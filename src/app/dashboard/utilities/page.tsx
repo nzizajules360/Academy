@@ -23,6 +23,7 @@ import {
     CollapsibleTrigger,
   } from "@/components/ui/collapsible"
 import { ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type UtilitiesPageProps = {
   searchParams: {

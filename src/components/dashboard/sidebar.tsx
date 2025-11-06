@@ -67,7 +67,7 @@ export function DashboardSidebar() {
         <SidebarMenu>
           {currentNavItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={createHref(item.href)} legacyBehavior passHref>
+              <Link href={createHref(item.href)} passHref>
                 <SidebarMenuButton
                   isActive={pathname === item.href}
                   tooltip={item.label}
