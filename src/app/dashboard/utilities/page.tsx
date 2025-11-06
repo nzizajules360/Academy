@@ -1,3 +1,6 @@
+
+'use client';
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -13,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { students, materials } from '@/lib/data';
 import type { UserRole } from '@/types';
@@ -65,7 +67,7 @@ export default function UtilitiesPage({ searchParams }: UtilitiesPageProps) {
                 </TableHeader>
                 <TableBody>
                     {relevantStudents.map(student => (
-                    <Collapsible asChild key={student.id}>
+                    <Collapsible asChild key={student.id} tag="tbody">
                         <>
                             <TableRow>
                                 <TableCell className="font-medium">{student.name}</TableCell>
