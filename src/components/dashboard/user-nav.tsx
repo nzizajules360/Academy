@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,17 +13,29 @@ import {
 import { Button } from '@/components/ui/button';
 import { useRole } from '@/hooks/use-role';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAuth, useUser } from '@/firebase';
+import { getAuth, signOut } from 'firebase/auth';
 
 export function UserNav() {
   const { role } = useRole();
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
+
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+      router.push('/');
+    }
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
           <Image
-            src={userAvatar?.imageUrl || '/placeholder.svg'}
+            src={user?.photoURL || userAvatar?.imageUrl || '/placeholder.svg'}
             width={40}
             height={40}
             alt="Avatar"
@@ -34,13 +47,13 @@ export function UserNav() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">CampusConnect User</p>
-            <p className="text-xs leading-none text-muted-foreground capitalize">{role}</p>
+            <p className="text-sm font-medium leading-none">{user?.displayName || 'CampusConnect User'}</p>
+            <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/">Logout</Link>
+        <DropdownMenuItem onSelect={handleLogout}>
+          Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
