@@ -66,7 +66,7 @@ export function DashboardSidebar() {
         <SidebarMenu>
           {currentNavItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={createHref(item.href)} passHref>
+              <Link href={createHref(item.href)}>
                 <SidebarMenuButton
                   isActive={pathname === item.href}
                   tooltip={item.label}
