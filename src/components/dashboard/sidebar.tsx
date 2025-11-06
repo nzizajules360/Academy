@@ -8,6 +8,7 @@ import {
   ListTodo,
   Users,
   UserPlus,
+  Settings,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,9 +32,9 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
   secretary: [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/students/add', icon: UserPlus, label: 'Enroll Student' },
-    { href: '/dashboard/students', icon: Users, label: 'View Students' },
+    { href: '/dashboard/students', icon: Users, label: 'Manage Students' },
+    { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ],
   patron: [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -77,7 +78,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={createHref(item.href)} passHref>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === item.href)}
                   tooltip={item.label}
                 >
                   <item.icon />
