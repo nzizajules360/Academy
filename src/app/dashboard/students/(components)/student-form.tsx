@@ -14,6 +14,7 @@ import { useFirestore } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { useRouter } from 'next/navigation';
 
 const A_LEVEL_FEE = 2000;
 const O_LEVEL_FEE = 1800;
@@ -37,6 +38,7 @@ export function StudentForm() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const firestore = useFirestore();
+    const router = useRouter();
 
     const form = useForm<StudentFormValues>({
         resolver: zodResolver(studentFormSchema),
@@ -82,7 +84,6 @@ export function StudentForm() {
                         requestResourceData: data,
                     });
                     errorEmitter.emit('permission-error', permissionError);
-                    // We throw the original error so the UI can know something went wrong.
                     throw serverError;
                 });
 
@@ -91,6 +92,7 @@ export function StudentForm() {
                 description: `${data.name} has been successfully added to the system.`,
             });
             form.reset();
+            router.push('/dashboard/students');
         } catch(e) {
             console.error("Failed to add student:", e);
              toast({

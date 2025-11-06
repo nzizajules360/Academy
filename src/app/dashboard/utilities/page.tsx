@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import {
@@ -64,7 +63,7 @@ export default function UtilitiesPage() {
                 <TableBody>
                     {relevantStudents.map(student => (
                     <Collapsible asChild key={student.id} tag="tbody">
-                        <>
+                       <React.Fragment>
                             <TableRow>
                                 <TableCell className="font-medium">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
@@ -107,7 +106,7 @@ export default function UtilitiesPage() {
                                     </td>
                                 </tr>
                             </CollapsibleContent>
-                        </>
+                        </React.Fragment>
                     </Collapsible>
                     ))}
                 </TableBody>

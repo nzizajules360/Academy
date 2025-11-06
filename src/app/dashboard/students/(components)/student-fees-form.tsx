@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -42,12 +42,11 @@ export function StudentFeesForm({ studentId, studentName, totalFees, currentFees
         },
     });
     
-    // Reset form when the dialog opens with new student data
-    useState(() => {
+    useEffect(() => {
         if (isOpen) {
             form.reset({ feesPaid: currentFeesPaid });
         }
-    });
+    }, [isOpen, currentFeesPaid, form]);
 
     async function onSubmit(data: FeesFormValues) {
         setIsLoading(true);
@@ -62,11 +61,11 @@ export function StudentFeesForm({ studentId, studentName, totalFees, currentFees
             setIsLoading(false);
             return;
         }
+        
+        const studentRef = doc(firestore, 'students', studentId);
+        const updateData = { feesPaid: data.feesPaid };
 
         try {
-            const studentRef = doc(firestore, 'students', studentId);
-            const updateData = { feesPaid: data.feesPaid };
-            
             await updateDoc(studentRef, updateData)
                 .catch((serverError) => {
                     const permissionError = new FirestorePermissionError({
@@ -75,7 +74,7 @@ export function StudentFeesForm({ studentId, studentName, totalFees, currentFees
                         requestResourceData: updateData,
                     });
                     errorEmitter.emit('permission-error', permissionError);
-                    throw serverError;
+                    throw serverError; // Rethrow to be caught by the outer catch block
                 });
 
             toast({
@@ -83,14 +82,17 @@ export function StudentFeesForm({ studentId, studentName, totalFees, currentFees
                 description: `Payment status for ${studentName} has been updated.`,
             });
             onUpdate(); // Trigger refresh on parent
-            onOpenChange(false); // Close dialog
         } catch (e) {
             console.error("Failed to update fees:", e);
-            toast({
-                variant: 'destructive',
-                title: "Update Failed",
-                description: "Could not update student fees. See console for details.",
-            });
+            // The permission error toast is handled globally, but we might want a generic one here.
+            // Avoid showing two toasts. The global one is more specific.
+            if (!(e instanceof FirestorePermissionError)) {
+                 toast({
+                    variant: 'destructive',
+                    title: "Update Failed",
+                    description: "Could not update student fees. Check permissions or network.",
+                });
+            }
         } finally {
             setIsLoading(false);
         }

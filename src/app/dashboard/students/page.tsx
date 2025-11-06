@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { useState, useCallback } from 'react';
@@ -30,7 +29,7 @@ import { PlusCircle, Loader2, AlertTriangle, Pencil } from 'lucide-react';
 import type { UserRole } from '@/types';
 import { useUser, useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, DocumentData, query, getDocs } from 'firebase/firestore';
+import { collection, DocumentData, getDocs } from 'firebase/firestore';
 import { StudentFeesForm } from './(components)/student-fees-form';
 
 interface StudentData extends DocumentData {
@@ -65,7 +64,7 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
     <Accordion type="single" collapsible className="w-full" defaultValue={sortedClasses[0]}>
       {sortedClasses.map((className) => (
         <AccordionItem value={className} key={className}>
-          <AccordionTrigger>{className}</AccordionTrigger>
+          <AccordionTrigger>{className} ({studentsByClass[className].length})</AccordionTrigger>
           <AccordionContent>
             <Table>
               <TableHeader>
@@ -129,18 +128,11 @@ export default function StudentsPage() {
     setIsFormOpen(true);
   };
   
-  const handleUpdate = async () => {
-    // Manually refetch data to see updates
-    if (snapshot) {
-      const freshSnapshot = await getDocs(snapshot.query);
-      // This is a simplified way to trigger a re-render.
-      // In a more complex app, state management would be better.
-      // For react-firebase-hooks, this is tricky without changing the query ref.
-      // So we force a component refresh by setting state.
-      setSelectedStudent(null);
-      setIsFormOpen(false);
-      // The hook should ideally pick up the changes, but if not, this is a fallback.
-    }
+  const handleUpdate = () => {
+    // react-firebase-hooks will automatically update the UI on data change,
+    // so we just need to close the dialog.
+    setSelectedStudent(null);
+    setIsFormOpen(false);
   }
 
 
@@ -165,17 +157,17 @@ export default function StudentsPage() {
       </CardHeader>
       <CardContent>
         {loading && (
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         )}
-        {error && <p className="text-destructive">Error loading students: {error.message}</p>}
+        {error && <p className="text-destructive p-4">Error loading students: {error.message}</p>}
         {!loading && !error && (
           students.length > 0 ? (
             <StudentListByClass students={students} onEditFees={handleEditFees} />
           ) : (
             <div className="text-center text-muted-foreground py-8">
-              No students found.
+              No students found. Use the "Add Student" button to enroll the first student.
             </div>
           )
         )}
