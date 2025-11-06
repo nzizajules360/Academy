@@ -4,7 +4,6 @@ import { usePathname } from 'next/navigation';
 import {
   BookUser,
   ClipboardList,
-  GraduationCap,
   LayoutDashboard,
   ListTodo,
   Users,
@@ -16,7 +15,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
+import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
 
@@ -46,6 +47,12 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
   ],
 };
 
+const BsmLogo = () => (
+    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xs">
+      BSM
+    </div>
+  );
+
 export function DashboardSidebar() {
   const { user } = useUser();
   const role = user?.role as UserRole | undefined ?? 'admin';
@@ -58,8 +65,8 @@ export function DashboardSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2" data-sidebar-menu-button="">
-            <GraduationCap className="w-8 h-8 text-sidebar-primary" />
-            <span className="text-lg font-semibold text-sidebar-foreground">CampusConnect</span>
+            <BsmLogo />
+            <span className="text-lg font-semibold text-sidebar-foreground">BSM</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -79,6 +86,11 @@ export function DashboardSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
+      <SidebarFooter>
+        <div className="flex items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+            <Badge variant="secondary" className="bg-white/20 text-white border-none">v1.0</Badge>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
