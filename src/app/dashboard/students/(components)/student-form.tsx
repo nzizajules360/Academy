@@ -10,17 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useFirestore } from '@/firebase';
+import { addDoc, collection } from 'firebase/firestore';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const studentFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   class: z.string().min(1, 'Please select a class.'),
-  type: z.enum(['boarding', 'external']),
-  gender: z.enum(['male', 'female']),
+  location: z.string().min(2, 'Location is required.'),
   parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
   parentPhone: z.string().regex(/^\d{3}-\d{3}-\d{4}$/, 'Invalid phone number format (e.g., 123-456-7890).'),
-  location: z.string().min(2, 'Location is required.'),
-  feesPaid: z.coerce.number().min(0, 'Fees paid cannot be negative.'),
-  refectoryTable: z.coerce.number().int().positive('Table number must be a positive integer.'),
 });
 
 type StudentFormValues = z.infer<typeof studentFormSchema>;
@@ -28,35 +28,60 @@ type StudentFormValues = z.infer<typeof studentFormSchema>;
 export function StudentForm() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const firestore = useFirestore();
 
     const form = useForm<StudentFormValues>({
         resolver: zodResolver(studentFormSchema),
         defaultValues: {
             name: '',
             class: '',
-            type: 'boarding',
-            gender: 'male',
             parentName: '',
             parentPhone: '',
             location: '',
-            feesPaid: 0,
-            refectoryTable: undefined
         },
     });
 
-    function onSubmit(data: StudentFormValues) {
+    async function onSubmit(data: StudentFormValues) {
         setIsLoading(true);
-        console.log(data);
-
-        // Simulate API call
-        setTimeout(() => {
+        if (!firestore) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Firestore is not initialized. Cannot save student.',
+            });
             setIsLoading(false);
+            return;
+        }
+
+        try {
+            const studentsCollection = collection(firestore, 'students');
+            await addDoc(studentsCollection, data)
+                .catch((serverError) => {
+                    const permissionError = new FirestorePermissionError({
+                        path: studentsCollection.path,
+                        operation: 'create',
+                        requestResourceData: data,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                    // We throw the original error so the UI can know something went wrong.
+                    throw serverError;
+                });
+
             toast({
                 title: "Student Registered",
                 description: `${data.name} has been successfully added to the system.`,
             });
             form.reset();
-        }, 1500);
+        } catch(e) {
+            console.error("Failed to add student:", e);
+             toast({
+                variant: 'destructive',
+                title: "Registration Failed",
+                description: "Could not save student to the database. See console for details.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -89,7 +114,7 @@ export function StudentForm() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Class</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select a class" />
@@ -106,37 +131,7 @@ export function StudentForm() {
                                         </FormItem>
                                     )}
                                 />
-                                <div className="grid grid-cols-2 gap-4">
-                                     <FormField
-                                        control={form.control}
-                                        name="type"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Student Type</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                                    <SelectContent><SelectItem value="boarding">Boarding</SelectItem><SelectItem value="external">External</SelectItem></SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                     <FormField
-                                        control={form.control}
-                                        name="gender"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Gender</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                                    <SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem></SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <FormField
+                                 <FormField
                                     control={form.control}
                                     name="location"
                                     render={({ field }) => (
@@ -177,34 +172,6 @@ export function StudentForm() {
                                         </FormItem>
                                     )}
                                 />
-                                <div className="grid grid-cols-2 gap-4">
-                                   <FormField
-                                        control={form.control}
-                                        name="feesPaid"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>School Fees Paid ($)</FormLabel>
-                                                <FormControl>
-                                                    <Input type="number" placeholder="1500" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="refectoryTable"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Refectory Table No.</FormLabel>
-                                                <FormControl>
-                                                    <Input type="number" placeholder="12" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
                             </div>
                         </div>
                         <Button type="submit" disabled={isLoading}>

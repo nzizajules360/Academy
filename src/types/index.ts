@@ -9,15 +9,16 @@ export type Student = {
   id: string;
   name: string;
   class: string;
-  type: 'boarding' | 'external';
+  location: string;
   parentName: string;
   parentPhone: string;
-  location: string;
-  feesPaid: number;
-  totalFees: number;
-  refectoryTable: number;
-  gender: 'male' | 'female';
-  utilities: MaterialStatus[];
+  // Fields below are from the initial data, but not in the secretary form
+  type?: 'boarding' | 'external';
+  feesPaid?: number;
+  totalFees?: number;
+  refectoryTable?: number;
+  gender?: 'male' | 'female';
+  utilities?: MaterialStatus[];
 };
 
 export type Material = {

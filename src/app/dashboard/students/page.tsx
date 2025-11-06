@@ -17,17 +17,86 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { students } from '@/lib/data';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import type { UserRole } from '@/types';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, DocumentData } from 'firebase/firestore';
+
+interface StudentData extends DocumentData {
+  id: string;
+  name: string;
+  class: string;
+  location: string;
+  parentName: string;
+  parentPhone: string;
+}
+
+const StudentListByClass = ({ students }: { students: StudentData[] }) => {
+  const studentsByClass = students.reduce((acc, student) => {
+    const { class: studentClass } = student;
+    if (!acc[studentClass]) {
+      acc[studentClass] = [];
+    }
+    acc[studentClass].push(student);
+    return acc;
+  }, {} as Record<string, StudentData[]>);
+
+  const sortedClasses = Object.keys(studentsByClass).sort();
+
+  return (
+    <Accordion type="single" collapsible className="w-full">
+      {sortedClasses.map((className) => (
+        <AccordionItem value={className} key={className}>
+          <AccordionTrigger>{className}</AccordionTrigger>
+          <AccordionContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Parent Name</TableHead>
+                  <TableHead>Parent Phone</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {studentsByClass[className].map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell>{student.location}</TableCell>
+                    <TableCell>{student.parentName}</TableCell>
+                    <TableCell>{student.parentPhone}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
+  );
+};
+
 
 export default function StudentsPage() {
   const { user } = useUser();
-  const role = user?.role as UserRole | undefined ?? 'admin';
+  const firestore = useFirestore();
+  const role = user?.role as UserRole | undefined ?? 'secretary';
   const canAddStudents = role === 'secretary' || role === 'admin';
+
+  const [studentsSnapshot, loading, error] = useCollection(
+    firestore ? collection(firestore, 'students') : null
+  );
+
+  const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentData)) || [];
 
   return (
     <Card>
@@ -48,43 +117,25 @@ export default function StudentsPage() {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Fees Paid</TableHead>
-              <TableHead>Refectory Table</TableHead>
-              <TableHead>Parent Contact</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {students.map((student) => (
-              <TableRow key={student.id}>
-                <TableCell className="font-medium">{student.name}</TableCell>
-                <TableCell>{student.class}</TableCell>
-                <TableCell>
-                  <Badge variant={student.type === 'boarding' ? 'default' : 'secondary'}>
-                    {student.type}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                    ${student.feesPaid.toLocaleString()} / ${student.totalFees.toLocaleString()}
-                </TableCell>
-                <TableCell>{student.refectoryTable}</TableCell>
-                <TableCell>
-                    <div>{student.parentName}</div>
-                    <div className="text-sm text-muted-foreground">{student.parentPhone}</div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {loading && (
+            <div className="flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )}
+        {error && <p className="text-destructive">Error loading students: {error.message}</p>}
+        {!loading && !error && (
+          students.length > 0 ? (
+            <StudentListByClass students={students} />
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              No students found.
+            </div>
+          )
+        )}
       </CardContent>
       <CardFooter>
         <div className="text-xs text-muted-foreground">
-          Showing <strong>1-{students.length}</strong> of <strong>{students.length}</strong> students
+            { !loading && `Showing ${students.length} students.`}
         </div>
       </CardFooter>
     </Card>

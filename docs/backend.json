@@ -30,6 +30,34 @@
         }
       },
       "required": ["uid", "email", "role"]
+    },
+    "student": {
+      "title": "Student",
+      "description": "A student enrolled in the school.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The student's full name."
+        },
+        "class": {
+          "type": "string",
+          "description": "The student's class."
+        },
+        "location": {
+          "type": "string",
+          "description": "The student's home location."
+        },
+        "parentName": {
+          "type": "string",
+          "description": "The name of the student's parent or guardian."
+        },
+        "parentPhone": {
+          "type": "string",
+          "description": "The phone number of the student's parent or guardian."
+        }
+      },
+      "required": ["name", "class", "location", "parentName", "parentPhone"]
     }
   },
   "auth": {
@@ -41,6 +69,12 @@
         "$ref": "#/entities/user"
       },
       "description": "Stores user profile information."
+    },
+    "/students/{studentId}": {
+      "schema": {
+        "$ref": "#/entities/student"
+      },
+      "description": "Stores student enrollment information."
     }
   }
 }

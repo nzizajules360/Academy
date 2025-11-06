@@ -18,9 +18,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { students } from '@/lib/data';
-import { DollarSign, Users, ClipboardList, AlertCircle } from 'lucide-react';
+import { DollarSign, Users, ClipboardList, AlertCircle, UserPlus, BookOpen } from 'lucide-react';
 import type { UserRole } from '@/types';
 import { useUser } from '@/firebase';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const totalStudents = students.length;
 const boardingStudents = students.filter(s => s.type === 'boarding').length;
@@ -179,23 +181,45 @@ const PatronMatronDashboard = ({ role }: { role: 'patron' | 'matron' }) => {
 };
 
 const SecretaryDashboard = () => (
-    <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-            <RecentEnrollments/>
-        </div>
-        <div className="space-y-8">
+    <div className='space-y-8'>
+        <div className="grid md:grid-cols-2 gap-8">
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Enroll Student</CardTitle>
+                    <UserPlus className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-2xl font-bold">{totalStudents}</div>
-                <p className="text-xs text-muted-foreground">
-                    {boardingStudents} boarding, {externalStudents} external
-                </p>
+                    <p className="text-sm text-muted-foreground mb-4">Add a new student to the school registry.</p>
+                    <Link href="/dashboard/students/add" passHref>
+                      <Button>Go to Enrollment Form</Button>
+                    </Link>
                 </CardContent>
             </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">View Students</CardTitle>
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">See a list of all currently enrolled students by class.</p>
+                     <Link href="/dashboard/students" passHref>
+                      <Button>View Student List</Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        </div>
+        <div>
+          <Card>
+              <CardHeader>
+                  <CardTitle>Total Students</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <div className="text-2xl font-bold">{totalStudents}</div>
+                  <p className="text-xs text-muted-foreground">
+                      {boardingStudents} boarding, {externalStudents} external
+                  </p>
+              </CardContent>
+          </Card>
         </div>
     </div>
 );
