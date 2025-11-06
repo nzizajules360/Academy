@@ -44,6 +44,11 @@
           "type": "string",
           "description": "The student's class."
         },
+        "gender": {
+          "type": "string",
+          "description": "The student's gender.",
+          "enum": ["male", "female"]
+        },
         "location": {
           "type": "string",
           "description": "The student's home location."
@@ -65,7 +70,7 @@
           "description": "The amount of school fees the student has paid."
         }
       },
-      "required": ["name", "class", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]
+      "required": ["name", "class", "gender", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]
     }
   },
   "auth": {

@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { students as staticStudents } from '@/lib/data';
 import { DollarSign, Users, ClipboardList, AlertCircle, UserPlus, BookOpen } from 'lucide-react';
 import type { UserRole } from '@/types';
 import { useUser, useFirestore } from '@/firebase';
@@ -26,7 +25,7 @@ import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, DocumentData } from 'firebase/firestore';
 
 
-const RecentEnrollments = () => (
+const RecentEnrollments = ({ students }: { students: DocumentData[] }) => (
   <Card>
     <CardHeader>
       <CardTitle>Recent Enrollments</CardTitle>
@@ -38,19 +37,13 @@ const RecentEnrollments = () => (
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Class</TableHead>
-            <TableHead>Type</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {staticStudents.slice(0, 5).map(student => (
+          {students.slice(0, 5).map(student => (
             <TableRow key={student.id}>
               <TableCell>{student.name}</TableCell>
               <TableCell>{student.class}</TableCell>
-              <TableCell>
-                <Badge variant={student.type === 'boarding' ? 'default' : 'secondary'}>
-                  {student.type}
-                </Badge>
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -60,17 +53,29 @@ const RecentEnrollments = () => (
 );
 
 const AdminDashboard = () => {
-    const totalStudents = staticStudents.length;
-    const boardingStudents = staticStudents.filter(s => s.type === 'boarding').length;
-    const externalStudents = staticStudents.filter(s => s.type === 'external').length;
-    const totalFeesPaid = staticStudents.reduce((acc, s) => acc + s.feesPaid, 0);
-    const totalFeesExpected = staticStudents.reduce((acc, s) => acc + s.totalFees, 0);
-    const feesPaidPercentage = (totalFeesPaid / totalFeesExpected) * 100;
-    const utilitiesMissing = staticStudents.flatMap(s => s.utilities.filter(u => u.status === 'missing')).length;
+    const firestore = useFirestore();
+    const [studentsSnapshot, loading] = useCollection(
+        firestore ? collection(firestore, 'students') : null
+    );
+
+    const students = studentsSnapshot?.docs.map(doc => doc.data()) || [];
+    const totalStudents = students.length;
+    const totalFeesPaid = students.reduce((acc, s) => acc + (s.feesPaid || 0), 0);
+    const totalFeesExpected = students.reduce((acc, s) => acc + (s.totalFees || 0), 0);
+    const feesPaidPercentage = totalFeesExpected > 0 ? (totalFeesPaid / totalFeesExpected) * 100 : 0;
+    
+    // Note: 'utilities' data is not in Firestore yet, so this will be 0.
+    // This can be implemented once utility tracking is moved to Firestore.
+    const utilitiesMissing = 0; 
+    
+    if (loading) {
+        return <div>Loading...</div>
+    }
+
     return (
         <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-                <RecentEnrollments />
+                <RecentEnrollments students={studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data()})) || []} />
             </div>
             <div className="space-y-8">
                 <Card>
@@ -80,9 +85,6 @@ const AdminDashboard = () => {
                     </CardHeader>
                     <CardContent>
                     <div className="text-2xl font-bold">{totalStudents}</div>
-                    <p className="text-xs text-muted-foreground">
-                        {boardingStudents} boarding, {externalStudents} external
-                    </p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -114,14 +116,24 @@ const AdminDashboard = () => {
 }
 
 const PatronMatronDashboard = ({ role }: { role: 'patron' | 'matron' }) => {
-  const patronStudents = staticStudents.filter(s => s.gender === 'male' && s.type === 'boarding');
-  const matronStudents = staticStudents.filter(s => s.gender === 'female' && s.type === 'boarding');
-  const patronUtilitiesMissing = patronStudents.flatMap(s => s.utilities.filter(u => u.status === 'missing')).length;
-  const matronUtilitiesMissing = matronStudents.flatMap(s => s.utilities.filter(u => u.status === 'missing')).length;
-  const studentCount = role === 'patron' ? patronStudents.length : matronStudents.length;
-  const missingCount = role === 'patron' ? patronUtilitiesMissing : matronUtilitiesMissing;
-  const studentsToMonitor = role === 'patron' ? patronStudents : matronStudents;
-  
+    const firestore = useFirestore();
+    const [studentsSnapshot, loading] = useCollection(
+        firestore ? collection(firestore, 'students') : null
+    );
+
+    const genderToMonitor = role === 'patron' ? 'male' : 'female';
+    const studentsToMonitor = studentsSnapshot?.docs
+        .map(doc => doc.data())
+        .filter(s => s.gender === genderToMonitor) || [];
+
+    const studentCount = studentsToMonitor.length;
+    // Note: 'utilities' data is not in Firestore yet, so this will be 0.
+    const missingCount = 0;
+
+    if (loading) {
+        return <div>Loading...</div>
+    }
+
   return (
     <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
@@ -141,13 +153,12 @@ const PatronMatronDashboard = ({ role }: { role: 'patron' | 'matron' }) => {
                     </TableHeader>
                     <TableBody>
                     {studentsToMonitor
-                        .filter(s => s.utilities.some(u => u.status === 'missing'))
-                        .slice(0, 5)
+                        .slice(0, 5) // Placeholder logic, will be updated when utilities are in Firestore
                         .map(student => (
                         <TableRow key={student.id}>
                             <TableCell>{student.name}</TableCell>
                             <TableCell>{student.class}</TableCell>
-                            <TableCell>{student.utilities.filter(u => u.status === 'missing').length}</TableCell>
+                            <TableCell>0</TableCell>
                         </TableRow>
                     ))}
                     </TableBody>

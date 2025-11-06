@@ -22,6 +22,7 @@ const O_LEVEL_FEE = 1800;
 const studentFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   class: z.string().min(1, 'Please select a class.'),
+  gender: z.enum(['male', 'female'], { required_error: 'Please select a gender.'}),
   location: z.string().min(2, 'Location is required.'),
   parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
   parentPhone: z.string().regex(/^\d{3}-\d{3}-\d{4}$/, 'Invalid phone number format (e.g., 123-456-7890).'),
@@ -45,6 +46,7 @@ export function StudentForm() {
         defaultValues: {
             name: '',
             class: '',
+            gender: 'male',
             parentName: '',
             parentPhone: '',
             location: '',
@@ -146,6 +148,27 @@ export function StudentForm() {
                                                     <SelectItem value="Grade 10A">Grade 10A</SelectItem>
                                                     <SelectItem value="Grade 11B">Grade 11B</SelectItem>
                                                     <SelectItem value="Grade 12A">Grade 12A</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="gender"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Gender</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a gender" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="male">Male</SelectItem>
+                                                    <SelectItem value="female">Female</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
