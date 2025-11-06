@@ -1,6 +1,7 @@
 
 'use client';
 import Link from 'next/link';
+import { useState, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -25,11 +26,12 @@ import {
 } from "@/components/ui/accordion"
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, AlertTriangle, Pencil } from 'lucide-react';
 import type { UserRole } from '@/types';
 import { useUser, useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, DocumentData } from 'firebase/firestore';
+import { collection, DocumentData, query, getDocs } from 'firebase/firestore';
+import { StudentFeesForm } from './(components)/student-fees-form';
 
 interface StudentData extends DocumentData {
   id: string;
@@ -38,9 +40,16 @@ interface StudentData extends DocumentData {
   location: string;
   parentName: string;
   parentPhone: string;
+  totalFees: number;
+  feesPaid: number;
 }
 
-const StudentListByClass = ({ students }: { students: StudentData[] }) => {
+interface StudentListByClassProps {
+  students: StudentData[];
+  onEditFees: (student: StudentData) => void;
+}
+
+const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) => {
   const studentsByClass = students.reduce((acc, student) => {
     const { class: studentClass } = student;
     if (!acc[studentClass]) {
@@ -53,7 +62,7 @@ const StudentListByClass = ({ students }: { students: StudentData[] }) => {
   const sortedClasses = Object.keys(studentsByClass).sort();
 
   return (
-    <Accordion type="single" collapsible className="w-full">
+    <Accordion type="single" collapsible className="w-full" defaultValue={sortedClasses[0]}>
       {sortedClasses.map((className) => (
         <AccordionItem value={className} key={className}>
           <AccordionTrigger>{className}</AccordionTrigger>
@@ -62,20 +71,34 @@ const StudentListByClass = ({ students }: { students: StudentData[] }) => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
                   <TableHead>Parent Name</TableHead>
                   <TableHead>Parent Phone</TableHead>
+                  <TableHead>Fee Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {studentsByClass[className].map((student) => (
-                  <TableRow key={student.id}>
+                {studentsByClass[className].map((student) => {
+                  const hasOutstanding = student.feesPaid < student.totalFees;
+                  return (
+                  <TableRow key={student.id} className={hasOutstanding ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
                     <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.location}</TableCell>
                     <TableCell>{student.parentName}</TableCell>
                     <TableCell>{student.parentPhone}</TableCell>
+                    <TableCell>
+                      <Badge variant={hasOutstanding ? 'destructive' : 'secondary'}>
+                        {hasOutstanding && <AlertTriangle className="mr-1 h-3 w-3" />}
+                        ${student.feesPaid.toLocaleString()} / ${student.totalFees.toLocaleString()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                       <Button variant="ghost" size="icon" onClick={() => onEditFees(student)}>
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit Fees</span>
+                       </Button>
+                    </TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           </AccordionContent>
@@ -92,13 +115,37 @@ export default function StudentsPage() {
   const role = user?.role as UserRole | undefined ?? 'secretary';
   const canAddStudents = role === 'secretary' || role === 'admin';
 
-  const [studentsSnapshot, loading, error] = useCollection(
+  const [studentsSnapshot, loading, error, snapshot] = useCollection(
     firestore ? collection(firestore, 'students') : null
   );
 
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
+
   const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentData)) || [];
 
+  const handleEditFees = (student: StudentData) => {
+    setSelectedStudent(student);
+    setIsFormOpen(true);
+  };
+  
+  const handleUpdate = async () => {
+    // Manually refetch data to see updates
+    if (snapshot) {
+      const freshSnapshot = await getDocs(snapshot.query);
+      // This is a simplified way to trigger a re-render.
+      // In a more complex app, state management would be better.
+      // For react-firebase-hooks, this is tricky without changing the query ref.
+      // So we force a component refresh by setting state.
+      setSelectedStudent(null);
+      setIsFormOpen(false);
+      // The hook should ideally pick up the changes, but if not, this is a fallback.
+    }
+  }
+
+
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -125,7 +172,7 @@ export default function StudentsPage() {
         {error && <p className="text-destructive">Error loading students: {error.message}</p>}
         {!loading && !error && (
           students.length > 0 ? (
-            <StudentListByClass students={students} />
+            <StudentListByClass students={students} onEditFees={handleEditFees} />
           ) : (
             <div className="text-center text-muted-foreground py-8">
               No students found.
@@ -139,5 +186,18 @@ export default function StudentsPage() {
         </div>
       </CardFooter>
     </Card>
+
+    {selectedStudent && (
+        <StudentFeesForm
+            isOpen={isFormOpen}
+            onOpenChange={setIsFormOpen}
+            studentId={selectedStudent.id}
+            studentName={selectedStudent.name}
+            totalFees={selectedStudent.totalFees}
+            currentFeesPaid={selectedStudent.feesPaid}
+            onUpdate={handleUpdate}
+        />
+    )}
+    </>
   );
 }

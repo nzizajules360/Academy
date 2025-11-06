@@ -12,10 +12,10 @@ export type Student = {
   location: string;
   parentName: string;
   parentPhone: string;
+  totalFees: number;
+  feesPaid: number;
   // Fields below are from the initial data, but not in the secretary form
   type?: 'boarding' | 'external';
-  feesPaid?: number;
-  totalFees?: number;
   refectoryTable?: number;
   gender?: 'male' | 'female';
   utilities?: MaterialStatus[];

@@ -55,9 +55,17 @@
         "parentPhone": {
           "type": "string",
           "description": "The phone number of the student's parent or guardian."
+        },
+        "totalFees": {
+          "type": "number",
+          "description": "The total school fees for the student."
+        },
+        "feesPaid": {
+          "type": "number",
+          "description": "The amount of school fees the student has paid."
         }
       },
-      "required": ["name", "class", "location", "parentName", "parentPhone"]
+      "required": ["name", "class", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]
     }
   },
   "auth": {

@@ -21,6 +21,11 @@ const studentFormSchema = z.object({
   location: z.string().min(2, 'Location is required.'),
   parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
   parentPhone: z.string().regex(/^\d{3}-\d{3}-\d{4}$/, 'Invalid phone number format (e.g., 123-456-7890).'),
+  totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
+  feesPaid: z.coerce.number().min(0, 'Fees paid must be a positive number.'),
+}).refine(data => data.feesPaid <= data.totalFees, {
+    message: "Fees paid cannot exceed total fees.",
+    path: ["feesPaid"],
 });
 
 type StudentFormValues = z.infer<typeof studentFormSchema>;
@@ -38,6 +43,8 @@ export function StudentForm() {
             parentName: '',
             parentPhone: '',
             location: '',
+            totalFees: 2000,
+            feesPaid: 0,
         },
     });
 
@@ -173,6 +180,34 @@ export function StudentForm() {
                                     )}
                                 />
                             </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-8 pt-4 border-t">
+                             <FormField
+                                control={form.control}
+                                name="totalFees"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Total School Fees</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="2000" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="feesPaid"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Amount Paid</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="0" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
