@@ -73,46 +73,48 @@ const RecentEnrollments = () => (
 );
 
 const AdminDashboard = () => (
-  <>
-    <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalStudents}</div>
-          <p className="text-xs text-muted-foreground">
-            {boardingStudents} boarding, {externalStudents} external
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Fee Collection</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">${totalFeesPaid.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground">
-            of ${totalFeesExpected.toLocaleString()} collected
-          </p>
-          <Progress value={feesPaidPercentage} className="mt-2 h-2" />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Utilities Status</CardTitle>
-          <ClipboardList className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{utilitiesMissing}</div>
-          <p className="text-xs text-muted-foreground">items reported missing</p>
-        </CardContent>
-      </Card>
+  <div className="grid lg:grid-cols-3 gap-8">
+    <div className="lg:col-span-2">
+        <RecentEnrollments />
     </div>
-    <RecentEnrollments />
-  </>
+    <div className="space-y-8">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+            <div className="text-2xl font-bold">{totalStudents}</div>
+            <p className="text-xs text-muted-foreground">
+                {boardingStudents} boarding, {externalStudents} external
+            </p>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Fee Collection</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+            <div className="text-2xl font-bold">${totalFeesPaid.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+                of ${totalFeesExpected.toLocaleString()} collected
+            </p>
+            <Progress value={feesPaidPercentage} className="mt-2 h-2" />
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Utilities Status</CardTitle>
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+            <div className="text-2xl font-bold">{utilitiesMissing}</div>
+            <p className="text-xs text-muted-foreground">items reported missing</p>
+            </CardContent>
+        </Card>
+    </div>
+  </div>
 );
 
 const PatronMatronDashboard = ({ role }: { role: 'patron' | 'matron' }) => {
@@ -121,66 +123,71 @@ const PatronMatronDashboard = ({ role }: { role: 'patron' | 'matron' }) => {
   const studentsToMonitor = role === 'patron' ? patronStudents : matronStudents;
   
   return (
-    <>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Students Monitored</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{studentCount}</div>
-            <p className="text-xs text-muted-foreground">Boarding {role === 'patron' ? 'boys' : 'girls'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Utility Alerts</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{missingCount}</div>
-            <p className="text-xs text-muted-foreground">Items need attention</p>
-          </CardContent>
-        </Card>
-      </div>
-       <Card>
-        <CardHeader>
-          <CardTitle>Students with Missing Utilities</CardTitle>
-          <CardDescription>A list of students who have missing items.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Missing Items</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {studentsToMonitor
-                .filter(s => s.utilities.some(u => u.status === 'missing'))
-                .slice(0, 5)
-                .map(student => (
-                  <TableRow key={student.id}>
-                    <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    <TableCell>{student.utilities.filter(u => u.status === 'missing').length}</TableCell>
-                  </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </>
+    <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                <CardTitle>Students with Missing Utilities</CardTitle>
+                <CardDescription>A list of students who have missing items.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Class</TableHead>
+                        <TableHead>Missing Items</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {studentsToMonitor
+                        .filter(s => s.utilities.some(u => u.status === 'missing'))
+                        .slice(0, 5)
+                        .map(student => (
+                        <TableRow key={student.id}>
+                            <TableCell>{student.name}</TableCell>
+                            <TableCell>{student.class}</TableCell>
+                            <TableCell>{student.utilities.filter(u => u.status === 'missing').length}</TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+        </div>
+        <div className="space-y-8">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Students Monitored</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{studentCount}</div>
+                    <p className="text-xs text-muted-foreground">Boarding {role === 'patron' ? 'boys' : 'girls'}</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Utility Alerts</CardTitle>
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{missingCount}</div>
+                    <p className="text-xs text-muted-foreground">Items need attention</p>
+                </CardContent>
+            </Card>
+        </div>
+    </div>
   )
 };
 
 const SecretaryDashboard = () => (
-    <>
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-            <Card>
+    <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+            <RecentEnrollments/>
+        </div>
+        <div className="space-y-8">
+             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Students</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -193,8 +200,7 @@ const SecretaryDashboard = () => (
                 </CardContent>
             </Card>
         </div>
-        <RecentEnrollments/>
-    </>
+    </div>
 );
 
 
