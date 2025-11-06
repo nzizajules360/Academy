@@ -1,3 +1,5 @@
+
+'use client';
 import {
   Card,
   CardContent,
@@ -18,12 +20,7 @@ import { Progress } from '@/components/ui/progress';
 import { students } from '@/lib/data';
 import { DollarSign, Users, ClipboardList, AlertCircle } from 'lucide-react';
 import type { UserRole } from '@/types';
-
-type DashboardPageProps = {
-  searchParams: {
-    role?: UserRole;
-  };
-};
+import { useUser } from '@/firebase';
 
 const totalStudents = students.length;
 const boardingStudents = students.filter(s => s.type === 'boarding').length;
@@ -204,8 +201,9 @@ const SecretaryDashboard = () => (
 );
 
 
-export default function DashboardPage({ searchParams }: DashboardPageProps) {
-  const role = searchParams.role ?? 'admin';
+export default function DashboardPage() {
+  const { user } = useUser();
+  const role = user?.role as UserRole | undefined ?? 'admin';
 
   const renderDashboard = () => {
     switch (role) {

@@ -1,24 +1,16 @@
 'use client';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
 
-const validRoles: UserRole[] = ['admin', 'secretary', 'patron', 'matron'];
-
 export function useRole() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const roleParam = searchParams.get('role');
-
-  const role: UserRole =
-    roleParam && validRoles.includes(roleParam as UserRole)
-      ? (roleParam as UserRole)
-      : 'admin'; // Default to 'admin' if role is invalid or not present
-
+  const { user } = useUser();
+  const role = user?.role as UserRole | undefined ?? 'admin';
+  
+  // The setRole function is no longer needed as the role is fixed.
+  // It is kept here to avoid breaking other components that might still use it.
+  // In a real application, you would remove this and update all call sites.
   const setRole = (newRole: UserRole) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('role', newRole);
-    router.push(`${pathname}?${params.toString()}`);
+    console.warn("setRole is deprecated. User role is fixed after registration.");
   };
 
   return { role, setRole };

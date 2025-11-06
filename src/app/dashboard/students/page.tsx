@@ -1,3 +1,5 @@
+
+'use client';
 import Link from 'next/link';
 import {
   Card,
@@ -20,15 +22,11 @@ import { Button } from '@/components/ui/button';
 import { students } from '@/lib/data';
 import { PlusCircle } from 'lucide-react';
 import type { UserRole } from '@/types';
+import { useUser } from '@/firebase';
 
-type StudentsPageProps = {
-  searchParams: {
-    role?: UserRole;
-  };
-};
-
-export default function StudentsPage({ searchParams }: StudentsPageProps) {
-  const role = searchParams.role ?? 'admin';
+export default function StudentsPage() {
+  const { user } = useUser();
+  const role = user?.role as UserRole | undefined ?? 'admin';
   const canAddStudents = role === 'secretary' || role === 'admin';
 
   return (
@@ -40,7 +38,7 @@ export default function StudentsPage({ searchParams }: StudentsPageProps) {
                 <CardDescription>Manage student records, view details, and track enrollment.</CardDescription>
             </div>
             {canAddStudents && (
-            <Link href={`/dashboard/students/add?role=${role}`} passHref>
+            <Link href={`/dashboard/students/add`} passHref>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Student
