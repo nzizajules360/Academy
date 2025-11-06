@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+
+const A_LEVEL_FEE = 2000;
+const O_LEVEL_FEE = 1800;
 
 const studentFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -43,10 +46,19 @@ export function StudentForm() {
             parentName: '',
             parentPhone: '',
             location: '',
-            totalFees: 2000,
+            totalFees: A_LEVEL_FEE,
             feesPaid: 0,
         },
     });
+
+    const selectedClass = form.watch('class');
+
+    useEffect(() => {
+        if (selectedClass) {
+            const isOLevel = selectedClass.startsWith('Grade 9') || selectedClass.startsWith('Grade 10');
+            form.setValue('totalFees', isOLevel ? O_LEVEL_FEE : A_LEVEL_FEE);
+        }
+    }, [selectedClass, form]);
 
     async function onSubmit(data: StudentFormValues) {
         setIsLoading(true);
@@ -182,19 +194,10 @@ export function StudentForm() {
                             </div>
                         </div>
                         <div className="grid md:grid-cols-2 gap-8 pt-4 border-t">
-                             <FormField
-                                control={form.control}
-                                name="totalFees"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Total School Fees</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="2000" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div>
+                                <FormLabel>Total School Fees</FormLabel>
+                                <Input type="text" value={`$${form.getValues('totalFees').toLocaleString()}`} readOnly disabled className="mt-2" />
+                            </div>
                              <FormField
                                 control={form.control}
                                 name="feesPaid"
