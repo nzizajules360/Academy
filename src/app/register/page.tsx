@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, GraduationCap, Mail, Lock, User, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { UserRole } from '@/types';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -39,7 +45,7 @@ export default function RegisterPage() {
     displayName: '', 
     email: '', 
     password: '',
-    role: ''
+    role: '' as UserRole | ''
   });
   const [errors, setErrors] = useState({ 
     displayName: '', 
@@ -49,9 +55,13 @@ export default function RegisterPage() {
   });
   const [focusedField, setFocusedField] = useState('');
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleValidation = () => {
     const newErrors = { displayName: '', email: '', password: '', role: '' };
     
     if (!formData.displayName) {
@@ -77,25 +87,86 @@ export default function RegisterPage() {
     }
     
     setErrors(newErrors);
-    
-    if (!newErrors.displayName && !newErrors.email && !newErrors.password && !newErrors.role) {
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        alert('Registration successful! (Demo)');
-      }, 1500);
+    return !newErrors.displayName && !newErrors.email && !newErrors.password && !newErrors.role;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!handleValidation() || !auth || !firestore) return;
+
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      await updateProfile(user, { displayName: formData.displayName });
+
+      await setDoc(doc(firestore, "users", user.uid), {
+        uid: user.uid,
+        displayName: formData.displayName,
+        email: user.email,
+        role: formData.role,
+        photoURL: user.photoURL
+      });
+      
+      router.push('/dashboard');
+
+    } catch (error: any) {
+      console.error(error);
+      let errorMessage = "An unknown error occurred during registration.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email address is already in use.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "The password is too weak.";
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
+    if (!auth || !firestore || !formData.role) {
+      setErrors(prev => ({...prev, role: 'Please select a role before signing in with Google.'}))
+      toast({
+        variant: 'destructive',
+        title: 'Role Required',
+        description: "You must select a role before signing in with Google.",
+      });
+      return;
+    }
     setGoogleLoading(true);
-    setTimeout(() => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      await setDoc(doc(firestore, "users", user.uid), {
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        role: formData.role,
+        photoURL: user.photoURL,
+      }, { merge: true }); // Merge to avoid overwriting existing data if user logs in differently
+
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error(error);
+       toast({
+        variant: 'destructive',
+        title: 'Google Sign-In Failed',
+        description: "Could not sign in with Google. Please try again or use email/password.",
+      });
+    } finally {
       setGoogleLoading(false);
-      alert('Google sign-in successful! (Demo)');
-    }, 1500);
+    }
   };
 
-  const handleRoleSelect = (value) => {
+  const handleRoleSelect = (value: UserRole) => {
     setFormData({...formData, role: value});
     setShowRoleDropdown(false);
     setErrors({...errors, role: ''});
@@ -107,7 +178,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute top-40 right-10 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '1s'}}></div>
         <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '2s'}}></div>
       </div>
@@ -137,33 +208,9 @@ export default function RegisterPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
               <p className="text-gray-600">Join CampusConnect and start your journey</p>
             </div>
-
-            {/* Google Sign In */}
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={isLoading || isGoogleLoading}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed group"
-            >
-              {isGoogleLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <GoogleIcon />
-              )}
-              <span>Continue with Google</span>
-            </button>
-
-            {/* Divider */}
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">Or register with email</span>
-              </div>
-            </div>
-
+            
             {/* Form */}
-            <div className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Name Field */}
               <div>
                 <label htmlFor="displayName" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -307,7 +354,7 @@ export default function RegisterPage() {
                         <button
                           key={role.value}
                           type="button"
-                          onClick={() => handleRoleSelect(role.value)}
+                          onClick={() => handleRoleSelect(role.value as UserRole)}
                           className={`w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors duration-200 flex items-center justify-between group ${
                             idx !== roles.length - 1 ? 'border-b border-gray-100' : ''
                           } ${formData.role === role.value ? 'bg-indigo-50' : ''}`}
@@ -334,8 +381,8 @@ export default function RegisterPage() {
               </div>
 
               {/* Submit Button */}
-              <button
-                onClick={handleSubmit}
+               <button
+                type="submit"
                 disabled={isLoading || isGoogleLoading}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed group transform hover:scale-[1.02] active:scale-[0.98]"
               >
@@ -351,7 +398,31 @@ export default function RegisterPage() {
                   </>
                 )}
               </button>
+            </form>
+            
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500 font-medium">Or</span>
+              </div>
             </div>
+
+            {/* Google Sign In */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={isLoading || isGoogleLoading}
+              className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed group"
+            >
+              {isGoogleLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <GoogleIcon />
+              )}
+              <span>Continue with Google</span>
+            </button>
 
             {/* Footer */}
             <div className="mt-8 text-center">

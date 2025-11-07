@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Loader2, GraduationCap, Mail, Lock, ArrowRight } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -30,9 +34,11 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({ email: '', password: '' });
   const [focusedField, setFocusedField] = useState('');
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleValidation = () => {
     const newErrors = { email: '', password: '' };
     
     if (!formData.email) {
@@ -43,34 +49,65 @@ export default function LoginPage() {
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
     }
     
     setErrors(newErrors);
-    
-    if (!newErrors.email && !newErrors.password) {
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        alert('Login successful! (Demo)');
-      }, 1500);
+    return !newErrors.email && !newErrors.password;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!handleValidation() || !auth) return;
+
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error(error);
+      const errorCode = error.code;
+      let errorMessage = "An unknown error occurred.";
+      if (errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (errorCode === 'auth/invalid-email') {
+        errorMessage = "Please enter a valid email address.";
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
+    if (!auth) return;
     setGoogleLoading(true);
-    setTimeout(() => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      // After successful sign-in, the useUser hook will redirect to the dashboard.
+      // A fallback redirect can be placed here if needed.
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Google Sign-In Failed',
+        description: "Could not sign in with Google. Please try again or use email/password.",
+      });
+    } finally {
       setGoogleLoading(false);
-      alert('Google sign-in successful! (Demo)');
-    }, 1500);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute top-40 right-10 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '1s'}}></div>
         <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '2s'}}></div>
       </div>
