@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -183,6 +184,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
             />
             {listType === 'class_roster' && (
               <FormField
+                key="class-field"
                 control={form.control}
                 name="class"
                 render={({ field }) => (
