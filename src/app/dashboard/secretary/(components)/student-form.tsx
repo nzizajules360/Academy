@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,7 +30,7 @@ const studentFormSchema = z.object({
   parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
   totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
   feesPaid: z.coerce.number().min(0, 'Fees paid must be a positive number.'),
-  refectoryTable: z.coerce.number().optional(),
+  refectoryTable: z.coerce.number().optional().nullable(),
 }).refine(data => data.feesPaid <= data.totalFees, {
     message: "Fees paid cannot exceed total fees.",
     path: ["feesPaid"],
@@ -62,6 +63,7 @@ export function StudentForm() {
             religion: 'Catholic',
             totalFees: 0,
             feesPaid: 0,
+            refectoryTable: null
         },
     });
 
@@ -106,7 +108,7 @@ export function StudentForm() {
             }
         });
         return occupancy;
-    }, [students, totalMorningTables]);
+    }, [students]);
 
     const availableTables = useMemo(() => {
         return Object.entries(tableOccupancy)

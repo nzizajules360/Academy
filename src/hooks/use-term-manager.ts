@@ -1,13 +1,14 @@
+
 'use client';
 import { useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, DocumentData } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from './use-active-term';
 import type { EnrolledStudent } from '@/types/refectory';
 
 export const useTermManager = () => {
     const firestore = useFirestore();
-    const { activeTermId, loading: loadingTerm } = useActiveTerm();
+    const { activeTermId, loading: loadingTerm, activeTerm } = useActiveTerm();
 
     const studentsQuery = (firestore && activeTermId) 
         ? query(collection(firestore, 'students'), where('termId', '==', activeTermId))
@@ -25,6 +26,7 @@ export const useTermManager = () => {
     return {
         enrolledStudents,
         loading: loadingTerm || loadingStudents,
-        error
+        error,
+        activeTerm,
     };
 };

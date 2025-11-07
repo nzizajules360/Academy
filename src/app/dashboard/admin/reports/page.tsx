@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -141,7 +142,7 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
         document.body.removeChild(link);
     }
 
-    const totalOutstanding = studentsWithOutstandingFees.reduce((sum, student) => 
+    const totalOutstanding = studentsWithOutstandingFees.reduce((sum: number, student: DocumentData) => 
         sum + (student.totalFees - student.feesPaid), 0
     );
 
@@ -226,7 +227,7 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                                                                 {studentsByClass[className].length} students
                                                             </Badge>
                                                             <Badge variant="destructive" className="text-sm">
-                                                                RWF {studentsByClass[className].reduce((sum, s) => sum + (s.totalFees - s.feesPaid), 0).toLocaleString()}
+                                                                RWF {studentsByClass[className].reduce((sum: number, s: DocumentData) => sum + (s.totalFees - s.feesPaid), 0).toLocaleString()}
                                                             </Badge>
                                                         </div>
                                                     </div>
@@ -241,7 +242,7 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {studentsByClass[className].map((student, idx) => (
+                                                            {studentsByClass[className].map((student: DocumentData, idx: number) => (
                                                                 <motion.tr
                                                                     key={student.id}
                                                                     initial={{ opacity: 0 }}
@@ -347,7 +348,7 @@ export default function ReportsPage() {
                     {activeTerm && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-accent/50 rounded-lg px-3 py-2 w-fit">
                             <Calendar className="h-4 w-4" />
-                            <span>Active Term: <strong>{activeTerm.name}</strong></span>
+                            <span>Active Term: <strong>{(activeTerm as DocumentData).name}</strong></span>
                         </div>
                     )}
                 </motion.div>

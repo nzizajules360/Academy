@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -43,7 +44,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
 
   // Fetch teachers
   const teachersQuery = firestore ? query(collection(firestore, 'users'), where('role', '==', 'teacher')) : null;
-  const [teachers, loadingTeachers] = useCollectionData(teachersQuery, { idField: 'id' });
+  const [teachers, loadingTeachers] = useCollectionData(teachersQuery);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(sendListSchema),
@@ -151,7 +152,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
                     </FormControl>
                     <SelectContent>
                       {teachers?.map(teacher => (
-                        <SelectItem key={teacher.id} value={teacher.id}>
+                        <SelectItem key={teacher.uid} value={teacher.uid}>
                           {teacher.displayName}
                         </SelectItem>
                       ))}

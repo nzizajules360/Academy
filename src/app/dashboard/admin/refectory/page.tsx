@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -18,6 +19,7 @@ import { useTermManager } from '@/hooks/use-term-manager';
 import { useFirestore } from '@/firebase';
 import { writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { DocumentData } from 'firebase/firestore';
 
 // Enhanced Student Avatar with animations
 const StudentAvatar = ({ student, index }: { student: EnrolledStudent; index: number }) => (
@@ -205,7 +207,7 @@ const StatsCard = ({ title, value, icon: Icon, description, color }: any) => (
 );
 
 export default function SeatingChartPage() {
-  const { enrolledStudents, loading, currentTerm } = useTermManager();
+  const { enrolledStudents, loading, activeTerm } = useTermManager();
   const [seatingChart, setSeatingChart] = useState<SeatingChart | null>(null);
   const [previousSeatingChart, setPreviousSeatingChart] = useState<SeatingChart | null>(null);
   const firestore = useFirestore();
@@ -575,10 +577,10 @@ export default function SeatingChartPage() {
             <p className="text-lg text-muted-foreground max-w-2xl">
               Automatically assign seats to students with intelligent table distribution and real-time updates.
             </p>
-            {currentTerm && (
+            {activeTerm && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                <span>Active Term: {currentTerm.name}</span>
+                <span>Active Term: {(activeTerm as DocumentData).name}</span>
               </div>
             )}
           </div>
