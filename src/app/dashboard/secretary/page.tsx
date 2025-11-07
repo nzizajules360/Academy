@@ -9,11 +9,11 @@ import {
   CardDescription
 } from '@/components/ui/card';
 import { useFirestore } from '@/firebase';
-import { useCollection, useDocument } from 'react-firebase-hooks/firestore';
+import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { UserPlus, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
 import { useActiveTerm } from '@/hooks/use-active-term';
-import { isPast } from 'date-fns';
+import { isPast, parseISO } from 'date-fns';
 
 const OutstandingFeesAlert = () => {
     const { activeTermId, loading: loadingTerm } = useActiveTerm();
@@ -23,9 +23,9 @@ const OutstandingFeesAlert = () => {
     const activeTermQuery = (firestore && activeTermId && activeTermId.includes('_')) 
         ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) 
         : null;
-    const [termSnapshot, loadingTermDetails] = useDocument(activeTermQuery);
+    const [termDetails, loadingTermDetails] = useDocumentData(activeTermQuery);
 
-    // Get students with outstanding fees for the active term
+    // Get students for the active term
     const studentsQuery = (firestore && activeTermId) 
         ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) 
         : null;
@@ -35,9 +35,9 @@ const OutstandingFeesAlert = () => {
 
     if (isLoading) {
         return (
-            <Card className="bg-yellow-50 border-yellow-200">
+            <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800/40">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-yellow-800">
+                    <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-400">
                         <Loader2 className="h-5 w-5 animate-spin" />
                         Checking for Fee Alerts...
                     </CardTitle>
@@ -46,31 +46,32 @@ const OutstandingFeesAlert = () => {
         );
     }
     
-    if (!activeTermId) {
-        // Don't render anything if there's no active term.
+    if (!activeTermId || !termDetails) {
+        // Don't render anything if there's no active term or details.
         return null;
     }
     
-    const deadline = termSnapshot?.data()?.paymentDeadline;
+    const deadline = termDetails.paymentDeadline;
     const studentsWithOutstandingFees = studentsSnapshot?.docs.filter(doc => doc.data().feesPaid < doc.data().totalFees).length || 0;
 
-    if (!deadline || !isPast(new Date(deadline)) || studentsWithOutstandingFees === 0) {
+    // A deadline must exist, it must be in the past, and there must be students with outstanding fees.
+    if (!deadline || !isPast(parseISO(deadline)) || studentsWithOutstandingFees === 0) {
         return null;
     }
     
     return (
-        <Card className="bg-destructive/10 border-destructive/20">
+        <Card className="bg-destructive/10 border-destructive/20 dark:bg-destructive/20 dark:border-destructive/30">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-destructive">
+                <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">
                     <AlertTriangle className="h-5 w-5" />
                     Overdue Payment Alert
                 </CardTitle>
-                 <CardDescription className="text-destructive/90">
+                 <CardDescription className="text-destructive/90 dark:text-red-400/80">
                     The payment deadline of {new Date(deadline).toLocaleDateString()} has passed.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <p className="text-destructive/90">
+                <p className="text-destructive/90 dark:text-red-400/90">
                     There are <span className="font-bold">{studentsWithOutstandingFees} students</span> with outstanding fee payments.
                 </p>
                 <Link href="/dashboard/secretary/reports" passHref className='mt-4 block'>
