@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,6 +15,8 @@ import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useActiveTerm } from '@/hooks/use-active-term';
+import { cn } from '@/lib/utils';
+
 
 const sendListSchema = z.object({
   teacherId: z.string().min(1, { message: 'Please select a teacher.' }),
@@ -182,33 +183,32 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
                 </FormItem>
               )}
             />
-            {listType === 'class_roster' && (
-              <FormField
-                key="class-field"
-                control={form.control}
-                name="class"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Class</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a class for the roster" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableClasses.map(c => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <div className={cn(listType !== 'class_roster' && 'hidden')}>
+                <FormField
+                    control={form.control}
+                    name="class"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Class</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select a class for the roster" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {availableClasses.map(c => (
+                            <SelectItem key={c} value={c}>
+                                {c}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary" disabled={isSending}>Cancel</Button>
