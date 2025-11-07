@@ -1,3 +1,4 @@
+
 import type { SeatingChart, RefectoryTable, EnrolledStudent } from '@/types/refectory';
 
 const TABLE_CAPACITY = {
@@ -74,16 +75,20 @@ export function generateSeatingChart(students: EnrolledStudent[], previous?: Sea
     const unassignedGirls = girls.length - girlIndex;
 
     if (unassignedBoys > 0) {
-        console.warn(`${unassignedBoys} abahungu ntibabonye imyanya.`);
+        console.warn(`${unassignedBoys} boys did not get a seat.`);
     }
     if (unassignedGirls > 0) {
-        console.warn(`${unassignedGirls} abakobwa ntibabonye imyanya.`);
+        console.warn(`${unassignedGirls} girls did not get a seat.`);
     }
 
     const morningShiftTables = masterTables;
 
     const eveningShiftTables = masterTables
-        .map(table => ({ ...table, boys: [...table.boys], girls: [...table.girls] })) // Deep copy
+        .map(table => ({
+            ...table, 
+            boys: table.boys.map(s => ({...s})), 
+            girls: table.girls.map(s => ({...s}))
+        }))
         .filter(table => {
             if (table.serie === 1) return true;
             const serie2TableIndex = table.tableNumber - REFEFCTORY_CONFIG.serie1;

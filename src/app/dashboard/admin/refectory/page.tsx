@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -56,8 +57,8 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
                 <CardFooter className="p-4 pt-0">
                     <ScrollArea className="h-32 w-full pr-3">
                         <div className="space-y-2">
-                           {table.boys.map(s => <StudentAvatar key={`boy-${s.id}`} student={s} />)}
-                           {table.girls.map(s => <StudentAvatar key={`girl-${s.id}`} student={s} />)}
+                           {table.boys.map((s, i) => <StudentAvatar key={`boy-${s.id || i}`} student={s} />)}
+                           {table.girls.map((s, i) => <StudentAvatar key={`girl-${s.id || i}`} student={s} />)}
                         </div>
                     </ScrollArea>
                 </CardFooter>
