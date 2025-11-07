@@ -236,7 +236,7 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                                                         <TableHeader>
                                                             <TableRow>
                                                                 <TableHead className="font-semibold">Student Name</TableHead>
-                                                                <TableHead className="font-semibold">Parent Contact</TableHead>
+                                                                <TableHead className="font-semibold hidden sm:table-cell">Parent Contact</TableHead>
                                                                 <TableHead className="text-right font-semibold">Outstanding Balance</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
@@ -252,10 +252,15 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                                                                     <TableCell className="font-medium">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className={`h-2 w-2 rounded-full ${student.gender === 'male' ? 'bg-blue-500' : 'bg-pink-500'}`} />
-                                                                            {student.name}
+                                                                            <div>
+                                                                                <p>{student.name}</p>
+                                                                                <div className="text-muted-foreground text-sm sm:hidden">
+                                                                                    {student.parentName} ({student.parentPhone})
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </TableCell>
-                                                                    <TableCell>
+                                                                    <TableCell className="hidden sm:table-cell">
                                                                         <div>
                                                                             <div className="font-medium">{student.parentName}</div>
                                                                             <div className="text-sm text-muted-foreground">{student.parentPhone}</div>

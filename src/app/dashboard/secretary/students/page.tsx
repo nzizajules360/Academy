@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -72,9 +73,9 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Parent Name</TableHead>
-                  <TableHead>Parent Phone</TableHead>
-                  <TableHead>Religion</TableHead>
+                  <TableHead className="hidden sm:table-cell">Parent Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Parent Phone</TableHead>
+                  <TableHead className="hidden lg:table-cell">Religion</TableHead>
                   <TableHead>Fee Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -84,12 +85,15 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                   const hasOutstanding = student.feesPaid < student.totalFees;
                   return (
                   <TableRow key={student.id} className={hasOutstanding ? "bg-destructive/10 hover:bg-destructive/20" : ""}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.parentName}</TableCell>
-                    <TableCell>{student.parentPhone}</TableCell>
-                    <TableCell>{student.religion}</TableCell>
+                    <TableCell className="font-medium">
+                        <div>{student.name}</div>
+                        <div className="text-muted-foreground text-sm sm:hidden">{student.parentName}</div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.parentName}</TableCell>
+                    <TableCell className="hidden md:table-cell">{student.parentPhone}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{student.religion}</TableCell>
                     <TableCell>
-                      <Badge variant={hasOutstanding ? 'destructive' : 'secondary'}>
+                      <Badge variant={hasOutstanding ? 'destructive' : 'secondary'} className="whitespace-nowrap">
                         {hasOutstanding && <AlertTriangle className="mr-1 h-3 w-3" />}
                         RWF {student.feesPaid.toLocaleString()} / {student.totalFees.toLocaleString()}
                       </Badge>

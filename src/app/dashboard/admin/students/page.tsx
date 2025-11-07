@@ -87,8 +87,8 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                     <TableHeader>
                         <TableRow>
                         <TableHead className="pl-6">Name</TableHead>
-                        <TableHead>Parent Name</TableHead>
-                        <TableHead>Parent Phone</TableHead>
+                        <TableHead className="hidden md:table-cell">Parent Name</TableHead>
+                        <TableHead className="hidden lg:table-cell">Parent Phone</TableHead>
                         <TableHead>Fee Status</TableHead>
                         <TableHead className="text-right pr-6">Actions</TableHead>
                         </TableRow>
@@ -103,13 +103,16 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                                     <Avatar className="h-8 w-8">
                                         <AvatarFallback className={hasOutstanding ? "bg-destructive/20" : ""}>{student.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    {student.name}
+                                    <div>
+                                        <p>{student.name}</p>
+                                        <p className="text-sm text-muted-foreground md:hidden">{student.parentName}</p>
+                                    </div>
                                 </div>
                             </TableCell>
-                            <TableCell>{student.parentName}</TableCell>
-                            <TableCell>{student.parentPhone}</TableCell>
+                            <TableCell className="hidden md:table-cell">{student.parentName}</TableCell>
+                            <TableCell className="hidden lg:table-cell">{student.parentPhone}</TableCell>
                             <TableCell>
-                            <Badge variant={hasOutstanding ? 'destructive' : 'secondary'} className="text-sm">
+                            <Badge variant={hasOutstanding ? 'destructive' : 'secondary'} className="text-sm whitespace-nowrap">
                                 {hasOutstanding && <AlertTriangle className="mr-1 h-3 w-3" />}
                                 RWF {student.feesPaid.toLocaleString()} / {student.totalFees.toLocaleString()}
                             </Badge>

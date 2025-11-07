@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -87,15 +88,18 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Name</TableHead>
-                                                <TableHead>Parent Contact</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Parent Contact</TableHead>
                                                 <TableHead className="text-right">Outstanding Balance</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {studentsByClass[className].map(student => (
                                                 <TableRow key={student.id}>
-                                                    <TableCell className="font-medium">{student.name}</TableCell>
-                                                    <TableCell>{student.parentName} ({student.parentPhone})</TableCell>
+                                                    <TableCell className="font-medium">
+                                                        <div>{student.name}</div>
+                                                        <div className="text-sm text-muted-foreground sm:hidden">{student.parentName} ({student.parentPhone})</div>
+                                                    </TableCell>
+                                                    <TableCell className="hidden sm:table-cell">{student.parentName} ({student.parentPhone})</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant="destructive">
                                                             RWF {(student.totalFees - student.feesPaid).toLocaleString()}

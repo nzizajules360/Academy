@@ -82,8 +82,8 @@ const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="pl-6">Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Religion</TableHead>
+                  <TableHead className="hidden sm:table-cell">Location</TableHead>
+                  <TableHead className="hidden md:table-cell">Religion</TableHead>
                   <TableHead className="text-right pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -95,11 +95,14 @@ const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
                             <Avatar className="h-8 w-8">
                                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            {student.name}
+                            <div>
+                                <p>{student.name}</p>
+                                <p className="text-sm text-muted-foreground sm:hidden">{student.location}</p>
+                            </div>
                         </div>
                     </TableCell>
-                    <TableCell>{student.location}</TableCell>
-                    <TableCell>{student.religion}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.location}</TableCell>
+                    <TableCell className="hidden md:table-cell">{student.religion}</TableCell>
                     <TableCell className="text-right pr-6">
                        <Button variant="ghost" size="icon" onClick={() => onEdit(student)}>
                             <Pencil className="h-4 w-4" />
