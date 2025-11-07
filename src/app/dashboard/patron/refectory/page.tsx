@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, doc, writeBatch, DocumentData, updateDoc } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -213,6 +213,12 @@ const AssignTableDialog = ({ isOpen, onOpenChange, student, meal, allStudents, o
     const [selectedTable, setSelectedTable] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     
+    useEffect(() => {
+        if (!isOpen) {
+            setSelectedTable('');
+        }
+    }, [isOpen]);
+
     if (!student) return null;
 
     const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
