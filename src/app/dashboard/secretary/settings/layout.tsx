@@ -17,34 +17,32 @@ export default function SettingsLayout({
     ];
     
     return (
-        <div className="space-y-8">
-            <div className="space-y-2">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                    Application Settings
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl">
-                    Configure core aspects of the school management system.
-                </p>
-            </div>
-            <div className="grid md:grid-cols-[16rem_1fr] gap-12">
-                <aside>
-                     <nav className="flex flex-col gap-2">
-                        {settingsNav.map(item => (
-                            <Link href={item.href} key={item.href} passHref>
-                               <Button 
-                                    variant={pathname === item.href ? "secondary" : "ghost"} 
-                                    className="w-full justify-start h-12 text-base"
-                                >
-                                    <item.icon className="mr-3 h-5 w-5"/>
-                                    {item.label}
-                               </Button>
-                            </Link>
-                        ))}
-                     </nav>
-                </aside>
-                <div className="md:-mt-20">
-                    {children}
+        <div className="grid md:grid-cols-[16rem_1fr] gap-12">
+            <aside className="flex flex-col gap-8">
+                 <div className="space-y-2">
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                        Application Settings
+                    </h1>
+                    <p className="text-lg text-muted-foreground max-w-2xl">
+                        Configure core aspects of the school management system.
+                    </p>
                 </div>
+                 <nav className="flex flex-col gap-2">
+                    {settingsNav.map(item => (
+                        <Link href={item.href} key={item.href} passHref>
+                           <Button 
+                                variant={pathname.startsWith(item.href) ? "secondary" : "ghost"} 
+                                className="w-full justify-start h-12 text-base"
+                            >
+                                <item.icon className="mr-3 h-5 w-5"/>
+                                {item.label}
+                           </Button>
+                        </Link>
+                    ))}
+                 </nav>
+            </aside>
+            <div className="">
+                {children}
             </div>
         </div>
     )
