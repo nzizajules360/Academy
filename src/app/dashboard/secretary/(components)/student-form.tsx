@@ -29,6 +29,8 @@ const studentFormSchema = z.object({
   parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
   totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
   feesPaid: z.coerce.number().min(0, 'Fees paid must be a positive number.'),
+  refectoryTableMorning: z.coerce.number().optional(),
+  refectoryTableEvening: z.coerce.number().optional(),
 }).refine(data => data.feesPaid <= data.totalFees, {
     message: "Fees paid cannot exceed total fees.",
     path: ["feesPaid"],
@@ -102,7 +104,12 @@ export function StudentForm() {
             return;
         }
         
-        const studentData = { ...data, termId: activeTermId };
+        const studentData = { 
+            ...data, 
+            termId: activeTermId,
+            refectoryTableMorning: data.refectoryTableMorning || null,
+            refectoryTableEvening: data.refectoryTableEvening || null,
+        };
 
         try {
             const studentsCollection = collection(firestore, 'students');
@@ -168,8 +175,9 @@ export function StudentForm() {
             <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                        <div className="grid md:grid-cols-2 gap-8">
-                            <div className="space-y-4">
+                        <div className="space-y-4 pt-4 border-t">
+                            <h3 className="text-lg font-medium">Student Information</h3>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 <FormField
                                     control={form.control}
                                     name="name"
@@ -270,7 +278,11 @@ export function StudentForm() {
                                     )}
                                 />
                             </div>
-                            <div className="space-y-4">
+                        </div>
+
+                         <div className="space-y-4 pt-4 border-t">
+                            <h3 className="text-lg font-medium">Parent/Guardian Information</h3>
+                            <div className="grid md:grid-cols-2 gap-8">
                                <FormField
                                     control={form.control}
                                     name="parentName"
@@ -299,25 +311,63 @@ export function StudentForm() {
                                 />
                             </div>
                         </div>
-                        <div className="grid md:grid-cols-2 gap-8 pt-4 border-t">
-                            <div>
-                                <FormLabel>Total School Fees</FormLabel>
-                                 {loadingFees ? <Loader2 className="mt-2 h-4 w-4 animate-spin" /> : <Input type="text" value={`RWF ${form.getValues('totalFees').toLocaleString()}`} readOnly disabled className="mt-2" /> }
+
+                        <div className="space-y-4 pt-4 border-t">
+                             <h3 className="text-lg font-medium">Financial Information</h3>
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div>
+                                    <FormLabel>Total School Fees</FormLabel>
+                                     {loadingFees ? <Loader2 className="mt-2 h-4 w-4 animate-spin" /> : <Input type="text" value={`RWF ${form.getValues('totalFees').toLocaleString()}`} readOnly disabled className="mt-2" /> }
+                                </div>
+                                 <FormField
+                                    control={form.control}
+                                    name="feesPaid"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Amount Paid</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="0" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
-                             <FormField
-                                control={form.control}
-                                name="feesPaid"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Amount Paid</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="0" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
                         </div>
+
+                        <div className="space-y-4 pt-4 border-t">
+                             <h3 className="text-lg font-medium">Refectory Assignment (Optional)</h3>
+                            <div className="grid md:grid-cols-2 gap-8">
+                                 <FormField
+                                    control={form.control}
+                                    name="refectoryTableMorning"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Morning & Lunch Table</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="e.g., 15" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="refectoryTableEvening"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Evening Table</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="e.g., 22" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </div>
+
+
                         <Button type="submit" disabled={isLoading || loadingFees}>
                             {(isLoading || loadingFees) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Add Student
