@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -323,8 +324,8 @@ export default function RefectoryPage() {
       studentAssignments.forEach((assignments, studentId) => {
            const studentRef = doc(firestore, 'students', studentId);
             batch.update(studentRef, {
-              refectoryTableMorning: assignments.morning,
-              refectoryTableEvening: assignments.evening,
+              refectoryTableMorning: assignments.morning ?? null,
+              refectoryTableEvening: assignments.evening ?? null,
             });
       })
 

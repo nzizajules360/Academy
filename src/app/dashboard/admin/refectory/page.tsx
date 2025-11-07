@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -14,6 +15,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
 import { useTermManager } from '@/hooks/use-term-manager';
+import { useFirestore } from '@/firebase';
+import { writeBatch, doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
 
 const StudentAvatar = ({ student }: { student: EnrolledStudent }) => (
     <div className="flex items-center gap-2">
@@ -72,11 +77,15 @@ export default function SeatingChartPage() {
     const { enrolledStudents, loading } = useTermManager();
     const [seatingChart, setSeatingChart] = useState<SeatingChart | null>(null);
     const [previousSeatingChart, setPreviousSeatingChart] = useState<SeatingChart | null>(null);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isAssigning, setIsAssigning] = useState(false);
 
     const handleGenerateChart = useCallback(() => {
         if (enrolledStudents && enrolledStudents.length > 0) {
             setPreviousSeatingChart(seatingChart); // Save current chart before regenerating
-            setSeatingChart(generateSeatingChart(enrolledStudents, seatingChart || undefined));
+            const newChart = generateSeatingChart(enrolledStudents, seatingChart || undefined)
+            setSeatingChart(newChart);
         } else {
             setSeatingChart(null);
         }
@@ -95,6 +104,55 @@ export default function SeatingChartPage() {
             handleGenerateChart();
         }
     }, [enrolledStudents, seatingChart, handleGenerateChart]);
+
+    const handleSaveAssignments = async () => {
+        if (!firestore || !seatingChart || !enrolledStudents) {
+            toast({ variant: 'destructive', title: 'Error', description: 'System not ready.' });
+            return;
+        }
+        setIsAssigning(true);
+        try {
+            const batch = writeBatch(firestore);
+            const studentAssignments = new Map<string, { morning?: number; evening?: number }>();
+
+            // Helper to process tables for a given shift
+            const processTables = (tables: RefectoryTable[], shift: 'morning' | 'evening') => {
+                tables.forEach(table => {
+                    [...table.boys, ...table.girls].forEach(student => {
+                        if (student.id) {
+                            if (!studentAssignments.has(student.id)) {
+                                studentAssignments.set(student.id, {});
+                            }
+                            const assignment = studentAssignments.get(student.id)!;
+                            if (shift === 'morning') assignment.morning = table.tableNumber;
+                            if (shift === 'evening') assignment.evening = table.tableNumber;
+                        }
+                    });
+                });
+            };
+
+            // Process both shifts to populate the map
+            processTables(seatingChart.morning, 'morning');
+            processTables(seatingChart.evening, 'evening');
+            
+            // Create batch updates from the collected assignments
+            studentAssignments.forEach((assignments, studentId) => {
+                const studentRef = doc(firestore, 'students', studentId);
+                batch.update(studentRef, {
+                    refectoryTableMorning: assignments.morning ?? null,
+                    refectoryTableEvening: assignments.evening ?? null,
+                });
+            });
+
+            await batch.commit();
+            toast({ title: 'Success', description: 'Seating assignments saved to database.' });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to save assignments.' });
+        } finally {
+            setIsAssigning(false);
+        }
+    };
     
 
     const handleExcelExport = (shift: 'morning' | 'evening', serie?: 1 | 2) => {
@@ -246,6 +304,10 @@ export default function SeatingChartPage() {
                     <Button onClick={handleGenerateChart} disabled={loading || !enrolledStudents || enrolledStudents.length === 0}>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Generate Chart
+                    </Button>
+                     <Button onClick={handleSaveAssignments} disabled={isAssigning || !seatingChart}>
+                        {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Save Assignments
                     </Button>
                 </div>
             </div>

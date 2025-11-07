@@ -198,26 +198,6 @@ export default function RefectoryPage() {
 
       const batch = writeBatch(firestore);
       
-      const updateStudent = (student: EnrolledStudent, morningTable: number | undefined, eveningTable: number | undefined) => {
-        if (!student.id) return;
-        const studentRef = doc(firestore, 'students', student.id);
-        batch.update(studentRef, {
-          refectoryTableMorning: morningTable,
-          refectoryTableEvening: eveningTable,
-        });
-      };
-      
-      morning.forEach(table => {
-          table.boys.forEach(student => updateStudent(student, table.tableNumber, undefined));
-          table.girls.forEach(student => updateStudent(student, table.tableNumber, undefined));
-      });
-      
-      evening.forEach(table => {
-          table.boys.forEach(student => updateStudent(student, undefined, table.tableNumber));
-          table.girls.forEach(student => updateStudent(student, undefined, table.tableNumber));
-      });
-      
-      // A bit inefficient but we need to combine assignments
       const studentAssignments = new Map<string, {morning?: number, evening?: number}>();
       
       const processTables = (tables: any[], shift: 'morning' | 'evening') => {
@@ -241,8 +221,8 @@ export default function RefectoryPage() {
       studentAssignments.forEach((assignments, studentId) => {
            const studentRef = doc(firestore, 'students', studentId);
             batch.update(studentRef, {
-              refectoryTableMorning: assignments.morning,
-              refectoryTableEvening: assignments.evening,
+              refectoryTableMorning: assignments.morning ?? null,
+              refectoryTableEvening: assignments.evening ?? null,
             });
       })
 
