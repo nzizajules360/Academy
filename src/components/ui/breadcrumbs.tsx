@@ -3,14 +3,38 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRight, Home } from 'lucide-react';
+import { useUser } from '@/firebase';
+import { UserRole } from '@/types';
 
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const pathSegments = pathname.split('/').filter(segment => segment);
+  const { user } = useUser();
+  const role = user?.role as UserRole | undefined;
 
-  const breadcrumbs = pathSegments.map((segment, index) => {
-    const href = '/' + pathSegments.slice(0, index + 1).join('/');
-    const isLast = index === pathSegments.length - 1;
+  // Don't render breadcrumbs if we don't have a role yet or if it's the base dashboard path
+  if (!role || pathname === `/dashboard/${role}`) {
+    return (
+        <nav aria-label="Breadcrumb" className="hidden md:flex">
+         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <li>
+                <div className="flex items-center gap-1.5">
+                    <Home className="h-4 w-4" />
+                    <span className="font-medium text-foreground">Dashboard</span>
+                </div>
+            </li>
+         </ol>
+        </nav>
+    );
+  }
+
+  const pathSegments = pathname.split('/').filter(segment => segment);
+  
+  // Find the index of the role in the path to start breadcrumbs from there
+  const roleIndex = pathSegments.findIndex(segment => segment === role);
+
+  const breadcrumbs = pathSegments.slice(roleIndex + 1).map((segment, index) => {
+    const href = '/' + pathSegments.slice(0, roleIndex + index + 2).join('/');
+    const isLast = index === pathSegments.length - (roleIndex + 1) - 1;
     const name = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
 
     return { href, name, isLast };
@@ -20,16 +44,17 @@ export function Breadcrumbs() {
     <nav aria-label="Breadcrumb" className="hidden md:flex">
       <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <li>
-          <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-foreground">
+          <Link href={`/dashboard/${role}`} className="flex items-center gap-1.5 hover:text-foreground">
             <Home className="h-4 w-4" />
+            <span className="sr-only">Dashboard</span>
           </Link>
         </li>
-        {breadcrumbs.length > 1 && (
+        {breadcrumbs.length > 0 && (
             <li>
                 <ChevronRight className="h-4 w-4" />
             </li>
         )}
-        {breadcrumbs.slice(1).map((breadcrumb, index) => (
+        {breadcrumbs.map((breadcrumb, index) => (
           <React.Fragment key={breadcrumb.href}>
             <li>
               <Link

@@ -1,11 +1,12 @@
 'use client';
 import React, { Suspense, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
+import type { UserRole } from '@/types';
 
 export default function DashboardLayout({
   children,
@@ -14,12 +15,27 @@ export default function DashboardLayout({
 }) {
   const { user, loading, error } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
+  const role = user?.role as UserRole | undefined;
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+      return;
     }
-  }, [user, loading, router]);
+    
+    if (!loading && user && role) {
+        const expectedPath = `/dashboard/${role}`;
+        if (!pathname.startsWith(expectedPath) && pathname !== '/dashboard') {
+          // If user is on a page not belonging to their role, redirect.
+          // This is a simple check. More robust checks might be needed.
+          router.push(expectedPath);
+        } else if (pathname === '/dashboard') {
+            router.push(expectedPath);
+        }
+    }
+
+  }, [user, loading, router, role, pathname]);
 
   if (loading) {
     return (

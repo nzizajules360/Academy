@@ -25,28 +25,29 @@ import type { UserRole } from '@/types';
 
 const navItems: Record<UserRole, { href: string; icon: React.ElementType; label: string }[]> = {
   admin: [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/dashboard/students', icon: Users, label: 'Students' },
-    { href: '/dashboard/utilities', icon: ClipboardList, label: 'Utilities' },
-    { href: '/dashboard/materials', icon: BookUser, label: 'Materials' },
-    { href: '/dashboard/daily-planner', icon: ListTodo, label: 'Daily Planner' },
+    { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/admin/students', icon: Users, label: 'Students' },
+    { href: '/dashboard/admin/utilities', icon: ClipboardList, label: 'Utilities' },
+    { href: '/dashboard/admin/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/admin/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
   secretary: [
-    { href: '/dashboard/students/add', icon: UserPlus, label: 'Enroll Student' },
-    { href: '/dashboard/students', icon: Users, label: 'Manage Students' },
-    { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+    { href: '/dashboard/secretary', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/secretary/students/add', icon: UserPlus, label: 'Enroll Student' },
+    { href: '/dashboard/secretary/students', icon: Users, label: 'Manage Students' },
+    { href: '/dashboard/secretary/settings', icon: Settings, label: 'Settings' },
   ],
   patron: [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/dashboard/utilities', icon: ClipboardList, label: 'Utilities' },
-    { href: '/dashboard/materials', icon: BookUser, label: 'Materials' },
-    { href: '/dashboard/daily-planner', icon: ListTodo, label: 'Daily Planner' },
+    { href: '/dashboard/patron', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/patron/utilities', icon: ClipboardList, label: 'Utilities' },
+    { href: '/dashboard/patron/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/patron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
   matron: [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/dashboard/utilities', icon: ClipboardList, label: 'Utilities' },
-    { href: '/dashboard/materials', icon: BookUser, label: 'Materials' },
-    { href: '/dashboard/daily-planner', icon: ListTodo, label: 'Daily Planner' },
+    { href: '/dashboard/matron', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/matron/utilities', icon: ClipboardList, label: 'Utilities' },
+    { href: '/dashboard/matron/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/matron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
 };
 
@@ -62,8 +63,6 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const currentNavItems = navItems[role] || [];
   
-  const createHref = (baseHref: string) => `${baseHref}`;
-
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -76,9 +75,9 @@ export function DashboardSidebar() {
         <SidebarMenu>
           {currentNavItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={createHref(item.href)} passHref>
+              <Link href={item.href} legacyBehavior passHref>
                 <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === item.href)}
+                  isActive={pathname === item.href}
                   tooltip={item.label}
                 >
                   <item.icon />
