@@ -29,8 +29,7 @@ const studentFormSchema = z.object({
   parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
   totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
   feesPaid: z.coerce.number().min(0, 'Fees paid must be a positive number.'),
-  refectoryTableMorning: z.coerce.number().optional(),
-  refectoryTableEvening: z.coerce.number().optional(),
+  refectoryTable: z.coerce.number().optional(),
 }).refine(data => data.feesPaid <= data.totalFees, {
     message: "Fees paid cannot exceed total fees.",
     path: ["feesPaid"],
@@ -104,11 +103,13 @@ export function StudentForm() {
             return;
         }
         
+        const { refectoryTable, ...studentDataWithoutTable } = data;
+        
         const studentData = { 
-            ...data, 
+            ...studentDataWithoutTable, 
             termId: activeTermId,
-            refectoryTableMorning: data.refectoryTableMorning || null,
-            refectoryTableEvening: data.refectoryTableEvening || null,
+            refectoryTableMorning: refectoryTable || null,
+            refectoryTableEvening: refectoryTable || null,
         };
 
         try {
@@ -165,6 +166,8 @@ export function StudentForm() {
              </Card>
         )
     }
+
+    const totalMorningTables = 39; // 28 (serie 1) + 11 (serie 2)
 
     return (
         <Card>
@@ -313,8 +316,8 @@ export function StudentForm() {
                         </div>
 
                         <div className="space-y-4 pt-4 border-t">
-                             <h3 className="text-lg font-medium">Financial Information</h3>
-                            <div className="grid md:grid-cols-2 gap-8">
+                             <h3 className="text-lg font-medium">Financial & Refectory</h3>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 <div>
                                     <FormLabel>Total School Fees</FormLabel>
                                      {loadingFees ? <Loader2 className="mt-2 h-4 w-4 animate-spin" /> : <Input type="text" value={`RWF ${form.getValues('totalFees').toLocaleString()}`} readOnly disabled className="mt-2" /> }
@@ -332,34 +335,26 @@ export function StudentForm() {
                                         </FormItem>
                                     )}
                                 />
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 pt-4 border-t">
-                             <h3 className="text-lg font-medium">Refectory Assignment (Optional)</h3>
-                            <div className="grid md:grid-cols-2 gap-8">
-                                 <FormField
-                                    control={form.control}
-                                    name="refectoryTableMorning"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Morning & Lunch Table</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="e.g., 15" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                                 <FormField
                                     control={form.control}
-                                    name="refectoryTableEvening"
+                                    name="refectoryTable"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Evening Table</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="e.g., 22" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)} />
-                                            </FormControl>
+                                            <FormLabel>Refectory Table (Optional)</FormLabel>
+                                            <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a table" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {Array.from({ length: totalMorningTables }, (_, i) => i + 1).map(tableNum => (
+                                                        <SelectItem key={tableNum} value={String(tableNum)}>
+                                                            Table {tableNum}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}
