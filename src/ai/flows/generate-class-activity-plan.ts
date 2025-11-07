@@ -20,7 +20,7 @@ export type GenerateClassActivityPlanInput = z.infer<typeof GenerateClassActivit
 
 const GenerateClassActivityPlanOutputSchema = z.object({
   morningActivity: z.string().describe('A detailed activity for the morning session.'),
-  eveningActivity: z-string().describe('A detailed activity for the evening session.'),
+  eveningActivity: z.string().describe('A detailed activity for the evening session.'),
 });
 export type GenerateClassActivityPlanOutput = z.infer<typeof GenerateClassActivityPlanOutputSchema>;
 
