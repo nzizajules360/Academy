@@ -20,7 +20,7 @@ const OutstandingFeesAlert = () => {
     const firestore = useFirestore();
 
     // Get active term details
-    const activeTermQuery = (firestore && activeTermId) ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) : null;
+    const activeTermQuery = (firestore && activeTermId && activeTermId.includes('_')) ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) : null;
     const [termSnapshot, loadingTermDetails] = useDocument(activeTermQuery);
 
     // Get students with outstanding fees for the active term
