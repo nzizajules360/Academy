@@ -6,14 +6,13 @@ import { generateSeatingChart } from '@/lib/seating-chart-generator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Users, Download, Undo } from 'lucide-react';
+import { RefreshCw, Users, Download, Undo, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
 import { useTermManager } from '@/hooks/use-term-manager';
-import { Loader2 } from 'lucide-react';
 
 const StudentAvatar = ({ student }: { student: EnrolledStudent }) => (
     <div className="flex items-center gap-2">
@@ -57,8 +56,8 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
                 <CardFooter className="p-4 pt-0">
                     <ScrollArea className="h-32 w-full pr-3">
                         <div className="space-y-2">
-                           {table.boys.map(s => <StudentAvatar key={s.id} student={s} />)}
-                           {table.girls.map(s => <StudentAvatar key={s.id} student={s} />)}
+                           {table.boys.map(s => <StudentAvatar key={`boy-${s.id}`} student={s} />)}
+                           {table.girls.map(s => <StudentAvatar key={`girl-${s.id}`} student={s} />)}
                         </div>
                     </ScrollArea>
                 </CardFooter>
@@ -119,12 +118,12 @@ export default function SeatingChartPage() {
                 rowIndex++;
 
                 const allStudentsInTable = [
-                    ...table.girls.map(s => ({ ...s, gender: 'Umukobwa' })),
-                    ...table.boys.map(s => ({ ...s, gender: 'Umuhungu' }))
+                    ...table.girls.map(s => ({ ...s, genderLabel: 'Umukobwa' })),
+                    ...table.boys.map(s => ({ ...s, genderLabel: 'Umuhungu' }))
                 ];
 
                 allStudentsInTable.forEach(student => {
-                    data.push([student.gender, student.fullName, (student as EnrolledStudent).class]);
+                    data.push([student.genderLabel, student.fullName, (student as EnrolledStudent).class]);
                     rowIndex++;
                 });
 
