@@ -147,13 +147,13 @@ export default function StudentsPage() {
         where('gender', '==', 'female')
       ) 
     : null;
-  const [studentsSnapshot, loading, error] = useCollection(studentsQuery);
+  const [studentsSnapshot, loading, error] = useCollection(studentsQuery, { idField: 'id' });
 
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isDormFormOpen, setIsDormFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
-  const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentData)) || [];
+  const students = studentsSnapshot?.docs.map(doc => doc.data() as StudentData) || [];
 
   const handleEdit = (student: StudentData) => {
     setSelectedStudent(student);

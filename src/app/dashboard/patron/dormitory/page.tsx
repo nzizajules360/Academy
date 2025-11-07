@@ -6,7 +6,7 @@ import { collection, query, where, DocumentData } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BedDouble, Users, User, ChevronsRight } from 'lucide-react';
+import { Loader2, BedDouble } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -18,15 +18,15 @@ export default function DormitoryPage() {
     const studentsQuery = firestore && activeTermId ? query(
         collection(firestore, 'students'),
         where('termId', '==', activeTermId),
-        where('gender', '==', 'male'),
-        where('dormitoryBed', '!=', null)
+        where('gender', '==', 'male')
     ) : null;
 
     const [students, loadingStudents] = useCollectionData(studentsQuery);
 
-    const beds = (students || []).reduce((acc, student) => {
+    const beds = (students || [])
+      .filter(student => student.dormitoryBed != null)
+      .reduce((acc, student) => {
         const bedNumber = student.dormitoryBed;
-        if (!bedNumber) return acc;
         if (!acc[bedNumber]) {
             acc[bedNumber] = [];
         }
@@ -88,7 +88,7 @@ export default function DormitoryPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-4">
-                                    {assignedStudents.map((s, i) => (
+                                    {assignedStudents.map((s) => (
                                          <div key={s.id} className="flex items-center gap-4">
                                             <Avatar className="h-10 w-10 border">
                                                 <AvatarFallback>{s.name.charAt(0)}</AvatarFallback>

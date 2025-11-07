@@ -18,13 +18,14 @@ export default function DormitoryPage() {
     const studentsQuery = firestore && activeTermId ? query(
         collection(firestore, 'students'),
         where('termId', '==', activeTermId),
-        where('gender', '==', 'female'),
-        where('dormitoryBed', '!=', null)
+        where('gender', '==', 'female')
     ) : null;
 
     const [students, loadingStudents] = useCollectionData(studentsQuery);
 
-    const beds = (students || []).reduce((acc, student) => {
+    const beds = (students || [])
+        .filter(student => student.dormitoryBed != null)
+        .reduce((acc, student) => {
         const bedNumber = student.dormitoryBed;
         if (!bedNumber) return acc;
         if (!acc[bedNumber]) {
