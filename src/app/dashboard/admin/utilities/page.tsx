@@ -42,8 +42,6 @@ export default function UtilitiesPage() {
     const studentRef = doc(firestore, 'students', studentId);
     const utility = { materialId, status: checked ? 'present' : 'missing' };
     
-    // To update an array, we first remove the old item and then add the new one.
-    // This is a simplified approach. A more robust solution might involve transactions.
     try {
         const studentDoc = relevantStudents?.find(s => s.id === studentId);
         if (!studentDoc) return;
@@ -96,9 +94,9 @@ export default function UtilitiesPage() {
                         <TableHead className="text-right">Status</TableHead>
                     </TableRow>
                 </TableHeader>
-                
+                <TableBody>
                     {relevantStudents?.map(student => (
-                    <Collapsible asChild key={student.id} tag="tbody" className="w-full">
+                    <Collapsible asChild key={student.id} tag="tbody">
                        <>
                             <TableRow>
                                 <TableCell className="font-medium">{student.name}</TableCell>
@@ -144,8 +142,6 @@ export default function UtilitiesPage() {
                         </>
                     </Collapsible>
                     ))}
-                <TableBody>
-
                 </TableBody>
             </Table>
         </div>

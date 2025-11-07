@@ -97,9 +97,9 @@ export default function UtilitiesPage() {
                         <TableHead className="text-right">Status</TableHead>
                     </TableRow>
                 </TableHeader>
-                
+                <TableBody>
                     {relevantStudents?.map(student => (
-                    <Collapsible asChild key={student.id} tag="tbody" className="w-full">
+                    <Collapsible asChild key={student.id} tag="tbody">
                        <>
                             <TableRow>
                                 <TableCell className="font-medium">{student.name}</TableCell>
@@ -145,8 +145,6 @@ export default function UtilitiesPage() {
                         </>
                     </Collapsible>
                     ))}
-                <TableBody>
-
                 </TableBody>
             </Table>
         </div>
