@@ -2,18 +2,19 @@
 
 import { useState } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { collection, doc, writeBatch, DocumentData } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { assignRefectoryTables } from '@/ai/flows/assign-refectory-tables-flow';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, User, Users, LayoutGrid, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
+import { Separator } from '@/components/ui/separator';
 
 interface Student extends DocumentData {
   id: string;
@@ -29,16 +30,24 @@ const TableCapacity = {
   girls: 7,
 };
 
+const SeriesConfig = {
+    morning: { first: 28, second: 11 },
+    evening: { first: 28, second: 8 },
+};
+
 const TableTotals = {
-    morning: 28 + 11,
-    evening: 28 + 8,
+    morning: SeriesConfig.morning.first + SeriesConfig.morning.second,
+    evening: SeriesConfig.evening.first + SeriesConfig.evening.second,
 }
 
-const TableView = ({ students, meal }: { students: Student[], meal: 'morning' | 'evening'}) => {
+const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 'morning' | 'evening', view: 'list' | 'grid' }) => {
     const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
-    const totalTables = meal === 'morning' ? TableTotals.morning : TableTotals.evening;
-  
-    const tables = Array.from({ length: totalTables }, (_, i) => i + 1).map(tableNumber => {
+    const series = SeriesConfig[meal];
+    
+    const firstSeriesTables = Array.from({ length: series.first }, (_, i) => i + 1);
+    const secondSeriesTables = Array.from({ length: series.second }, (_, i) => series.first + i + 1);
+
+    const getTableData = (tableNumber: number) => {
       const studentsAtTable = students.filter(s => s[tableField] === tableNumber);
       const boys = studentsAtTable.filter(s => s.gender === 'male');
       const girls = studentsAtTable.filter(s => s.gender === 'female');
@@ -48,44 +57,111 @@ const TableView = ({ students, meal }: { students: Student[], meal: 'morning' | 
         boyCount: boys.length,
         girlCount: girls.length,
       };
-    });
+    }
+
+    const firstSeriesData = firstSeriesTables.map(getTableData);
+    const secondSeriesData = secondSeriesTables.map(getTableData);
+
+    if (view === 'grid') {
+        return (
+            <div className="space-y-8">
+                <div>
+                    <h3 className="text-lg font-semibold mb-4">First Series ({series.first} Tables)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {firstSeriesData.map(table => (
+                            <Card key={table.number}>
+                                <CardHeader className="p-4">
+                                    <CardTitle>Table {table.number}</CardTitle>
+                                    <CardDescription className="flex items-center gap-4">
+                                        <Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>Boys: {table.boyCount}/{TableCapacity.boys}</Badge>
+                                        <Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>Girls: {table.girlCount}/{TableCapacity.girls}</Badge>
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-4 pt-0 text-sm">
+                                    {table.students.length > 0 ? table.students.map(s => s.name).join(', ') : <span className="text-muted-foreground">Empty</span>}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+                 <div>
+                    <h3 className="text-lg font-semibold mb-4">Second Series ({series.second} Tables)</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {secondSeriesData.map(table => (
+                            <Card key={table.number}>
+                                <CardHeader className="p-4">
+                                    <CardTitle>Table {table.number}</CardTitle>
+                                    <CardDescription className="flex items-center gap-4">
+                                        <Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>Boys: {table.boyCount}/{TableCapacity.boys}</Badge>
+                                        <Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>Girls: {table.girlCount}/{TableCapacity.girls}</Badge>
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-4 pt-0 text-sm">
+                                     {table.students.length > 0 ? table.students.map(s => s.name).join(', ') : <span className="text-muted-foreground">Empty</span>}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Table No.</TableHead>
-              <TableHead>Boys</TableHead>
-              <TableHead>Girls</TableHead>
-              <TableHead>Students</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tables.map(table => (
-              <TableRow key={table.number}>
-                <TableCell className="font-bold">{table.number}</TableCell>
-                <TableCell>
-                  <Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>
-                    {table.boyCount} / {TableCapacity.boys}
-                  </Badge>
-                </TableCell>
-                 <TableCell>
-                  <Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>
-                    {table.girlCount} / {TableCapacity.girls}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {table.students.map(s => s.name).join(', ')}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="space-y-8">
+            <div>
+                <h3 className="text-lg font-semibold mb-4">First Series</h3>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Table No.</TableHead>
+                            <TableHead>Boys</TableHead>
+                            <TableHead>Girls</TableHead>
+                            <TableHead>Students</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {firstSeriesData.map(table => (
+                            <TableRow key={table.number}>
+                                <TableCell className="font-bold">{table.number}</TableCell>
+                                <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
+                                <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
+                                <TableCell>{table.students.map(s => s.name).join(', ')}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+            <div>
+                <h3 className="text-lg font-semibold mb-4">Second Series</h3>
+                <Table>
+                     <TableHeader>
+                        <TableRow>
+                            <TableHead>Table No.</TableHead>
+                            <TableHead>Boys</TableHead>
+                            <TableHead>Girls</TableHead>
+                            <TableHead>Students</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                         {secondSeriesData.map(table => (
+                            <TableRow key={table.number}>
+                                <TableCell className="font-bold">{table.number}</TableCell>
+                                <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
+                                <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
+                                <TableCell>{table.students.map(s => s.name).join(', ')}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
     )
 }
 
 const StudentView = ({ students, meal }: { students: Student[], meal: 'morning' | 'evening'}) => {
     const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
+    const sortedStudents = [...students].sort((a,b) => a.name.localeCompare(b.name));
     return (
          <Table>
           <TableHeader>
@@ -97,7 +173,7 @@ const StudentView = ({ students, meal }: { students: Student[], meal: 'morning' 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map(student => (
+            {sortedStudents.map(student => (
               <TableRow key={student.id}>
                 <TableCell>{student.name}</TableCell>
                 <TableCell>{student.class}</TableCell>
@@ -119,6 +195,8 @@ export default function RefectoryPage() {
   const [isAssigning, setIsAssigning] = useState(false);
   const { user } = useUser();
   const role = user?.role as UserRole | undefined;
+  const [viewType, setViewType] = useState<'table' | 'student'>('table');
+  const [tableDisplay, setTableDisplay] = useState<'list' | 'grid'>('list');
   
   const studentsCollection = firestore ? collection(firestore, 'students') : null;
   const [students, loading, error] = useCollectionData(studentsCollection, { idField: 'id' });
@@ -176,10 +254,16 @@ export default function RefectoryPage() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <CardTitle>Refectory Seating</CardTitle>
             <CardDescription>Manage and view student seating arrangements for meals.</CardDescription>
+             {unassignedStudents > 0 && (
+                <div className="mt-4 flex items-center gap-2 text-sm text-destructive font-medium">
+                    <AlertTriangle className="h-4 w-4" />
+                    There are {unassignedStudents} students without a complete table assignment.
+                </div>
+            )}
           </div>
           {(role === 'admin' || role === 'secretary') && (
             <Button onClick={handleAssignTables} disabled={isAssigning || loading}>
@@ -188,12 +272,6 @@ export default function RefectoryPage() {
             </Button>
           )}
         </div>
-        {unassignedStudents > 0 && (
-             <div className="mt-4 flex items-center gap-2 text-sm text-destructive">
-                <AlertTriangle className="h-4 w-4" />
-                There are {unassignedStudents} students without a complete table assignment.
-            </div>
-        )}
       </CardHeader>
       <CardContent>
         {loading && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
@@ -201,37 +279,40 @@ export default function RefectoryPage() {
         {students && (
           <Tabs defaultValue="morning">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="morning">Morning & Lunch</TabsTrigger>
-              <TabsTrigger value="evening">Evening</TabsTrigger>
+              <TabsTrigger value="morning">Morning & Lunch ({TableTotals.morning} tables)</TabsTrigger>
+              <TabsTrigger value="evening">Evening ({TableTotals.evening} tables)</TabsTrigger>
             </TabsList>
-            <TabsContent value="morning">
-                <Tabs defaultValue="table-view" className="mt-4">
-                    <TabsList>
-                        <TabsTrigger value="table-view">View by Table</TabsTrigger>
-                        <TabsTrigger value="student-view">View by Student</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="table-view">
-                        <TableView students={students as Student[]} meal="morning" />
-                    </TabsContent>
-                    <TabsContent value="student-view">
+            <div className="mt-4">
+                <div className="flex justify-between items-center mb-4">
+                     <Tabs value={viewType} onValueChange={(v) => setViewType(v as 'table' | 'student')} className="mt-4">
+                        <TabsList>
+                            <TabsTrigger value="table"><Users className="mr-2"/>View by Table</TabsTrigger>
+                            <TabsTrigger value="student"><User className="mr-2"/>View by Student</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    {viewType === 'table' && (
+                        <div>
+                             <Button variant={tableDisplay === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTableDisplay('list')}><List className="h-4 w-4"/></Button>
+                             <Button variant={tableDisplay === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTableDisplay('grid')}><LayoutGrid className="h-4 w-4"/></Button>
+                        </div>
+                    )}
+                </div>
+                <Separator />
+                <div className="mt-4">
+                    <TabsContent value="morning" forceMount hidden={viewType !== 'student'}>
                         <StudentView students={students as Student[]} meal="morning" />
                     </TabsContent>
-                </Tabs>
-            </TabsContent>
-            <TabsContent value="evening">
-                 <Tabs defaultValue="table-view" className="mt-4">
-                    <TabsList>
-                        <TabsTrigger value="table-view">View by Table</TabsTrigger>
-                        <TabsTrigger value="student-view">View by Student</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="table-view">
-                        <TableView students={students as Student[]} meal="evening" />
-                    </TabsContent>
-                    <TabsContent value="student-view">
+                    <TabsContent value="evening" forceMount hidden={viewType !== 'student'}>
                         <StudentView students={students as Student[]} meal="evening" />
                     </TabsContent>
-                </Tabs>
-            </TabsContent>
+                     <TabsContent value="morning" forceMount hidden={viewType !== 'table'}>
+                        <TableSeriesView students={students as Student[]} meal="morning" view={tableDisplay} />
+                    </TabsContent>
+                     <TabsContent value="evening" forceMount hidden={viewType !== 'table'}>
+                        <TableSeriesView students={students as Student[]} meal="evening" view={tableDisplay} />
+                    </TabsContent>
+                </div>
+            </div>
           </Tabs>
         )}
       </CardContent>
