@@ -44,14 +44,14 @@ export default function ReportsPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Patron Reports</h1>
                     <p className="text-muted-foreground">An overview of metrics for students under your care.</p>
                 </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <StatCard title="Students Monitored" value={totalStudents} icon={Users} description="Total number of male students." />
                 <StatCard title="Total Missing Items" value={utilitiesMissing} icon={ClipboardList} description="Across all male students."/>
             </div>

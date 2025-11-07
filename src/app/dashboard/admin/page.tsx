@@ -74,8 +74,8 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
                 <RecentEnrollments students={studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data()})) || []} />
             </div>
             <div className="space-y-8">

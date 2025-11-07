@@ -139,18 +139,18 @@ export default function StudentsPage() {
     <>
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
                 <CardTitle>Students</CardTitle>
                 <CardDescription>Manage student records for the active term.</CardDescription>
             </div>
-            <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsSendListOpen(true)}>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button variant="outline" onClick={() => setIsSendListOpen(true)} className="w-full sm:w-auto">
                     <Send className="mr-2 h-4 w-4" />
                     Send List to Teacher
                 </Button>
                 <Link href={`/dashboard/secretary/students/add`} passHref>
-                    <Button>
+                    <Button className="w-full sm:w-auto">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add Student
                     </Button>

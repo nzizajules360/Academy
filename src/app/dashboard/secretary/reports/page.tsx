@@ -63,7 +63,7 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
     return (
          <Card>
             <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <CardTitle>Outstanding Fees Report</CardTitle>
                         <CardDescription>List of students with incomplete fee payments for the active term.</CardDescription>
@@ -142,7 +142,7 @@ const RefectoryReport = ({ students }: { students: DocumentData[] }) => {
     return (
         <Card>
             <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <CardTitle>Refectory Assignment Report</CardTitle>
                         <CardDescription>Summary of student dining table assignments.</CardDescription>
@@ -210,7 +210,7 @@ export default function ReportsPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">School Reports</h1>
                     <p className="text-muted-foreground">An overview of student and financial metrics for the active term.</p>
@@ -219,7 +219,7 @@ export default function ReportsPage() {
 
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div>
                             <CardTitle>Enrollment Report</CardTitle>
                             <CardDescription>Summary of student enrollment for the active term.</CardDescription>

@@ -85,7 +85,7 @@ export default function AttendancePage() {
   };
 
   const handleSaveAttendance = async () => {
-    if (!firestore || !students || !activeTermId || !assignedClass) {
+    if (!firestore || !students || !activeTermId || !assignedClass || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'Missing required data to save.' });
         return;
     }
@@ -110,7 +110,7 @@ export default function AttendancePage() {
                     class: assignedClass,
                     termId: activeTermId,
                     status,
-                    recordedBy: user?.uid,
+                    recordedBy: user.uid,
                     recordedAt: Timestamp.now(),
                 });
             }
@@ -149,12 +149,12 @@ export default function AttendancePage() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
                 <CardTitle>Class Attendance: {assignedClass}</CardTitle>
                 <CardDescription>Mark attendance for {format(new Date(), 'PPPP')}.</CardDescription>
             </div>
-             <Button onClick={handleSaveAttendance} disabled={isSaving || !allMarked}>
+             <Button onClick={handleSaveAttendance} disabled={isSaving || !allMarked} className="w-full md:w-auto">
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                 {allMarked && Object.keys(attendance).length > 0 ? <CheckCircle className="mr-2 h-4 w-4"/> : null}
                 Save Attendance

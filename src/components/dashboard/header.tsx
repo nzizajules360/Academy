@@ -1,7 +1,6 @@
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserNav } from '@/components/dashboard/user-nav';
-import { useUser } from '@/firebase';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Bell, Sun, Moon } from 'lucide-react';
@@ -9,7 +8,6 @@ import { useTheme } from 'next-themes';
 
 
 export function DashboardHeader() {
-  const { user } = useUser();
   const { theme, setTheme } = useTheme();
 
   return (

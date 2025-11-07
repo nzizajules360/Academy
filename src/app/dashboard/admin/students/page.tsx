@@ -135,7 +135,7 @@ export default function StudentsPage() {
     <>
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
                 <CardTitle>Students</CardTitle>
                 <CardDescription>Manage student records for the active term.</CardDescription>
