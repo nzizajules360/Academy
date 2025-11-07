@@ -46,28 +46,36 @@ const OutstandingFeesAlert = () => {
         );
     }
     
-    if (!activeTermId || !termDetails) {
-        // Don't render anything if there's no active term or details.
+    if (!activeTermId) {
+        // Don't render anything if there's no active term.
         return null;
     }
     
-    const deadline = termDetails.paymentDeadline;
+    const deadline = termDetails?.paymentDeadline;
     const studentsWithOutstandingFees = studentsSnapshot?.docs.filter(doc => doc.data().feesPaid < doc.data().totalFees).length || 0;
 
-    // A deadline must exist, it must be in the past, and there must be students with outstanding fees.
-    if (!deadline || !isPast(parseISO(deadline)) || studentsWithOutstandingFees === 0) {
+    // Show alert if:
+    // 1. There are students with outstanding fees, AND
+    // 2. Either the deadline has passed OR no deadline has been set yet.
+    if (studentsWithOutstandingFees === 0 || (deadline && !isPast(parseISO(deadline)))) {
         return null;
     }
     
+    const alertTitle = deadline ? "Overdue Payment Alert" : "Outstanding Fee Alert";
+    const alertDescription = deadline 
+        ? `The payment deadline of ${new Date(deadline).toLocaleDateString()} has passed.`
+        : "A payment deadline has not been set for the active term.";
+
+
     return (
         <Card className="bg-destructive/10 border-destructive/20 dark:bg-destructive/20 dark:border-destructive/30">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">
                     <AlertTriangle className="h-5 w-5" />
-                    Overdue Payment Alert
+                    {alertTitle}
                 </CardTitle>
                  <CardDescription className="text-destructive/90 dark:text-red-400/80">
-                    The payment deadline of {new Date(deadline).toLocaleDateString()} has passed.
+                    {alertDescription}
                 </CardDescription>
             </CardHeader>
             <CardContent>
