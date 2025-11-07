@@ -9,10 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFirestore } from '@/firebase';
-import { addDoc, collection, doc } from 'firebase/firestore';
-import { useDocumentData } from 'react-firebase-hooks/firestore';
+import { addDoc, collection, doc, query, where } from 'firebase/firestore';
+import { useCollectionData, useDocumentData } from 'react-firebase-hooks/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useRouter } from 'next/navigation';
@@ -47,6 +47,9 @@ export function StudentForm() {
     const feesDocRef = firestore ? doc(firestore, 'settings', 'fees') : null;
     const [feeSettings, loadingFees] = useDocumentData(feesDocRef);
 
+    const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+    const [students, loadingStudents] = useCollectionData(studentsQuery);
+
     const form = useForm<StudentFormValues>({
         resolver: zodResolver(studentFormSchema),
         defaultValues: {
@@ -63,6 +66,7 @@ export function StudentForm() {
     });
 
     const selectedClass = form.watch('class');
+    const selectedGender = form.watch('gender');
 
     useEffect(() => {
         if (selectedClass && feeSettings) {
@@ -80,6 +84,46 @@ export function StudentForm() {
              }
         }
     }, [feeSettings, form])
+
+    const totalMorningTables = 39; // 28 (serie 1) + 11 (serie 2)
+    const BOY_CAPACITY = 3;
+    const GIRL_CAPACITY = 7;
+
+    const tableOccupancy = useMemo(() => {
+        const occupancy: Record<number, { boys: number; girls: number }> = {};
+        for(let i=1; i <= totalMorningTables; i++) {
+            occupancy[i] = { boys: 0, girls: 0 };
+        }
+
+        students?.forEach(student => {
+            const tableNum = student.refectoryTableMorning; // Using morning table as the reference
+            if (tableNum && occupancy[tableNum]) {
+                if (student.gender === 'male') {
+                    occupancy[tableNum].boys++;
+                } else if (student.gender === 'female') {
+                    occupancy[tableNum].girls++;
+                }
+            }
+        });
+        return occupancy;
+    }, [students, totalMorningTables]);
+
+    const availableTables = useMemo(() => {
+        return Object.entries(tableOccupancy)
+            .map(([tableNum, counts]) => ({
+                num: Number(tableNum),
+                ...counts,
+            }))
+            .filter(table => {
+                if (selectedGender === 'male') {
+                    return table.boys < BOY_CAPACITY;
+                }
+                if (selectedGender === 'female') {
+                    return table.girls < GIRL_CAPACITY;
+                }
+                return false; // Don't show if no gender selected
+            });
+    }, [tableOccupancy, selectedGender]);
 
     async function onSubmit(data: StudentFormValues) {
         setIsLoading(true);
@@ -143,7 +187,7 @@ export function StudentForm() {
         }
     }
     
-    if (loadingTerm) {
+    if (loadingTerm || loadingStudents) {
         return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
 
@@ -166,8 +210,6 @@ export function StudentForm() {
              </Card>
         )
     }
-
-    const totalMorningTables = 39; // 28 (serie 1) + 11 (serie 2)
 
     return (
         <Card>
@@ -341,16 +383,20 @@ export function StudentForm() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Refectory Table (Optional)</FormLabel>
-                                            <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                                            <Select
+                                                onValueChange={(value) => field.onChange(Number(value))}
+                                                value={field.value?.toString()}
+                                                disabled={!selectedGender || loadingStudents}
+                                            >
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select a table" />
+                                                        <SelectValue placeholder={loadingStudents ? 'Loading tables...' : 'Select a table'} />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {Array.from({ length: totalMorningTables }, (_, i) => i + 1).map(tableNum => (
-                                                        <SelectItem key={tableNum} value={String(tableNum)}>
-                                                            Table {tableNum}
+                                                    {availableTables.map(table => (
+                                                        <SelectItem key={table.num} value={String(table.num)}>
+                                                           Table {table.num} (B: {table.boys}/{BOY_CAPACITY}, G: {table.girls}/{GIRL_CAPACITY})
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -363,8 +409,8 @@ export function StudentForm() {
                         </div>
 
 
-                        <Button type="submit" disabled={isLoading || loadingFees}>
-                            {(isLoading || loadingFees) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={isLoading || loadingFees || loadingStudents}>
+                            {(isLoading || loadingFees || loadingStudents) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Add Student
                         </Button>
                     </form>
