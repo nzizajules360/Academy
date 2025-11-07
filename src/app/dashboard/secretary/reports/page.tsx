@@ -1,7 +1,7 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, Users, AlertCircle, Loader2, FileDown } from 'lucide-react';
+import { DollarSign, Users, AlertCircle, Loader2, FileDown, Table } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
@@ -9,7 +9,7 @@ import { useActiveTerm } from '@/hooks/use-active-term';
 import { Button } from '@/components/ui/button';
 import Papa from 'papaparse';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
@@ -83,7 +83,7 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                             <AccordionItem value={className} key={className}>
                                 <AccordionTrigger>{className} ({studentsByClass[className].length} students)</AccordionTrigger>
                                 <AccordionContent>
-                                    <Table>
+                                    <UiTable>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Name</TableHead>
@@ -104,12 +104,32 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                                                 </TableRow>
                                             ))}
                                         </TableBody>
-                                    </Table>
+                                    </UiTable>
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
                     </Accordion>
                 )}
+            </CardContent>
+        </Card>
+    )
+}
+
+const RefectoryReport = ({ students }: { students: DocumentData[] }) => {
+    const unassignedStudents = students.filter(s => !s.refectoryTableMorning || !s.refectoryTableEvening).length;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Refectory Assignment Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <StatCard 
+                    title="Unassigned Students" 
+                    value={unassignedStudents} 
+                    icon={AlertCircle} 
+                    description="Students without a full table assignment for both meals."
+                />
             </CardContent>
         </Card>
     )
@@ -147,7 +167,6 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            {/* Enrollment Section */}
             <Card>
                 <CardHeader>
                     <CardTitle>Enrollment Summary</CardTitle>
@@ -159,7 +178,6 @@ export default function ReportsPage() {
                 </CardContent>
             </Card>
 
-            {/* Financial Section */}
             <Card>
                 <CardHeader>
                     <CardTitle>Financial Report</CardTitle>
@@ -180,6 +198,8 @@ export default function ReportsPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <RefectoryReport students={students} />
 
             <OutstandingFeesReport students={students} />
         </div>
