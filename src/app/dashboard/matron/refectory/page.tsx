@@ -2,20 +2,22 @@
 
 import { useState } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, DocumentData } from 'firebase/firestore';
+import { collection, doc, writeBatch, DocumentData, updateDoc } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { assignRefectoryTables } from '@/ai/flows/assign-refectory-tables-flow';
-import { Loader2, AlertTriangle, User, Users, LayoutGrid, List, FileDown } from 'lucide-react';
+import { Loader2, AlertTriangle, User, Users, LayoutGrid, List, FileDown, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import Papa from 'papaparse';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Student extends DocumentData {
   id: string;
@@ -158,7 +160,7 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
     )
 }
 
-const StudentView = ({ students, meal }: { students: Student[], meal: 'morning' | 'evening'}) => {
+const StudentView = ({ students, meal, onAssign }: { students: Student[], meal: 'morning' | 'evening', onAssign: (student: Student, meal: 'morning' | 'evening') => void}) => {
     const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
     const sortedStudents = [...students].sort((a,b) => a.name.localeCompare(b.name));
     return (
@@ -169,6 +171,7 @@ const StudentView = ({ students, meal }: { students: Student[], meal: 'morning' 
               <TableHead>Class</TableHead>
               <TableHead>Gender</TableHead>
               <TableHead>Assigned Table</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -180,6 +183,14 @@ const StudentView = ({ students, meal }: { students: Student[], meal: 'morning' 
                 <TableCell>
                     {student[tableField] ? student[tableField] : <Badge variant="outline">Unassigned</Badge>}
                 </TableCell>
+                 <TableCell className="text-right">
+                    {!student[tableField] && (
+                        <Button size="sm" variant="outline" onClick={() => onAssign(student, meal)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Assign
+                        </Button>
+                    )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -187,6 +198,87 @@ const StudentView = ({ students, meal }: { students: Student[], meal: 'morning' 
     )
 }
 
+interface AssignDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  student: Student | null;
+  meal: 'morning' | 'evening';
+  allStudents: Student[];
+  onAssignSuccess: () => void;
+}
+
+const AssignTableDialog = ({ isOpen, onOpenChange, student, meal, allStudents, onAssignSuccess }: AssignDialogProps) => {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [selectedTable, setSelectedTable] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    
+    if (!student) return null;
+
+    const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
+    const totalTables = TableTotals[meal];
+    
+    const availableTables = Array.from({ length: totalTables }, (_, i) => i + 1).filter(tableNum => {
+        const studentsAtTable = allStudents.filter(s => s[tableField] === tableNum);
+        const capacity = student.gender === 'male' ? TableCapacity.boys : TableCapacity.girls;
+        const currentCount = studentsAtTable.filter(s => s.gender === student.gender).length;
+        return currentCount < capacity;
+    });
+
+    const handleSave = async () => {
+        if (!firestore || !student || !selectedTable) return;
+        setIsSaving(true);
+        try {
+            const studentRef = doc(firestore, 'students', student.id);
+            await updateDoc(studentRef, {
+                [tableField]: Number(selectedTable)
+            });
+            toast({ title: 'Success!', description: `${student.name} has been assigned to table ${selectedTable}.`});
+            onAssignSuccess();
+            onOpenChange(false);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not assign table.' });
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Assign Table for {student.name}</DialogTitle>
+                    <DialogDescription>
+                        Assigning for {meal === 'morning' ? 'Morning & Lunch' : 'Evening'} meal.
+                        Only tables with available spots for a {student.gender} are shown.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                     <Select onValueChange={setSelectedTable} value={selectedTable}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a table" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableTables.map(tableNum => (
+                                <SelectItem key={tableNum} value={String(tableNum)}>
+                                    Table {tableNum}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
+                    <Button onClick={handleSave} disabled={isSaving || !selectedTable}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Save Assignment
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function RefectoryPage() {
   const firestore = useFirestore();
@@ -196,6 +288,9 @@ export default function RefectoryPage() {
   const role = user?.role as UserRole | undefined;
   const [viewType, setViewType] = useState<'table' | 'student'>('table');
   const [tableDisplay, setTableDisplay] = useState<'list' | 'grid'>('list');
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedMeal, setSelectedMeal] = useState<'morning' | 'evening'>('morning');
   
   const studentsCollection = firestore ? collection(firestore, 'students') : null;
   const [students, loading, error] = useCollectionData(studentsCollection, { idField: 'id' });
@@ -270,9 +365,16 @@ export default function RefectoryPage() {
     document.body.removeChild(link);
   }
 
+  const handleOpenAssignDialog = (student: Student, meal: 'morning' | 'evening') => {
+    setSelectedStudent(student);
+    setSelectedMeal(meal);
+    setIsAssignDialogOpen(true);
+  }
+
   const unassignedStudents = students?.filter(s => !s.refectoryTableMorning || !s.refectoryTableEvening).length || 0;
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
@@ -328,14 +430,14 @@ export default function RefectoryPage() {
                 <div className="mt-4">
                     <TabsContent value="morning">
                         {viewType === 'student' ? (
-                            <StudentView students={students as Student[]} meal="morning" />
+                            <StudentView students={students as Student[]} meal="morning" onAssign={handleOpenAssignDialog} />
                         ) : (
                             <TableSeriesView students={students as Student[]} meal="morning" view={tableDisplay} />
                         )}
                     </TabsContent>
                     <TabsContent value="evening">
                         {viewType === 'student' ? (
-                            <StudentView students={students as Student[]} meal="evening" />
+                            <StudentView students={students as Student[]} meal="evening" onAssign={handleOpenAssignDialog} />
                         ) : (
                             <TableSeriesView students={students as Student[]} meal="evening" view={tableDisplay} />
                         )}
@@ -346,5 +448,15 @@ export default function RefectoryPage() {
         )}
       </CardContent>
     </Card>
+
+    <AssignTableDialog
+      isOpen={isAssignDialogOpen}
+      onOpenChange={setIsAssignDialogOpen}
+      student={selectedStudent}
+      meal={selectedMeal}
+      allStudents={students as Student[]}
+      onAssignSuccess={() => { /* Data will refetch automatically through react-firebase-hooks */ }}
+    />
+    </>
   );
 }
