@@ -19,6 +19,8 @@ import { useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
+import { materials } from '@/lib/data';
+import { Badge } from '@/components/ui/badge';
 
 export default function MatronDashboard() {
     const firestore = useFirestore();
@@ -27,11 +29,22 @@ export default function MatronDashboard() {
     const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', 'female')) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
-    const studentsToMonitor = studentsSnapshot?.docs
-        .map(doc => ({id: doc.id, ...doc.data()})) || [];
+    const requiredMaterials = materials.filter(m => m.required);
+    const requiredMaterialIds = requiredMaterials.map(m => m.id);
 
-    const studentCount = studentsToMonitor.length;
-    const missingCount = 0;
+    const getMissingItems = (student: any) => {
+        const presentMaterialIds = new Set(student.utilities?.filter((u: any) => u.status === 'present').map((u: any) => u.materialId) || []);
+        return requiredMaterials.filter(m => !presentMaterialIds.has(m.id));
+    }
+
+    const studentsToMonitor = studentsSnapshot?.docs.map(doc => {
+        const studentData = {id: doc.id, ...doc.data()};
+        const missingItems = getMissingItems(studentData);
+        return { ...studentData, missingItems };
+    }) || [];
+
+    const studentsWithMissingItems = studentsToMonitor.filter(s => s.missingItems.length > 0);
+    const totalMissingCount = studentsWithMissingItems.reduce((acc, student) => acc + student.missingItems.length, 0);
 
     const isLoading = loadingTerm || loadingStudents;
 
@@ -45,7 +58,7 @@ export default function MatronDashboard() {
             <Card>
                 <CardHeader>
                 <CardTitle>Students with Missing Utilities</CardTitle>
-                <CardDescription>A list of students who have missing items.</CardDescription>
+                <CardDescription>A list of female students who have missing required items.</CardDescription>
                 </CardHeader>
                 <CardContent>
                 <Table>
@@ -57,13 +70,26 @@ export default function MatronDashboard() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {studentsToMonitor
+                    {studentsWithMissingItems.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                No students have missing items.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {studentsWithMissingItems
                         .slice(0, 5)
                         .map(student => (
                         <TableRow key={student.id}>
-                            <TableCell>{student.name}</TableCell>
+                            <TableCell className="font-medium">{student.name}</TableCell>
                             <TableCell>{student.class}</TableCell>
-                            <TableCell>0</TableCell>
+                            <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                    {student.missingItems.map(item => (
+                                        <Badge key={item.id} variant="destructive">{item.name}</Badge>
+                                    ))}
+                                </div>
+                            </TableCell>
                         </TableRow>
                     ))}
                     </TableBody>
@@ -78,7 +104,7 @@ export default function MatronDashboard() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{studentCount}</div>
+                    <div className="text-2xl font-bold">{studentsToMonitor.length}</div>
                     <p className="text-xs text-muted-foreground">Boarding girls</p>
                 </CardContent>
             </Card>
@@ -88,8 +114,8 @@ export default function MatronDashboard() {
                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{missingCount}</div>
-                    <p className="text-xs text-muted-foreground">Items need attention</p>
+                    <div className="text-2xl font-bold">{totalMissingCount}</div>
+                    <p className="text-xs text-muted-foreground">Total items that need attention.</p>
                 </CardContent>
             </Card>
         </div>
