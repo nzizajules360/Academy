@@ -88,7 +88,7 @@ const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morni
                         <Progress value={boyProgress} />
                         <div className="mt-2 space-y-1">
                           {table.boys.map(s => (
-                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
+                              <div key={`${s.id}-${Math.random()}`} className="flex items-center gap-2 text-muted-foreground">
                                 <UserCheck className="h-3 w-3 text-green-500" />
                                 <span>{s.name} ({s.class})</span>
                               </div>
@@ -103,7 +103,7 @@ const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morni
                         <Progress value={girlProgress} />
                          <div className="mt-2 space-y-1">
                           {table.girls.map(s => (
-                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
+                              <div key={`${s.id}-${Math.random()}`} className="flex items-center gap-2 text-muted-foreground">
                                 <UserCheck className="h-3 w-3 text-pink-500" />
                                 <span>{s.name} ({s.class})</span>
                               </div>
@@ -301,33 +301,33 @@ export default function RefectoryPage() {
 
       const batch = writeBatch(firestore);
       
-      const studentAssignments = new Map<string, {morning?: number, evening?: number}>();
-      
-      const processTables = (tables: any[], shift: 'morning' | 'evening') => {
-          tables.forEach(table => {
-              [...table.boys, ...table.girls].forEach((student: EnrolledStudent) => {
-                  if (student.id) {
-                      if (!studentAssignments.has(student.id)) {
-                          studentAssignments.set(student.id, {});
-                      }
-                      const assignment = studentAssignments.get(student.id)!;
-                      if(shift === 'morning') assignment.morning = table.tableNumber;
-                      if(shift === 'evening') assignment.evening = table.tableNumber;
-                  }
-              });
+      const studentAssignments = new Map<string, { morning?: number; evening?: number }>();
+
+      const processShift = (tables: any[], shift: 'morning' | 'evening') => {
+        tables.forEach(table => {
+          [...table.boys, ...table.girls].forEach((student: EnrolledStudent) => {
+            if (student.id) {
+              if (!studentAssignments.has(student.id)) {
+                studentAssignments.set(student.id, {});
+              }
+              const assignment = studentAssignments.get(student.id)!;
+              if (shift === 'morning') assignment.morning = table.tableNumber;
+              if (shift === 'evening') assignment.evening = table.tableNumber;
+            }
           });
+        });
       };
-      
-      processTables(morning, 'morning');
-      processTables(evening, 'evening');
-      
+    
+      processShift(morning, 'morning');
+      processShift(evening, 'evening');
+
       studentAssignments.forEach((assignments, studentId) => {
-           const studentRef = doc(firestore, 'students', studentId);
-            batch.update(studentRef, {
-              refectoryTableMorning: assignments.morning ?? null,
-              refectoryTableEvening: assignments.evening ?? null,
-            });
-      })
+        const studentRef = doc(firestore, 'students', studentId);
+        batch.update(studentRef, { 
+            refectoryTableMorning: assignments.morning ?? null,
+            refectoryTableEvening: assignments.evening ?? null
+        });
+      });
 
 
       await batch.commit();
