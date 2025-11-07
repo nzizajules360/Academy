@@ -107,7 +107,6 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
       });
       toast({ title: 'Success!', description: 'The list has been sent to the teacher.' });
       onOpenChange(false);
-      form.reset();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to send the list.' });
@@ -117,8 +116,12 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
   }
 
   useEffect(() => {
-    if (!isOpen) {
-      form.reset({ listType: 'outstanding_fees', class: '', teacherId: '' });
+    if (isOpen) {
+      form.reset({
+        teacherId: '',
+        listType: 'outstanding_fees',
+        class: '',
+      });
     }
   }, [isOpen, form]);
 
