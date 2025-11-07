@@ -87,6 +87,7 @@ const StudentListByClass = ({ students, onEdit, onAssignBed }: StudentListByClas
                 <TableRow>
                   <TableHead className="pl-6">Name</TableHead>
                   <TableHead className="hidden md:table-cell">Religion</TableHead>
+                  <TableHead className="hidden md:table-cell">Parent</TableHead>
                   <TableHead>Dormitory</TableHead>
                   <TableHead className="text-right pr-6">Actions</TableHead>
                 </TableRow>
@@ -101,11 +102,17 @@ const StudentListByClass = ({ students, onEdit, onAssignBed }: StudentListByClas
                             </Avatar>
                            <div>
                                 <p>{student.name}</p>
-                                <p className="text-sm text-muted-foreground sm:hidden">{student.location}</p>
+                                <p className="text-sm text-muted-foreground md:hidden">{student.location}</p>
                            </div>
                         </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{student.religion}</TableCell>
+                    <TableCell className="hidden md:table-cell">{student.religion || 'N/A'}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <div>
+                            <p>{student.parentName || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">{student.parentPhone}</p>
+                        </div>
+                    </TableCell>
                     <TableCell>
                         {student.dormitoryBed ? `Bed ${student.dormitoryBed}` : <Badge variant="outline">Unassigned</Badge>}
                     </TableCell>

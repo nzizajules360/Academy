@@ -17,6 +17,8 @@ import { doc, updateDoc, DocumentData } from 'firebase/firestore';
 const studentFormSchema = z.object({
   location: z.string().min(2, 'Location is required.'),
   religion: z.enum(['Adventist', 'Abahamya', 'Catholic', 'Ajepra', 'Muslim'], { required_error: 'Please select a religion.'}),
+  parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
+  parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
 });
 
 type FormValues = z.infer<typeof studentFormSchema>;
@@ -41,7 +43,9 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
         if (isOpen && student) {
             form.reset({
                  location: student.location || '',
-                 religion: student.religion || undefined
+                 religion: student.religion || undefined,
+                 parentName: student.parentName || '',
+                 parentPhone: student.parentPhone || ''
             });
         }
     }, [isOpen, student, form]);
@@ -78,52 +82,80 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px] md:sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>Edit Student: {student?.name}</DialogTitle>
                     <DialogDescription>
-                        Update the location and religion for this student.
+                        Update the student's personal and parental information.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                        <FormField
-                            control={form.control}
-                            name="location"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Home Location</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g., Capital City" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="religion"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Religion</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="location"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Home Location</FormLabel>
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select a religion" />
-                                            </SelectTrigger>
+                                            <Input placeholder="e.g., Capital City" {...field} />
                                         </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="Adventist">Adventist</SelectItem>
-                                            <SelectItem value="Abahamya">Abahamya</SelectItem>
-                                            <SelectItem value="Catholic">Catholic</SelectItem>
-                                            <SelectItem value="Ajepra">Ajepra</SelectItem>
-                                            <SelectItem value="Muslim">Muslim</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="religion"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Religion</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a religion" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Adventist">Adventist</SelectItem>
+                                                <SelectItem value="Abahamya">Abahamya</SelectItem>
+                                                <SelectItem value="Catholic">Catholic</SelectItem>
+                                                <SelectItem value="Ajepra">Ajepra</SelectItem>
+                                                <SelectItem value="Muslim">Muslim</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="parentName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Parent/Guardian Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Jane Doe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="parentPhone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Parent/Guardian Phone</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="0788123456" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <DialogFooter className="pt-4">
                             <DialogClose asChild>
                                 <Button type="button" variant="outline" disabled={isLoading}>

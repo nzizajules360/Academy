@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection, doc, query, where, getDocs } from 'firebase/firestore';
-import { useCollectionData, useDocumentData } from 'react-firebase-hooks/firestore';
+import { useDocumentData } from 'react-firebase-hooks/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useRouter } from 'next/navigation';
@@ -25,12 +25,8 @@ const studentFormSchema = z.object({
   class: z.string().min(1, 'Please select a class.'),
   gender: z.enum(['male', 'female'], { required_error: 'Please select a gender.'}),
   location: z.string().min(2, 'Location is required.'),
-  religion: z.enum(['Adventist', 'Abahamya', 'Catholic', 'Ajepra', 'Muslim'], { required_error: 'Please select a religion.'}),
-  parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
-  parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
   totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
   feesPaid: z.coerce.number().min(0, 'Fees paid must be a positive number.'),
-  refectoryTable: z.coerce.number().optional().nullable(),
 }).refine(data => data.feesPaid <= data.totalFees, {
     message: "Fees paid cannot exceed total fees.",
     path: ["feesPaid"],
@@ -48,27 +44,19 @@ export function StudentForm() {
     const feesDocRef = firestore ? doc(firestore, 'settings', 'fees') : null;
     const [feeSettings, loadingFees] = useDocumentData(feesDocRef);
 
-    const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
-    const [students, loadingStudents] = useCollectionData(studentsQuery);
-
     const form = useForm<StudentFormValues>({
         resolver: zodResolver(studentFormSchema),
         defaultValues: {
             name: '',
             class: '',
             gender: undefined,
-            parentName: '',
-            parentPhone: '',
             location: '',
-            religion: 'Catholic',
             totalFees: 0,
             feesPaid: 0,
-            refectoryTable: null
         },
     });
 
     const selectedClass = form.watch('class');
-    const selectedGender = form.watch('gender');
 
     useEffect(() => {
         if (selectedClass && feeSettings) {
@@ -86,46 +74,6 @@ export function StudentForm() {
              }
         }
     }, [feeSettings, form])
-
-    const totalMorningTables = 39; // 28 (serie 1) + 11 (serie 2)
-    const BOY_CAPACITY = 3;
-    const GIRL_CAPACITY = 7;
-
-    const tableOccupancy = useMemo(() => {
-        const occupancy: Record<number, { boys: number; girls: number }> = {};
-        for(let i=1; i <= totalMorningTables; i++) {
-            occupancy[i] = { boys: 0, girls: 0 };
-        }
-
-        students?.forEach(student => {
-            const tableNum = student.refectoryTableMorning; // Using morning table as the reference
-            if (tableNum && occupancy[tableNum]) {
-                if (student.gender === 'male') {
-                    occupancy[tableNum].boys++;
-                } else if (student.gender === 'female') {
-                    occupancy[tableNum].girls++;
-                }
-            }
-        });
-        return occupancy;
-    }, [students]);
-
-    const availableTables = useMemo(() => {
-        return Object.entries(tableOccupancy)
-            .map(([tableNum, counts]) => ({
-                num: Number(tableNum),
-                ...counts,
-            }))
-            .filter(table => {
-                if (selectedGender === 'male') {
-                    return table.boys < BOY_CAPACITY;
-                }
-                if (selectedGender === 'female') {
-                    return table.girls < GIRL_CAPACITY;
-                }
-                return false; // Don't show if no gender selected
-            });
-    }, [tableOccupancy, selectedGender]);
 
     async function onSubmit(data: StudentFormValues) {
         setIsLoading(true);
@@ -149,13 +97,14 @@ export function StudentForm() {
             return;
         }
         
-        const { refectoryTable, ...studentDataWithoutTable } = data;
-        
         const studentData = { 
-            ...studentDataWithoutTable, 
+            ...data, 
             termId: activeTermId,
-            refectoryTableMorning: refectoryTable || null,
-            refectoryTableEvening: refectoryTable || null,
+            parentName: '',
+            parentPhone: '',
+            religion: null,
+            refectoryTableMorning: null,
+            refectoryTableEvening: null,
             utilities: []
         };
 
@@ -203,7 +152,7 @@ export function StudentForm() {
         }
     }
     
-    if (loadingTerm || loadingStudents) {
+    if (loadingTerm || loadingFees) {
         return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
 
@@ -314,67 +263,11 @@ export function StudentForm() {
                                         </FormItem>
                                     )}
                                 />
-                                <FormField
-                                    control={form.control}
-                                    name="religion"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Religion</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select a religion" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="Adventist">Adventist</SelectItem>
-                                                    <SelectItem value="Abahamya">Abahamya</SelectItem>
-                                                    <SelectItem value="Catholic">Catholic</SelectItem>
-                                                    <SelectItem value="Ajepra">Ajepra</SelectItem>
-                                                    <SelectItem value="Muslim">Muslim</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                        </div>
-
-                         <div className="space-y-4 pt-4 border-t">
-                            <h3 className="text-lg font-medium">Parent/Guardian Information</h3>
-                            <div className="grid md:grid-cols-2 gap-8">
-                               <FormField
-                                    control={form.control}
-                                    name="parentName"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Parent/Guardian Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Jane Doe" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="parentPhone"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Parent/Guardian Phone</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="0788123456" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                             </div>
                         </div>
 
                         <div className="space-y-4 pt-4 border-t">
-                             <h3 className="text-lg font-medium">Financial & Refectory</h3>
+                             <h3 className="text-lg font-medium">Financial Information</h3>
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 <div>
                                     <FormLabel>Total School Fees</FormLabel>
@@ -393,40 +286,12 @@ export function StudentForm() {
                                         </FormItem>
                                     )}
                                 />
-                                <FormField
-                                    control={form.control}
-                                    name="refectoryTable"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Refectory Table (Optional)</FormLabel>
-                                            <Select
-                                                onValueChange={(value) => field.onChange(Number(value))}
-                                                value={field.value?.toString()}
-                                                disabled={!selectedGender || loadingStudents}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder={loadingStudents ? 'Loading tables...' : 'Select a table'} />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {availableTables.map(table => (
-                                                        <SelectItem key={table.num} value={String(table.num)}>
-                                                           Table {table.num} (B: {table.boys}/{BOY_CAPACITY}, G: {table.girls}/{GIRL_CAPACITY})
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                             </div>
                         </div>
 
 
-                        <Button type="submit" disabled={isLoading || loadingFees || loadingStudents}>
-                            {(isLoading || loadingFees || loadingStudents) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={isLoading || loadingFees}>
+                            {(isLoading || loadingFees) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Add Student
                         </Button>
                     </form>
