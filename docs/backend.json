@@ -78,6 +78,14 @@
               "status": { "type": "string", "enum": ["present", "missing"] }
             }
           }
+        },
+        "refectoryTableMorning": {
+            "type": "number",
+            "description": "Assigned table for morning and lunch."
+        },
+        "refectoryTableEvening": {
+            "type": "number",
+            "description": "Assigned table for evening."
         }
       },
       "required": ["name", "class", "gender", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]

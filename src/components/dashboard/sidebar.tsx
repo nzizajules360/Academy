@@ -9,6 +9,7 @@ import {
   Users,
   UserPlus,
   Settings,
+  Table,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -29,6 +30,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/admin/students', icon: Users, label: 'Students' },
     { href: '/dashboard/admin/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/admin/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/admin/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/admin/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
   secretary: [
