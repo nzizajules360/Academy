@@ -14,6 +14,7 @@ import {
   Calendar,
   ListChecks,
   Send,
+  DollarSign
 } from 'lucide-react';
 import {
   Sidebar,
@@ -36,16 +37,14 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/admin/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/admin/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/admin/reports', icon: FileText, label: 'Reports' },
-    { href: '/dashboard/admin/settings/fees', icon: Settings, label: 'Fee Settings' },
-    { href: '/dashboard/admin/settings/academic', icon: Calendar, label: 'Academic Settings' },
+    { href: '/dashboard/admin/settings', icon: Settings, label: 'Settings' },
   ],
   secretary: [
     { href: '/dashboard/secretary', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/secretary/students', icon: Users, label: 'Manage Students' },
     { href: '/dashboard/secretary/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/secretary/reports', icon: FileText, label: 'Reports' },
-    { href: '/dashboard/secretary/settings/fees', icon: Settings, label: 'Fee Settings' },
-    { href: '/dashboard/secretary/settings/academic', icon: Calendar, label: 'Academic Settings' },
+    { href: '/dashboard/secretary/settings', icon: Settings, label: 'Settings' },
   ],
   patron: [
     { href: '/dashboard/patron', icon: LayoutDashboard, label: 'Dashboard' },
@@ -96,7 +95,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith(item.href) && (item.href.split('/').length === pathname.split('/').length || pathname.split('/').length === item.href.split('/').length+1)}
+                isActive={pathname.startsWith(item.href)}
                 tooltip={item.label}
               >
                 <Link href={item.href}>

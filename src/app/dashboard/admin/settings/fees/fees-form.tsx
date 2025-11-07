@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, School, TrendingUp, Shield, CheckCircle2 } from 'lucide-react';
+import { Loader2, School, TrendingUp, Shield, CheckCircle2, DollarSign } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -251,7 +251,7 @@ export function FeesForm() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                                            <School className="h-6 w-6 text-primary" />
+                                            <DollarSign className="h-6 w-6 text-primary" />
                                             Update Fee Structure
                                         </CardTitle>
                                         <CardDescription className="text-base mt-2">
@@ -383,50 +383,6 @@ export function FeesForm() {
                         </Card>
                     </motion.div>
                 </div>
-
-                {/* Information Cards */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="grid md:grid-cols-3 gap-6"
-                >
-                    <Card className="bg-blue-50 border-blue-200">
-                        <CardContent className="p-4 flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <School className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <p className="font-semibold text-blue-900">O-Level Programs</p>
-                                <p className="text-sm text-blue-700">S1 to S3 classes</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-purple-50 border-purple-200">
-                        <CardContent className="p-4 flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <TrendingUp className="h-5 w-5 text-purple-600" />
-                            </div>
-                            <div>
-                                <p className="font-semibold text-purple-900">A-Level Programs</p>
-                                <p className="text-sm text-purple-700">S4 to L5 classes</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-green-50 border-green-200">
-                        <CardContent className="p-4 flex items-center gap-3">
-                            <div className="p-2 bg-green-100 rounded-lg">
-                                <Shield className="h-5 w-5 text-green-600" />
-                            </div>
-                            <div>
-                                <p className="font-semibold text-green-900">Secure & Reliable</p>
-                                <p className="text-sm text-green-700">Changes are automatically saved</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
             </div>
         </TooltipProvider>
     );
