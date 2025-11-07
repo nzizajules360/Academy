@@ -203,7 +203,10 @@ const AssignTableDialog = ({ isOpen, onOpenChange, student, meal, allStudents, o
     });
 
     const handleSave = async () => {
-        if (!firestore || !student || !selectedTable) return;
+        if (!firestore || !student || !student.id || !selectedTable) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Student data is incomplete.' });
+            return;
+        }
         setIsSaving(true);
         try {
             const studentRef = doc(firestore, 'students', student.id);
@@ -431,5 +434,7 @@ export default function RefectoryPage() {
     </>
   );
 }
+
+    
 
     
