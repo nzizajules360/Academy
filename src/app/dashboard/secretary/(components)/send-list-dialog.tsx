@@ -47,7 +47,9 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
   const form = useForm<FormValues>({
     resolver: zodResolver(sendListSchema),
     defaultValues: {
+      teacherId: '',
       listType: 'outstanding_fees',
+      class: '',
     },
   });
 
@@ -116,7 +118,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
 
   useEffect(() => {
     if (!isOpen) {
-      form.reset({ listType: 'outstanding_fees', class: undefined, teacherId: undefined });
+      form.reset({ listType: 'outstanding_fees', class: '', teacherId: '' });
     }
   }, [isOpen, form]);
 
