@@ -37,18 +37,21 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/secretary', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/secretary/students/add', icon: UserPlus, label: 'Enroll Student' },
     { href: '/dashboard/secretary/students', icon: Users, label: 'Manage Students' },
+    { href: '/dashboard/secretary/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/secretary/settings', icon: Settings, label: 'Settings' },
   ],
   patron: [
     { href: '/dashboard/patron', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/patron/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/patron/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/patron/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/patron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
   matron: [
     { href: '/dashboard/matron', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/matron/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/matron/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/matron/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/matron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
 };
