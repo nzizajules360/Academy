@@ -11,7 +11,7 @@ import {
 import { useFirestore } from '@/firebase';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
 import { collection, doc, query, where } from 'firebase/firestore';
-import { UserPlus, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
+import { UserPlus, BookOpen, AlertTriangle, Loader2, FileText, Settings, ArrowRight } from 'lucide-react';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { isPast, parseISO } from 'date-fns';
 
@@ -55,8 +55,8 @@ const OutstandingFeesAlert = () => {
         return null;
     }
     
-    const alertTitle = deadline ? "Overdue Payment Alert" : "Outstanding Fee Alert";
-    const alertDescription = deadline 
+    const alertTitle = deadline && isPast(parseISO(deadline)) ? "Overdue Payment Alert" : "Outstanding Fee Alert";
+    const alertDescription = deadline && isPast(parseISO(deadline))
         ? `The payment deadline of ${new Date(deadline).toLocaleDateString()} has passed.`
         : "A payment deadline has not been set for the active term.";
 
@@ -87,6 +87,21 @@ const OutstandingFeesAlert = () => {
     )
 }
 
+const ActionCard = ({ title, description, icon: Icon, href }: { title: string, description: string, icon: React.ElementType, href: string }) => (
+    <Card className="group hover:shadow-md transition-shadow">
+        <Link href={href} className="flex items-center gap-6 p-6">
+            <div className="p-3 bg-muted rounded-lg">
+                 <Icon className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
+                <h3 className="font-semibold">{title}</h3>
+                <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+        </Link>
+    </Card>
+)
+
 export default function SecretaryDashboard() {
     const firestore = useFirestore();
     const { activeTermId } = useActiveTerm();
@@ -98,45 +113,37 @@ export default function SecretaryDashboard() {
 
     return (
         <div className='space-y-8'>
-            <OutstandingFeesAlert />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Enroll Student</CardTitle>
-                        <UserPlus className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">Add a new student to the school registry for the active term.</p>
-                        <Link href="/dashboard/secretary/students/add" passHref>
-                          <Button>Go to Enrollment Form</Button>
-                        </Link>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">View Students</CardTitle>
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">See a list of all currently enrolled students by class for the active term.</p>
-                         <Link href="/dashboard/secretary/students" passHref>
-                          <Button>View Student List</Button>
-                        </Link>
-                    </CardContent>
-                </Card>
+             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold">Secretary Dashboard</h1>
+                    <p className="text-muted-foreground">Your central hub for administrative tasks.</p>
+                </div>
             </div>
-            <div>
-              <Card>
+
+            <OutstandingFeesAlert />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
                   <CardHeader>
                       <CardTitle>Total Students (Active Term)</CardTitle>
+                      <CardDescription>The number of students currently enrolled.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                      <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : totalStudents}</div>
-                      <p className="text-xs text-muted-foreground">
-                          students currently enrolled.
-                      </p>
+                      <div className="text-5xl font-bold">{loading ? <Loader2 className="h-10 w-10 animate-spin" /> : totalStudents}</div>
                   </CardContent>
-              </Card>
+                </Card>
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle>Quick Actions</CardTitle>
+                        <CardDescription>Jump to your most common tasks.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex flex-col justify-center space-y-4">
+                        <ActionCard title="Enroll New Student" description="Add a new student to the registry." icon={UserPlus} href="/dashboard/secretary/students/add" />
+                        <ActionCard title="Manage Students" description="View and update student records." icon={BookOpen} href="/dashboard/secretary/students" />
+                        <ActionCard title="View Reports" description="Generate financial and enrollment reports." icon={FileText} href="/dashboard/secretary/reports" />
+                        <ActionCard title="Configure Settings" description="Manage academic years and fees." icon={Settings} href="/dashboard/secretary/settings" />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

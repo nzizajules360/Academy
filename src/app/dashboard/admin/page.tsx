@@ -15,40 +15,64 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, Users, ClipboardList } from 'lucide-react';
+import { DollarSign, Users, ClipboardList, ArrowRight } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { materials } from '@/lib/data';
 import { useActiveTerm } from '@/hooks/use-active-term';
-
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const RecentEnrollments = ({ students }: { students: DocumentData[] }) => (
-  <Card>
+  <Card className="h-full">
     <CardHeader>
       <CardTitle>Recent Enrollments</CardTitle>
-      <CardDescription>A list of the most recently added students for the active term.</CardDescription>
+      <CardDescription>The 5 most recently added students for the active term.</CardDescription>
     </CardHeader>
     <CardContent>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Class</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {students.slice(0, 5).map(student => (
-            <TableRow key={student.id}>
-              <TableCell>{student.name}</TableCell>
-              <TableCell>{student.class}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="space-y-4">
+        {students.slice(0, 5).map(student => (
+          <div key={student.id} className="flex items-center gap-4">
+            <Avatar className="h-10 w-10">
+                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <p className="text-sm font-medium leading-none">{student.name}</p>
+              <p className="text-sm text-muted-foreground">{student.class}</p>
+            </div>
+            <div className="text-sm text-muted-foreground">{student.gender}</div>
+          </div>
+        ))}
+      </div>
     </CardContent>
+    <CardFooter>
+      <Button asChild className="w-full" variant="outline">
+        <Link href="/dashboard/admin/students">
+          View All Students <ArrowRight className="ml-2 h-4 w-4" />
+        </Link>
+      </Button>
+    </CardFooter>
   </Card>
 );
+
+const StatCard = ({ title, value, icon: Icon, description, color, link }: { title: string, value: string | number, icon: React.ElementType, description?: string, color: string, link: string }) => (
+    <Card className="group hover:shadow-lg transition-all duration-300">
+        <Link href={link}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <div className={`rounded-full p-2 ${color}`}>
+                    <Icon className="h-5 w-5 text-white" />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="text-4xl font-bold">{value}</div>
+                {description && <p className="text-xs text-muted-foreground">{description}</p>}
+            </CardContent>
+        </Link>
+    </Card>
+)
 
 export default function AdminDashboard() {
     const firestore = useFirestore();
@@ -74,43 +98,63 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-                <RecentEnrollments students={studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data()})) || []} />
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+                    <p className="text-muted-foreground">A complete overview of your school's operations.</p>
+                </div>
             </div>
-            <div className="space-y-8">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Students (Active Term)</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="text-2xl font-bold">{totalStudents}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Fee Collection</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="text-2xl font-bold">RWF {totalFeesPaid.toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">
-                        of RWF {totalFeesExpected.toLocaleString()} collected
-                    </p>
-                    <Progress value={feesPaidPercentage} className="mt-2 h-2" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Utilities Status</CardTitle>
-                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="text-2xl font-bold">{utilitiesMissing}</div>
-                    <p className="text-xs text-muted-foreground">items reported missing</p>
-                    </CardContent>
-                </Card>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <StatCard 
+                    title="Total Students" 
+                    value={totalStudents} 
+                    icon={Users} 
+                    description="In the active term"
+                    color="bg-blue-500"
+                    link="/dashboard/admin/students"
+                />
+                <StatCard 
+                    title="Fee Collection" 
+                    value={`RWF ${totalFeesPaid.toLocaleString()}`} 
+                    icon={DollarSign} 
+                    description={`${feesPaidPercentage.toFixed(0)}% of RWF ${totalFeesExpected.toLocaleString()}`}
+                    color="bg-green-500"
+                    link="/dashboard/admin/reports"
+                />
+                <StatCard 
+                    title="Utilities Status" 
+                    value={`${utilitiesMissing} missing`}
+                    icon={ClipboardList} 
+                    description="Across all boarding students"
+                    color="bg-orange-500"
+                    link="/dashboard/admin/utilities"
+                />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Financial Overview</CardTitle>
+                            <CardDescription>A summary of fee collection progress for the active term.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium">Fee Collection Progress</p>
+                                <Progress value={feesPaidPercentage} className="h-3" />
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>RWF {totalFeesPaid.toLocaleString()} collected</span>
+                                    <span>RWF {(totalFeesExpected - totalFeesPaid).toLocaleString()} outstanding</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                <div>
+                     <RecentEnrollments students={studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data()})) || []} />
+                </div>
             </div>
       </div>
   );
