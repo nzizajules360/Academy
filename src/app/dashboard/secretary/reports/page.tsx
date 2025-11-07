@@ -1,7 +1,7 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, Users, AlertCircle, Loader2, FileDown, Table } from 'lucide-react';
+import { DollarSign, Users, AlertCircle, Loader2, FileDown } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
@@ -40,7 +40,7 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
     const sortedClasses = Object.keys(studentsByClass).sort();
     
     const handleExport = () => {
-        const dataToExport = studentsWithOutstandingFees.map(s => ({
+        const dataToExport = studentsWithOutstandingFees.sort((a,b) => a.class.localeCompare(b.class) || a.name.localeCompare(b.name)).map(s => ({
             "Student Name": s.name,
             "Class": s.class,
             "Parent Name": s.parentName,
@@ -68,9 +68,9 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
                         <CardTitle>Outstanding Fees Report</CardTitle>
                         <CardDescription>List of students with incomplete fee payments for the active term.</CardDescription>
                     </div>
-                    <Button onClick={handleExport} disabled={studentsWithOutstandingFees.length === 0}>
+                    <Button onClick={handleExport} disabled={studentsWithOutstandingFees.length === 0} variant="outline">
                         <FileDown className="mr-2 h-4 w-4" />
-                        Export to CSV
+                        Export Report
                     </Button>
                 </div>
             </CardHeader>
@@ -118,17 +118,47 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
 const RefectoryReport = ({ students }: { students: DocumentData[] }) => {
     const unassignedStudents = students.filter(s => !s.refectoryTableMorning || !s.refectoryTableEvening).length;
 
+    const handleExport = () => {
+        if (!students) return;
+
+        const dataToExport = students.sort((a,b) => a.name.localeCompare(b.name)).map(s => ({
+            "Student Name": s.name,
+            "Class": s.class,
+            "Gender": s.gender,
+            "Morning & Lunch Table": s.refectoryTableMorning || 'Unassigned',
+            "Evening Table": s.refectoryTableEvening || 'Unassigned',
+        }));
+
+        const csv = Papa.unparse(dataToExport);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `refectory_assignments_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Refectory Assignment Summary</CardTitle>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Refectory Assignment Report</CardTitle>
+                        <CardDescription>Summary of student dining table assignments.</CardDescription>
+                    </div>
+                    <Button onClick={handleExport} disabled={students.length === 0} variant="outline">
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export Assignments
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <StatCard 
                     title="Unassigned Students" 
                     value={unassignedStudents} 
                     icon={AlertCircle} 
-                    description="Students without a full table assignment for both meals."
+                    description="Students missing one or both table assignments."
                 />
             </CardContent>
         </Card>
@@ -158,6 +188,26 @@ export default function ReportsPage() {
 
     const studentsWithOutstandingFees = students.filter(s => s.feesPaid < s.totalFees).length;
 
+    const handleStudentExport = () => {
+        const dataToExport = students.sort((a,b) => a.class.localeCompare(b.class) || a.name.localeCompare(b.name)).map(s => ({
+            "Student Name": s.name,
+            "Class": s.class,
+            "Gender": s.gender,
+            "Location": s.location,
+            "Parent Name": s.parentName,
+            "Parent Phone": s.parentPhone,
+        }));
+
+        const csv = Papa.unparse(dataToExport);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `student_list_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -169,7 +219,16 @@ export default function ReportsPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Enrollment Summary</CardTitle>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Enrollment Report</CardTitle>
+                            <CardDescription>Summary of student enrollment for the active term.</CardDescription>
+                        </div>
+                         <Button onClick={handleStudentExport} disabled={students.length === 0} variant="outline">
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Export Student List
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-3 gap-4">
                    <StatCard title="Total Students" value={totalStudents} icon={Users} />
@@ -181,6 +240,7 @@ export default function ReportsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Financial Report</CardTitle>
+                    <CardDescription>Summary of fee collection for the active term.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid md:grid-cols-3 gap-4">
