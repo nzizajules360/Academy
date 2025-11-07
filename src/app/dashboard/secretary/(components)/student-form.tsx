@@ -59,7 +59,7 @@ export function StudentForm() {
 
     useEffect(() => {
         if (selectedClass) {
-            const isOLevel = selectedClass.startsWith('Grade 9') || selectedClass.startsWith('Grade 10');
+            const isOLevel = selectedClass.startsWith('S1') || selectedClass.startsWith('S2') || selectedClass.startsWith('S3');
             form.setValue('totalFees', isOLevel ? O_LEVEL_FEE : A_LEVEL_FEE);
         }
     }, [selectedClass, form]);
@@ -144,10 +144,15 @@ export function StudentForm() {
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value="Grade 9A">Grade 9A</SelectItem>
-                                                    <SelectItem value="Grade 10A">Grade 10A</SelectItem>
-                                                    <SelectItem value="Grade 11B">Grade 11B</SelectItem>
-                                                    <SelectItem value="Grade 12A">Grade 12A</SelectItem>
+                                                    <SelectItem value="S1">S1</SelectItem>
+                                                    <SelectItem value="S2">S2</SelectItem>
+                                                    <SelectItem value="S3">S3</SelectItem>
+                                                    <SelectItem value="S4 ACC">S4 ACC</SelectItem>
+                                                    <SelectItem value="S5 ACC">S5 ACC</SelectItem>
+                                                    <SelectItem value="S6 ACC">S6 ACC</SelectItem>
+                                                    <SelectItem value="L3 SWD">L3 SWD</SelectItem>
+                                                    <SelectItem value="L4 SWD">L4 SWD</SelectItem>
+                                                    <SelectItem value="L5 SWD">L5 SWD</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
