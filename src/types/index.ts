@@ -17,7 +17,10 @@ export type Student = {
   // Fields below are from the initial data, but not in the secretary form
   type?: 'boarding' | 'external';
   refectoryTable?: number;
+  refectoryTableMorning?: number;
+  refectoryTableEvening?: number;
   gender?: 'male' | 'female';
+  religion?: 'Adventist' | 'Abahamya' | 'Catholic' | 'Ajepra' | 'Muslim';
   utilities?: MaterialStatus[];
 };
 

@@ -1,25 +1,26 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, DocumentData } from 'firebase/firestore';
+import { collection, doc, writeBatch, DocumentData, updateDoc, query, where } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { assignRefectoryTables } from '@/ai/flows/assign-refectory-tables-flow';
-import { Loader2, AlertTriangle, User, Users, FileDown, UserCheck } from 'lucide-react';
+import { Loader2, AlertTriangle, User, Users, FileDown, PlusCircle, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import Papa from 'papaparse';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useActiveTerm } from '@/hooks/use-active-term';
-import { query, where } from 'firebase/firestore';
 
 interface Student extends DocumentData {
   id: string;

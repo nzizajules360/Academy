@@ -10,6 +10,17 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import type { EnrolledStudent, SeatingChart, RefectoryTable } from '@/types/refectory';
+
+const TABLE_CAPACITY = {
+    boys: 3,
+    girls: 7,
+};
+
+const REFEFCTORY_CONFIG = {
+  serie1: 28,
+  serie2: { morning: 11, evening: 8 },
+};
 
 // Define input schema for a single student
 const StudentSchema = z.object({
@@ -18,13 +29,13 @@ const StudentSchema = z.object({
     gender: z.enum(['male', 'female']).describe('The gender of the student.'),
     class: z.string().describe('The class of the student.'),
 });
+export type AssignRefectoryTablesInput = z.infer<typeof AssignRefectoryTablesInputSchema>;
 
 // Define the overall input schema for the flow
 const AssignRefectoryTablesInputSchema = z.object({
   students: z.array(StudentSchema).describe('A list of all students to be assigned.'),
+  previous: z.any().optional().describe('Previous seating chart to maintain some consistency.'),
 });
-export type AssignRefectoryTablesInput = z.infer<typeof AssignRefectoryTablesInputSchema>;
-
 
 // Define output schema for a single student's assignment
 const StudentAssignmentSchema = z.object({
@@ -39,19 +50,91 @@ const AssignRefectoryTablesOutputSchema = z.array(StudentAssignmentSchema);
 export type AssignRefectoryTablesOutput = z.infer<typeof AssignRefectoryTablesOutputSchema>;
 
 
-// Define table structure and capacities
-const TABLE_CAPACITY = { boys: 3, girls: 7 };
-const SERIES_CONFIG = {
-    morning: { first: 28, second: 11 },
-    evening: { first: 28, second: 8 },
-};
+function shuffleArray<T>(array: T[]): T[] {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
 
-function initializeTables(meal: 'morning' | 'evening') {
-    const totalTables = SERIES_CONFIG[meal].first + SERIES_CONFIG[meal].second;
-    return Array.from({ length: totalTables }, () => ({
-        boys: 0,
-        girls: 0,
-    }));
+function initializeTables(totalTables: number): RefectoryTable[] {
+    const tables: RefectoryTable[] = [];
+    for (let i = 1; i <= totalTables; i++) {
+        tables.push({
+            tableNumber: i,
+            serie: i <= REFEFCTORY_CONFIG.serie1 ? 1 : 2,
+            boys: [],
+            girls: [],
+        });
+    }
+    return tables;
+}
+
+function generateSeatingChart(students: EnrolledStudent[], previous?: SeatingChart): SeatingChart {
+    const totalMorningTables = REFEFCTORY_CONFIG.serie1 + REFEFCTORY_CONFIG.serie2.morning;
+    const totalEveningTables = REFEFCTORY_CONFIG.serie1 + REFEFCTORY_CONFIG.serie2.evening;
+
+    const masterTables = initializeTables(totalMorningTables);
+    const assignedIds = new Set<string>();
+
+    if (previous && previous.morning) {
+        for (const prevTable of previous.morning) {
+            if (prevTable.tableNumber > masterTables.length) continue;
+            const table = masterTables[prevTable.tableNumber - 1];
+            const validBoys = prevTable.boys.filter(b => students.some(s => s.id === b.id));
+            const validGirls = prevTable.girls.filter(g => students.some(s => s.id === g.id));
+
+            table.boys = validBoys.slice(0, TABLE_CAPACITY.boys);
+            table.girls = validGirls.slice(0, TABLE_CAPACITY.girls);
+
+            table.boys.forEach(b => assignedIds.add(b.id));
+            table.girls.forEach(g => assignedIds.add(g.id));
+        }
+    }
+
+    let boys = shuffleArray(students.filter(s => s.gender === 'male' && !assignedIds.has(s.id)));
+    let girls = shuffleArray(students.filter(s => s.gender === 'female' && !assignedIds.has(s.id)));
+
+    let boyIndex = 0;
+    let girlIndex = 0;
+
+    for (const table of masterTables) {
+        while (table.boys.length < TABLE_CAPACITY.boys && boyIndex < boys.length) {
+            table.boys.push(boys[boyIndex]);
+            boyIndex++;
+        }
+        while (table.girls.length < TABLE_CAPACITY.girls && girlIndex < girls.length) {
+            table.girls.push(girls[girlIndex]);
+            girlIndex++;
+        }
+    }
+
+    const unassignedBoys = boys.length - boyIndex;
+    const unassignedGirls = girls.length - girlIndex;
+
+    if (unassignedBoys > 0) {
+        console.warn(`${unassignedBoys} abahungu ntibabonye imyanya.`);
+    }
+    if (unassignedGirls > 0) {
+        console.warn(`${unassignedGirls} abakobwa ntibabonye imyanya.`);
+    }
+
+    const morningShiftTables = masterTables;
+
+    const eveningShiftTables = masterTables
+        .map(table => ({ ...table, boys: [...table.boys], girls: [...table.girls] })) // Deep copy
+        .filter(table => {
+            if (table.serie === 1) return true;
+            const serie2TableIndex = table.tableNumber - REFEFCTORY_CONFIG.serie1;
+            return serie2TableIndex <= REFEFCTORY_CONFIG.serie2.evening;
+        });
+
+    return {
+        morning: morningShiftTables,
+        evening: eveningShiftTables,
+    };
 }
 
 
@@ -67,53 +150,47 @@ const assignRefectoryTablesFlow = ai.defineFlow(
     inputSchema: AssignRefectoryTablesInputSchema,
     outputSchema: AssignRefectoryTablesOutputSchema,
   },
-  async ({ students }) => {
+  async ({ students, previous }) => {
     
-    // This is a deterministic logic flow, not an LLM prompt.
-    // We wrap it in a Genkit flow to keep server-side logic organized.
+    const seatingChart = generateSeatingChart(students, previous);
+    
+    const assignments: Record<string, { studentId: string, studentName: string, morningTable: number, eveningTable: number }> = {};
 
-    const studentAssignments: { [studentId: string]: { studentId: string, studentName: string, morningTable: number, eveningTable: number } } = {};
-
-    // Initialize assignments
-    students.forEach(student => {
-        studentAssignments[student.id] = { 
-            studentId: student.id, 
-            studentName: student.name,
-            morningTable: 0, 
-            eveningTable: 0 
+    students.forEach(s => {
+        assignments[s.id] = {
+            studentId: s.id,
+            studentName: s.name,
+            morningTable: 0,
+            eveningTable: 0,
         };
     });
 
-    // Process assignments for each meal time independently
-    for (const meal of ['morning', 'evening'] as const) {
-        const tables = initializeTables(meal);
-        const studentsToAssign = [...students].sort(() => Math.random() - 0.5); // Shuffle for better distribution
-
-        for (const student of studentsToAssign) {
-            let assigned = false;
-            for (let i = 0; i < tables.length; i++) {
-                const capacity = student.gender === 'male' ? TABLE_CAPACITY.boys : TABLE_CAPACITY.girls;
-                const currentCount = student.gender === 'male' ? tables[i].boys : tables[i].girls;
-
-                if (currentCount < capacity) {
-                    if (student.gender === 'male') {
-                        tables[i].boys++;
-                    } else {
-                        tables[i].girls++;
-                    }
-
-                    if (meal === 'morning') {
-                        studentAssignments[student.id].morningTable = i + 1;
-                    } else {
-                        studentAssignments[student.id].eveningTable = i + 1;
-                    }
-                    assigned = true;
-                    break;
-                }
+    seatingChart.morning.forEach(table => {
+        table.boys.forEach(student => {
+            if (assignments[student.id]) {
+                assignments[student.id].morningTable = table.tableNumber;
             }
-        }
-    }
+        });
+        table.girls.forEach(student => {
+             if (assignments[student.id]) {
+                assignments[student.id].morningTable = table.tableNumber;
+            }
+        });
+    });
+
+    seatingChart.evening.forEach(table => {
+        table.boys.forEach(student => {
+            if (assignments[student.id]) {
+                assignments[student.id].eveningTable = table.tableNumber;
+            }
+        });
+        table.girls.forEach(student => {
+             if (assignments[student.id]) {
+                assignments[student.id].eveningTable = table.tableNumber;
+            }
+        });
+    });
     
-    return Object.values(studentAssignments);
+    return Object.values(assignments);
   }
 );
