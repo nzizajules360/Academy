@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import {
@@ -23,12 +24,15 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from '@/components/ui/button';
-import { Loader2, Pencil } from 'lucide-react';
+import { Loader2, Pencil, Users } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { EditStudentForm } from './(components)/edit-student-form';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 
 interface StudentData extends DocumentData {
@@ -59,25 +63,45 @@ const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
   return (
     <Accordion type="single" collapsible className="w-full" defaultValue={sortedClasses[0]}>
       {sortedClasses.map((className) => (
-        <AccordionItem value={className} key={className}>
-          <AccordionTrigger>{className} ({studentsByClass[className].length})</AccordionTrigger>
-          <AccordionContent>
+        <motion.div
+            key={className}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+        >
+        <AccordionItem value={className} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
+          <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                    <Users className="h-5 w-5 text-primary" />
+                </div>
+                {className}
+                <Badge variant="secondary">{studentsByClass[className].length} students</Badge>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="bg-accent/20">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead className="pl-6">Name</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Religion</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {studentsByClass[className].map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
+                  <TableRow key={student.id} className="hover:bg-card/50">
+                    <TableCell className="font-medium pl-6">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            {student.name}
+                        </div>
+                    </TableCell>
                     <TableCell>{student.location}</TableCell>
                     <TableCell>{student.religion}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right pr-6">
                        <Button variant="ghost" size="icon" onClick={() => onEdit(student)}>
                             <Pencil className="h-4 w-4" />
                             <span className="sr-only">Edit Student</span>
@@ -89,6 +113,7 @@ const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
             </Table>
           </AccordionContent>
         </AccordionItem>
+        </motion.div>
       ))}
     </Accordion>
   );
@@ -125,12 +150,20 @@ export default function StudentsPage() {
 
   return (
     <>
-    <Card>
-      <CardHeader>
-        <CardTitle>Students (Boys)</CardTitle>
-        <CardDescription>View and manage student information for the active term.</CardDescription>
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+    >
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+        <CardTitle className="text-2xl font-bold flex items-center gap-3">
+            <Users className="h-6 w-6 text-primary"/>
+            Male Students
+        </CardTitle>
+        <CardDescription className="text-base mt-1">View and manage student information for the active term.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {(loading || loadingTerm) && (
             <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -138,21 +171,32 @@ export default function StudentsPage() {
         )}
         {error && <p className="text-destructive p-4">Error loading students: {error.message}</p>}
         {!(loading || loadingTerm) && !error && (
-          students.length > 0 ? (
-            <StudentListByClass students={students} onEdit={handleEdit} />
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              {activeTermId ? "No male students found for the active term." : "No active term set. Please set an active term in the settings."}
-            </div>
-          )
+          <AnimatePresence>
+            {students.length > 0 ? (
+                <StudentListByClass students={students} onEdit={handleEdit} />
+            ) : (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg"
+                >
+                <Users className="mx-auto h-12 w-12 mb-4 opacity-50"/>
+                <h3 className="text-lg font-semibold">No Students Found</h3>
+                <p className="mt-2">
+                    {activeTermId ? "No male students found for the active term." : "No active term set. Please set an active term in the settings."}
+                </p>
+                </motion.div>
+            )}
+          </AnimatePresence>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="bg-gradient-to-r from-primary/5 to-primary/10 border-t">
         <div className="text-xs text-muted-foreground">
             { !loading && `Showing ${students.length} students.`}
         </div>
       </CardFooter>
     </Card>
+    </motion.div>
 
     {selectedStudent && (
         <EditStudentForm

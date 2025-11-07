@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -32,12 +33,34 @@ const StatCard = ({
   color?: "blue" | "green" | "red" | "purple" | "orange"
 }) => {
   const colorClasses = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    red: "from-red-500 to-red-600",
-    purple: "from-purple-500 to-purple-600",
-    orange: "from-orange-500 to-orange-600"
+    blue: {
+        gradient: "from-blue-500/5 to-purple-500/5",
+        text: "text-blue-500",
+        bg: "bg-blue-500/10"
+    },
+    green: {
+        gradient: "from-green-500/5 to-emerald-500/5",
+        text: "text-green-500",
+        bg: "bg-green-500/10"
+    },
+    red: {
+        gradient: "from-red-500/5 to-orange-500/5",
+        text: "text-red-500",
+        bg: "bg-red-500/10"
+    },
+    purple: {
+        gradient: "from-purple-500/5 to-fuchsia-500/5",
+        text: "text-purple-500",
+        bg: "bg-purple-500/10"
+    },
+    orange: {
+        gradient: "from-orange-500/5 to-amber-500/5",
+        text: "text-orange-500",
+        bg: "bg-orange-500/10"
+    }
   };
+
+  const selectedColor = colorClasses[color];
 
   return (
     <motion.div
@@ -46,18 +69,15 @@ const StatCard = ({
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-        {/* Gradient accent */}
-        <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${colorClasses[color]}`} />
-        
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pl-4">
+      <Card className={`relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group bg-gradient-to-br ${selectedColor.gradient}`}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-          <div className={`p-2 rounded-lg bg-${color}-500/10 group-hover:scale-110 transition-transform`}>
-            <Icon className={`h-4 w-4 text-${color}-500`} />
+          <div className={`p-2 rounded-lg ${selectedColor.bg} group-hover:scale-110 transition-transform`}>
+            <Icon className={`h-4 w-4 ${selectedColor.text}`} />
           </div>
         </CardHeader>
-        <CardContent className="pl-4">
-          <div className="text-2xl font-bold mb-1">{value}</div>
+        <CardContent>
+          <div className="text-3xl font-bold mb-1">{value}</div>
           <div className="flex items-center justify-between">
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
@@ -79,12 +99,11 @@ const StatCard = ({
 
 // Enhanced Progress Bar with animation
 const AnimatedProgress = ({ value, className = "" }: { value: number; className?: string }) => {
-  return (
-    <motion.div initial={{ width: 0 }} animate={{ width: `${value}%` }} transition={{ duration: 1, ease: "easeOut" }}>
-      <Progress value={value} className={className} />
-    </motion.div>
-  );
+    return (
+        <Progress value={value} className={cn("h-3", className)} />
+    );
 };
+
 
 const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
     const studentsWithOutstandingFees = students.filter(s => s.feesPaid < s.totalFees);
@@ -311,22 +330,20 @@ export default function ReportsPage() {
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                    className="space-y-2"
                 >
-                    <div className="space-y-2">
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                            Comprehensive Reports
-                        </h1>
-                        <p className="text-lg text-muted-foreground max-w-2xl">
-                            Real-time overview of school metrics, financial performance, and student analytics
-                        </p>
-                        {activeTerm && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-accent/50 rounded-lg px-3 py-2 w-fit">
-                                <Calendar className="h-4 w-4" />
-                                <span>Active Term: <strong>{activeTerm.name}</strong></span>
-                            </div>
-                        )}
-                    </div>
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                        Comprehensive Reports
+                    </h1>
+                    <p className="text-lg text-muted-foreground max-w-2xl">
+                        Real-time overview of school metrics, financial performance, and student analytics
+                    </p>
+                    {activeTerm && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-accent/50 rounded-lg px-3 py-2 w-fit">
+                            <Calendar className="h-4 w-4" />
+                            <span>Active Term: <strong>{activeTerm.name}</strong></span>
+                        </div>
+                    )}
                 </motion.div>
 
                 {/* Enrollment Section */}

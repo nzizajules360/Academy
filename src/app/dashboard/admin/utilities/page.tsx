@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import {
@@ -25,9 +26,11 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
   } from "@/components/ui/collapsible"
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useActiveTerm } from '@/hooks/use-active-term';
+import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
 
 export default function UtilitiesPage() {
   const firestore = useFirestore();
@@ -79,35 +82,45 @@ export default function UtilitiesPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Student Utility Tracking</CardTitle>
-        <CardDescription>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-orange-500/5 to-amber-500/5 border-b">
+        <CardTitle className="text-2xl font-bold flex items-center gap-3">
+            <ClipboardList className="h-6 w-6 text-orange-500" />
+            Student Utility Tracking
+        </CardTitle>
+        <CardDescription className="text-base">
           Monitor and manage the status of materials for each boarding student in the active term.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="border rounded-md">
+      <CardContent className="p-0">
+        <div className="border-t">
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead className="text-right">Status</TableHead>
+                        <TableHead className="p-6 font-semibold">Student</TableHead>
+                        <TableHead className="font-semibold">Class</TableHead>
+                        <TableHead className="text-right p-6 font-semibold">Status</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {relevantStudents?.map(student => (
-                    <Collapsible asChild key={student.id} tag="tbody">
+                    <Collapsible asChild key={student.id} tag="tbody" className="border-b-0">
                        <>
-                            <tr className="border-b">
-                                <TableCell className="font-medium">{student.name}</TableCell>
+                            <tr className="border-t">
+                                <TableCell className="font-medium p-6">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right p-6">
                                     <CollapsibleTrigger asChild>
                                         <Button variant="ghost" size="sm">
                                             <span className="mr-2">
-                                                {getPresentCount(student)}/{requiredMaterialsCount} Present
+                                                <Badge variant={getPresentCount(student) < requiredMaterialsCount ? "destructive" : "secondary"}>
+                                                    {getPresentCount(student)}/{requiredMaterialsCount} Present
+                                                </Badge>
                                             </span>
                                             <ChevronDown className="h-4 w-4" />
                                             <span className="sr-only">Toggle</span>
@@ -116,17 +129,18 @@ export default function UtilitiesPage() {
                                 </TableCell>
                             </tr>
                             <CollapsibleContent asChild>
-                                <tr className="bg-muted/50 hover:bg-muted/50">
+                                <tr className="bg-muted/30 hover:bg-muted/30">
                                     <td colSpan={3} className="p-0">
-                                        <div className="p-4">
-                                            <h4 className="font-semibold mb-2">Required Materials for {student.name}</h4>
-                                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+                                        <div className="p-6">
+                                            <h4 className="font-semibold mb-4 text-base">Required Materials for {student.name}</h4>
+                                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                                             {materials.filter(m => m.required).map(material => (
-                                                <div key={material.id} className="flex items-center space-x-2">
+                                                <div key={material.id} className="flex items-center space-x-3">
                                                     <Checkbox
                                                         id={`${student.id}-${material.id}`}
                                                         checked={getStatus(student, material.id)}
                                                         onCheckedChange={(checked) => handleUtilityChange(student.id, material.id, !!checked)}
+                                                        className="h-5 w-5"
                                                     />
                                                     <label
                                                         htmlFor={`${student.id}-${material.id}`}
@@ -149,5 +163,6 @@ export default function UtilitiesPage() {
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 }

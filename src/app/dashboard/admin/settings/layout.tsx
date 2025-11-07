@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from "@/components/ui/button";
 import { Settings, Calendar } from "lucide-react";
@@ -16,22 +17,34 @@ export default function SettingsLayout({
     ];
     
     return (
-        <div className="grid md:grid-cols-[16rem_1fr] gap-8">
-            <div>
-                 <h2 className="text-xl font-bold mb-4">Settings</h2>
-                 <div className="flex flex-col gap-2">
-                    {settingsNav.map(item => (
-                        <Link href={item.href} key={item.href} passHref>
-                           <Button variant={pathname === item.href ? "secondary" : "ghost"} className="w-full justify-start">
-                                <item.icon className="mr-2 h-4 w-4"/>
-                                {item.label}
-                           </Button>
-                        </Link>
-                    ))}
-                 </div>
+        <div className="space-y-8">
+            <div className="space-y-2">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    Application Settings
+                </h1>
+                <p className="text-lg text-muted-foreground max-w-2xl">
+                    Configure core aspects of the school management system.
+                </p>
             </div>
-            <div>
-                {children}
+            <div className="grid md:grid-cols-[16rem_1fr] gap-12">
+                <aside>
+                     <nav className="flex flex-col gap-2">
+                        {settingsNav.map(item => (
+                            <Link href={item.href} key={item.href} passHref>
+                               <Button 
+                                    variant={pathname === item.href ? "secondary" : "ghost"} 
+                                    className="w-full justify-start h-12 text-base"
+                                >
+                                    <item.icon className="mr-3 h-5 w-5"/>
+                                    {item.label}
+                               </Button>
+                            </Link>
+                        ))}
+                     </nav>
+                </aside>
+                <div className="md:-mt-20">
+                    {children}
+                </div>
             </div>
         </div>
     )

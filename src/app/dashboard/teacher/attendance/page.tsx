@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -5,14 +6,17 @@ import { useFirestore, useUser } from '@/firebase';
 import { collection, doc, query, where, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, ListChecks, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 type AttendanceStatus = 'present' | 'absent';
 
@@ -32,6 +36,7 @@ export default function AttendancePage() {
   useEffect(() => {
     if (user && firestore) {
       const fetchAssignment = async () => {
+        setLoadingAssignment(true);
         const q = query(collection(firestore, 'teacherAssignments'), where('teacherId', '==', user.uid));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
@@ -99,7 +104,6 @@ export default function AttendancePage() {
             const status = attendance[studentId];
 
             if (status) { // Only save if a status is selected
-                // This is an upsert operation. We use a predictable ID to overwrite existing records for the same student/day.
                 const recordId = `${activeTermId}_${todayDate}_${studentId}`;
                 const recordRef = doc(firestore, 'attendanceRecords', recordId);
                 
@@ -126,7 +130,7 @@ export default function AttendancePage() {
     }
   };
   
-  const allMarked = students && students.length > 0 && students.every(s => attendance[s.id]);
+  const allMarked = students && students.length > 0 && students.every(s => !!attendance[s.id]);
   const isLoading = loadingUser || loadingTerm || loadingAssignment || loadingStudents;
 
   if (isLoading) {
@@ -135,9 +139,9 @@ export default function AttendancePage() {
 
   if (!assignedClass) {
     return (
-      <Card>
+      <Card className="bg-destructive/10 border-destructive/20">
           <CardHeader>
-              <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>No Class Assigned</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle />No Class Assigned</CardTitle>
           </CardHeader>
           <CardContent>
               <p>You have not been assigned to a class yet. Please contact an administrator.</p>
@@ -147,42 +151,68 @@ export default function AttendancePage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-                <CardTitle>Class Attendance: {assignedClass}</CardTitle>
-                <CardDescription>Mark attendance for {format(new Date(), 'PPPP')}.</CardDescription>
+                <CardTitle className="text-2xl font-bold flex items-center gap-3">
+                    <ListChecks className="h-6 w-6 text-primary" />
+                    Class Attendance: {assignedClass}
+                </CardTitle>
+                <CardDescription className="text-base mt-1">Mark attendance for {format(new Date(), 'PPPP')}.</CardDescription>
             </div>
              <Button onClick={handleSaveAttendance} disabled={isSaving || !allMarked} className="w-full md:w-auto">
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                {allMarked && Object.keys(attendance).length > 0 ? <CheckCircle className="mr-2 h-4 w-4"/> : null}
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
                 Save Attendance
             </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        {errorStudents && <p className="text-destructive">Error loading students: {errorStudents.message}</p>}
+      <CardContent className="p-0">
+        {errorStudents && <p className="text-destructive p-6">Error loading students: {errorStudents.message}</p>}
+        <AnimatePresence>
         {students && students.length === 0 && (
-            <p className="text-muted-foreground">No students found for class {assignedClass} in the active term.</p>
+            <motion.div initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-center text-muted-foreground p-16">
+                <Users className="mx-auto h-12 w-12 mb-4 opacity-50"/>
+                <h3 className="text-lg font-semibold">No Students in Class</h3>
+                <p>No students found for class {assignedClass} in the active term.</p>
+            </motion.div>
         )}
+        </AnimatePresence>
         {students && students.length > 0 && (
             <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead className="pl-6 w-[60%]">Student Name</TableHead>
+                    <TableHead className="text-right pr-6">Status</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {students.map(student => (
-                    <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell className="text-right">
+                    {students.map((student, index) => (
+                    <motion.tr 
+                        key={student.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="border-t"
+                    >
+                        <TableCell className="font-medium pl-6">
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                {student.name}
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
                         <RadioGroup
                             value={attendance[student.id]}
                             onValueChange={(value) => handleStatusChange(student.id, value as AttendanceStatus)}
-                            className="flex justify-end gap-4"
+                            className="flex justify-end gap-6"
                         >
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="present" id={`${student.id}-present`} />
@@ -194,12 +224,18 @@ export default function AttendancePage() {
                             </div>
                         </RadioGroup>
                         </TableCell>
-                    </TableRow>
+                    </motion.tr>
                     ))}
                 </TableBody>
             </Table>
         )}
       </CardContent>
+      <CardFooter className="bg-gradient-to-r from-primary/5 to-primary/10 border-t">
+        <p className="text-xs text-muted-foreground">
+            {allMarked ? 'All students have been marked.' : 'Please mark all students to save.'}
+        </p>
+      </CardFooter>
     </Card>
+    </motion.div>
   );
 }

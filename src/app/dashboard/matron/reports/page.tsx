@@ -1,38 +1,48 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, ClipboardList, Loader2 } from 'lucide-react';
+import { Users, ClipboardList, Loader2, BookOpen } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { collection, DocumentData } from 'firebase/firestore';
+import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { materials } from '@/lib/data';
+import { useActiveTerm } from '@/hooks/use-active-term';
+import { motion } from 'framer-motion';
 
-const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
-        </CardContent>
-    </Card>
-)
+const StatCard = ({ title, value, icon: Icon, description, color }: { title: string, value: string | number, icon: React.ElementType, description?: string, color: 'blue' | 'orange' }) => {
+    const colorClasses = {
+        blue: 'text-blue-500 bg-blue-500/10',
+        orange: 'text-orange-500 bg-orange-500/10',
+    };
+    return (
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+                    <Icon className="h-5 w-5" />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="text-3xl font-bold">{value}</div>
+                {description && <p className="text-xs text-muted-foreground">{description}</p>}
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function ReportsPage() {
     const firestore = useFirestore();
-    const [studentsSnapshot, loading] = useCollection(
-        firestore ? collection(firestore, 'students') : null
-    );
+    const { activeTermId, loading: loadingTerm } = useActiveTerm();
 
-    if (loading) {
+    const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', 'female')) : null;
+    const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
+
+    if (loadingTerm || loadingStudents) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
     
-    const genderToMonitor = 'female';
     const studentsToMonitor = studentsSnapshot?.docs
-        .map(doc => doc.data())
-        .filter(s => s.gender === genderToMonitor) || [];
+        .map(doc => doc.data()) || [];
 
     const totalStudents = studentsToMonitor.length;
 
@@ -43,18 +53,44 @@ export default function ReportsPage() {
     }, 0);
 
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold">Matron Reports</h1>
-                    <p className="text-muted-foreground">An overview of metrics for students under your care.</p>
-                </div>
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-8"
+        >
+            <div className="space-y-2">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    Matron's Reports
+                </h1>
+                <p className="text-lg text-muted-foreground max-w-2xl">
+                    An overview of metrics for female students under your care for the active term.
+                </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <StatCard title="Students Monitored" value={totalStudents} icon={Users} description="Total number of female students." />
-                <StatCard title="Total Missing Items" value={utilitiesMissing} icon={ClipboardList} description="Across all female students."/>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard 
+                    title="Students Monitored" 
+                    value={totalStudents} 
+                    icon={Users} 
+                    description="Total number of female students."
+                    color="blue"
+                />
+                <StatCard 
+                    title="Total Missing Items" 
+                    value={utilitiesMissing} 
+                    icon={ClipboardList} 
+                    description="Across all female students."
+                    color="orange"
+                />
+                 <StatCard 
+                    title="Required Materials" 
+                    value={requiredMaterialsCount} 
+                    icon={BookOpen} 
+                    description="Essential items per student"
+                    color="orange"
+                />
             </div>
-        </div>
+        </motion.div>
     );
 }

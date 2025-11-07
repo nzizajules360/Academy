@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,10 +38,10 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
     });
     
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && student) {
             form.reset({
                  location: student.location || '',
-                 religion: student.religion || 'Catholic'
+                 religion: student.religion || undefined
             });
         }
     }, [isOpen, student, form]);
@@ -57,7 +58,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
         try {
             await updateDoc(studentRef, data);
-            toast({
+            toast.success({
                 title: "Student Updated",
                 description: `Information for ${student.name} has been updated.`,
             });
@@ -79,13 +80,13 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Edit Student: {student.name}</DialogTitle>
+                    <DialogTitle>Edit Student: {student?.name}</DialogTitle>
                     <DialogDescription>
                         Update the location and religion for this student.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                         <FormField
                             control={form.control}
                             name="location"
@@ -123,9 +124,9 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                 </FormItem>
                             )}
                         />
-                        <DialogFooter>
+                        <DialogFooter className="pt-4">
                             <DialogClose asChild>
-                                <Button type="button" variant="secondary" disabled={isLoading}>
+                                <Button type="button" variant="outline" disabled={isLoading}>
                                     Cancel
                                 </Button>
                             </DialogClose>
