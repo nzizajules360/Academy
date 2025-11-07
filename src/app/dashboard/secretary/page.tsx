@@ -19,13 +19,11 @@ const OutstandingFeesAlert = () => {
     const { activeTermId, loading: loadingTerm } = useActiveTerm();
     const firestore = useFirestore();
 
-    // Get active term details
     const activeTermQuery = (firestore && activeTermId && activeTermId.includes('_')) 
         ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) 
         : null;
     const [termDetails, loadingTermDetails] = useDocumentData(activeTermQuery);
-
-    // Get students for the active term
+    
     const studentsQuery = (firestore && activeTermId) 
         ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) 
         : null;
@@ -35,28 +33,24 @@ const OutstandingFeesAlert = () => {
 
     if (isLoading) {
         return (
-            <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800/40">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-400">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Checking for Fee Alerts...
-                    </CardTitle>
-                </CardHeader>
+            <Card>
+                <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <p className="text-muted-foreground">Checking for fee alerts...</p>
+                    </div>
+                </CardContent>
             </Card>
         );
     }
     
     if (!activeTermId) {
-        // Don't render anything if there's no active term.
         return null;
     }
     
     const deadline = termDetails?.paymentDeadline;
     const studentsWithOutstandingFees = studentsSnapshot?.docs.filter(doc => doc.data().feesPaid < doc.data().totalFees).length || 0;
 
-    // Show alert if:
-    // 1. There are students with outstanding fees, AND
-    // 2. Either the deadline has passed OR no deadline has been set yet.
     if (studentsWithOutstandingFees === 0 || (deadline && !isPast(parseISO(deadline)))) {
         return null;
     }
@@ -68,24 +62,27 @@ const OutstandingFeesAlert = () => {
 
 
     return (
-        <Card className="bg-destructive/10 border-destructive/20 dark:bg-destructive/20 dark:border-destructive/30">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">
-                    <AlertTriangle className="h-5 w-5" />
-                    {alertTitle}
-                </CardTitle>
-                 <CardDescription className="text-destructive/90 dark:text-red-400/80">
-                    {alertDescription}
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-destructive/90 dark:text-red-400/90">
-                    There are <span className="font-bold">{studentsWithOutstandingFees} students</span> with outstanding fee payments.
-                </p>
-                <Link href="/dashboard/secretary/reports" passHref className='mt-4 block'>
+        <Card className="bg-destructive/10 border-destructive/20 dark:bg-destructive/20 dark:border-destructive/30 overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center gap-6 p-6">
+                <div className="hidden md:block bg-destructive/20 p-4 rounded-full">
+                     <AlertTriangle className="h-8 w-8 text-destructive" />
+                </div>
+                <div className="space-y-1">
+                     <CardTitle className="flex items-center gap-2 text-destructive dark:text-red-400">
+                        <AlertTriangle className="h-6 w-6 md:hidden" />
+                        {alertTitle}
+                    </CardTitle>
+                    <CardDescription className="text-destructive/90 dark:text-red-400/80">
+                        {alertDescription}
+                    </CardDescription>
+                    <p className="text-destructive/90 dark:text-red-400/90 pt-2">
+                        There are <span className="font-bold text-lg">{studentsWithOutstandingFees} students</span> with outstanding fee payments.
+                    </p>
+                </div>
+                <Link href="/dashboard/secretary/reports" passHref className='mt-4 md:mt-0'>
                     <Button variant="destructive">View Report</Button>
                 </Link>
-            </CardContent>
+            </div>
         </Card>
     )
 }
