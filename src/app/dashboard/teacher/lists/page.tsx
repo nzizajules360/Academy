@@ -71,11 +71,11 @@ export default function SentListsPage() {
               <Accordion type="single" collapsible className="w-full">
                 {lists.map((list, index) => (
                   <motion.div
-                    key={list.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     exit={{ opacity: 0, x: -20, transition: { duration: 0.3 } }}
+                    key={list.id}
                   >
                   <AccordionItem value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
                     <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50">
