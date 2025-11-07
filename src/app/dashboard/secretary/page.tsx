@@ -20,14 +20,20 @@ const OutstandingFeesAlert = () => {
     const firestore = useFirestore();
 
     // Get active term details
-    const activeTermQuery = (firestore && activeTermId && activeTermId.includes('_')) ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) : null;
+    const activeTermQuery = (firestore && activeTermId && activeTermId.includes('_')) 
+        ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) 
+        : null;
     const [termSnapshot, loadingTermDetails] = useDocument(activeTermQuery);
 
     // Get students with outstanding fees for the active term
-    const studentsQuery = (firestore && activeTermId) ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+    const studentsQuery = (firestore && activeTermId) 
+        ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) 
+        : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
-    if (loadingTerm || loadingTermDetails || loadingStudents) {
+    const isLoading = loadingTerm || loadingTermDetails || loadingStudents;
+
+    if (isLoading) {
         return (
             <Card className="bg-yellow-50 border-yellow-200">
                 <CardHeader>
@@ -119,7 +125,7 @@ export default function SecretaryDashboard() {
                       <CardTitle>Total Students (Active Term)</CardTitle>
                   </CardHeader>
                   <CardContent>
-                      <div className="text-2xl font-bold">{loading ? '...' : totalStudents}</div>
+                      <div className="text-2xl font-bold">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : totalStudents}</div>
                       <p className="text-xs text-muted-foreground">
                           students currently enrolled.
                       </p>
