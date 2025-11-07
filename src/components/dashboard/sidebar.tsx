@@ -51,7 +51,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/patron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/patron/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/patron/reports', icon: FileText, label: 'Reports' },
-    { href: '/dashboard/patron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
+    { href: '/dashboard/patron/class-activity-planner', icon: ListTodo, label: 'Class Activity Planner' },
   ],
   matron: [
     { href: '/dashboard/matron', icon: LayoutDashboard, label: 'Dashboard' },
@@ -59,7 +59,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/matron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/matron/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/matron/reports', icon: FileText, label: 'Reports' },
-    { href: '/dashboard/matron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
+    { href: '/dashboard/matron/class-activity-planner', icon: ListTodo, label: 'Class Activity Planner' },
   ],
 };
 

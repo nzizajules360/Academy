@@ -154,6 +154,39 @@
                 "description": "The ID of the currently active term for data entry and display."
             }
         }
+    },
+    "dailyActivity": {
+        "title": "Daily Activity",
+        "description": "A plan of activities for a specific class on a given day.",
+        "type": "object",
+        "properties": {
+            "class": {
+                "type": "string",
+                "description": "The class for which the activity is planned."
+            },
+            "date": {
+                "type": "string",
+                "format": "date",
+                "description": "The date of the activity in YYYY-MM-DD format."
+            },
+            "termId": {
+                "type": "string",
+                "description": "The ID of the term during which the activity is scheduled."
+            },
+            "morningActivity": {
+                "type": "string",
+                "description": "The activity planned for the morning."
+            },
+            "eveningActivity": {
+                "type": "string",
+                "description": "The activity planned for the evening."
+            },
+            "createdBy": {
+                "type": "string",
+                "description": "The UID of the user who created the activity."
+            }
+        },
+        "required": ["class", "date", "termId", "morningActivity", "eveningActivity", "createdBy"]
     }
   },
   "auth": {
@@ -195,6 +228,12 @@
             "$ref": "#/entities/appSettings"
         },
         "description": "Stores global application settings like the active term."
+    },
+    "/dailyActivities/{activityId}": {
+        "schema": {
+            "$ref": "#/entities/dailyActivity"
+        },
+        "description": "Stores daily activity plans for classes."
     }
   }
 }
