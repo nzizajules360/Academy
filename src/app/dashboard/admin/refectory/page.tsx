@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SeatingChart, RefectoryTable, EnrolledStudent } from '@/types/refectory';
 import { generateSeatingChart } from '@/lib/seating-chart-generator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -74,14 +73,14 @@ export default function SeatingChartPage() {
     const [seatingChart, setSeatingChart] = useState<SeatingChart | null>(null);
     const [previousSeatingChart, setPreviousSeatingChart] = useState<SeatingChart | null>(null);
 
-    const handleGenerateChart = () => {
+    const handleGenerateChart = useCallback(() => {
         if (enrolledStudents && enrolledStudents.length > 0) {
             setPreviousSeatingChart(seatingChart); // Save current chart before regenerating
             setSeatingChart(generateSeatingChart(enrolledStudents, seatingChart || undefined));
         } else {
             setSeatingChart(null);
         }
-    };
+    }, [enrolledStudents, seatingChart]);
 
      const handleUndo = () => {
         if (previousSeatingChart) {
@@ -92,11 +91,10 @@ export default function SeatingChartPage() {
     
     useEffect(() => {
         // Automatically generate chart when enrolled students for the selected term are loaded
-        if (enrolledStudents && enrolledStudents.length > 0) {
+        if (enrolledStudents && enrolledStudents.length > 0 && !seatingChart) {
             handleGenerateChart();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enrolledStudents]);
+    }, [enrolledStudents, seatingChart, handleGenerateChart]);
     
 
     const handleExcelExport = (shift: 'morning' | 'evening', serie?: 1 | 2) => {
