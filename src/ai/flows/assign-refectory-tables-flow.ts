@@ -83,26 +83,25 @@ const assignRefectoryTablesFlow = ai.defineFlow(
         };
     });
 
-    // Process assignments for each meal time
+    // Process assignments for each meal time independently
     for (const meal of ['morning', 'evening'] as const) {
         const tables = initializeTables(meal);
-        const studentsToAssign = [...students].sort((a, b) => a.gender.localeCompare(b.gender)); // Process one gender fully first
+        const studentsToAssign = [...students].sort(() => Math.random() - 0.5); // Shuffle for better distribution
 
         for (const student of studentsToAssign) {
             let assigned = false;
             for (let i = 0; i < tables.length; i++) {
-                if (student.gender === 'male' && tables[i].boys < TABLE_CAPACITY.boys) {
-                    tables[i].boys++;
-                    if (meal === 'morning') {
-                        studentAssignments[student.id].morningTable = i + 1;
+                const capacity = student.gender === 'male' ? TABLE_CAPACITY.boys : TABLE_CAPACITY.girls;
+                const currentCount = student.gender === 'male' ? tables[i].boys : tables[i].girls;
+
+                if (currentCount < capacity) {
+                    if (student.gender === 'male') {
+                        tables[i].boys++;
                     } else {
-                        studentAssignments[student.id].eveningTable = i + 1;
+                        tables[i].girls++;
                     }
-                    assigned = true;
-                    break;
-                } else if (student.gender === 'female' && tables[i].girls < TABLE_CAPACITY.girls) {
-                    tables[i].girls++;
-                     if (meal === 'morning') {
+
+                    if (meal === 'morning') {
                         studentAssignments[student.id].morningTable = i + 1;
                     } else {
                         studentAssignments[student.id].eveningTable = i + 1;
@@ -111,8 +110,6 @@ const assignRefectoryTablesFlow = ai.defineFlow(
                     break;
                 }
             }
-            // If student could not be assigned (all tables full for their gender)
-            // they will have a table number of 0 for that meal.
         }
     }
     

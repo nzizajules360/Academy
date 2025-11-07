@@ -1,4 +1,5 @@
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+'use client';
+import { Button } from "@/components/ui/button";
 import { Settings, Calendar } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

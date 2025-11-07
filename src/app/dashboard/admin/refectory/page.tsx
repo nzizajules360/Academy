@@ -44,9 +44,6 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
     const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
     const series = SeriesConfig[meal];
     
-    const firstSeriesTables = Array.from({ length: series.first }, (_, i) => i + 1);
-    const secondSeriesTables = Array.from({ length: series.second }, (_, i) => series.first + i + 1);
-
     const getTableData = (tableNumber: number) => {
       const studentsAtTable = students.filter(s => s[tableField] === tableNumber);
       const boys = studentsAtTable.filter(s => s.gender === 'male');
@@ -58,9 +55,10 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
         girlCount: girls.length,
       };
     }
+    
+    const firstSeriesTables = Array.from({ length: series.first }, (_, i) => getTableData(i + 1));
+    const secondSeriesTables = Array.from({ length: series.second }, (_, i) => getTableData(series.first + i + 1));
 
-    const firstSeriesData = firstSeriesTables.map(getTableData);
-    const secondSeriesData = secondSeriesTables.map(getTableData);
 
     if (view === 'grid') {
         return (
@@ -68,8 +66,8 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                 <div>
                     <h3 className="text-lg font-semibold mb-4">First Series ({series.first} Tables)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {firstSeriesData.map(table => (
-                            <Card key={table.number}>
+                        {firstSeriesTables.map(table => (
+                            <Card key={`grid-1-${table.number}`}>
                                 <CardHeader className="p-4">
                                     <CardTitle>Table {table.number}</CardTitle>
                                     <CardDescription className="flex items-center gap-4">
@@ -87,8 +85,8 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                  <div>
                     <h3 className="text-lg font-semibold mb-4">Second Series ({series.second} Tables)</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {secondSeriesData.map(table => (
-                            <Card key={table.number}>
+                        {secondSeriesTables.map(table => (
+                            <Card key={`grid-2-${table.number}`}>
                                 <CardHeader className="p-4">
                                     <CardTitle>Table {table.number}</CardTitle>
                                     <CardDescription className="flex items-center gap-4">
@@ -121,8 +119,8 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {firstSeriesData.map(table => (
-                            <TableRow key={table.number}>
+                        {firstSeriesTables.map(table => (
+                            <TableRow key={`list-1-${table.number}`}>
                                 <TableCell className="font-bold">{table.number}</TableCell>
                                 <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
                                 <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
@@ -144,8 +142,8 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {secondSeriesData.map(table => (
-                            <TableRow key={table.number}>
+                         {secondSeriesTables.map(table => (
+                            <TableRow key={`list-2-${table.number}`}>
                                 <TableCell className="font-bold">{table.number}</TableCell>
                                 <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
                                 <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
@@ -299,17 +297,19 @@ export default function RefectoryPage() {
                 </div>
                 <Separator />
                 <div className="mt-4">
-                    <TabsContent value="morning" forceMount hidden={viewType !== 'student'}>
-                        <StudentView students={students as Student[]} meal="morning" />
+                    <TabsContent value="morning">
+                        {viewType === 'student' ? (
+                            <StudentView students={students as Student[]} meal="morning" />
+                        ) : (
+                            <TableSeriesView students={students as Student[]} meal="morning" view={tableDisplay} />
+                        )}
                     </TabsContent>
-                    <TabsContent value="evening" forceMount hidden={viewType !== 'student'}>
-                        <StudentView students={students as Student[]} meal="evening" />
-                    </TabsContent>
-                     <TabsContent value="morning" forceMount hidden={viewType !== 'table'}>
-                        <TableSeriesView students={students as Student[]} meal="morning" view={tableDisplay} />
-                    </TabsContent>
-                     <TabsContent value="evening" forceMount hidden={viewType !== 'table'}>
-                        <TableSeriesView students={students as Student[]} meal="evening" view={tableDisplay} />
+                    <TabsContent value="evening">
+                        {viewType === 'student' ? (
+                            <StudentView students={students as Student[]} meal="evening" />
+                        ) : (
+                            <TableSeriesView students={students as Student[]} meal="evening" view={tableDisplay} />
+                        )}
                     </TabsContent>
                 </div>
             </div>
