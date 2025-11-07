@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -48,7 +49,7 @@ export default function SentListsPage() {
   const isLoading = loadingUser || loadingLists;
 
   const ListAccordion = ({ list }: { list: any }) => (
-     <AccordionItem value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
+     <AccordionItem value={list.id} key={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
         <AccordionTrigger
             className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
             onClick={() => !list.isRead && handleMarkAsRead(list.id)}
@@ -65,7 +66,7 @@ export default function SentListsPage() {
                 <div className="flex flex-col">
                     <span className={`font-semibold ${!list.isRead && 'text-primary'}`}>{list.title}</span>
                     <span className="text-xs text-muted-foreground">
-                        Sent by {list.sentBy} • {formatDistanceToNow(list.sentAt.toDate(), { addSuffix: true })}
+                        Sent by {list.sentBy} • {list.sentAt ? formatDistanceToNow(list.sentAt.toDate(), { addSuffix: true }) : ''}
                     </span>
                 </div>
             </div>
