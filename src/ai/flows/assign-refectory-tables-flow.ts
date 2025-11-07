@@ -8,8 +8,7 @@
  * - AssignRefectoryTablesOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import type { EnrolledStudent, SeatingChart, RefectoryTable } from '@/types/refectory';
 
 const TABLE_CAPACITY = {
@@ -74,8 +73,7 @@ function initializeTables(totalTables: number): RefectoryTable[] {
 
 function generateSeatingChart(students: EnrolledStudent[], previous?: SeatingChart): SeatingChart {
     const totalMorningTables = REFEFCTORY_CONFIG.serie1 + REFEFCTORY_CONFIG.serie2.morning;
-    const totalEveningTables = REFEFCTORY_CONFIG.serie1 + REFEFCTORY_CONFIG.serie2.evening;
-
+    
     const masterTables = initializeTables(totalMorningTables);
     const assignedIds = new Set<string>();
 
@@ -140,17 +138,7 @@ function generateSeatingChart(students: EnrolledStudent[], previous?: SeatingCha
 
 // Exported wrapper function to be called from the frontend
 export async function assignRefectoryTables(input: AssignRefectoryTablesInput): Promise<AssignRefectoryTablesOutput> {
-  return assignRefectoryTablesFlow(input);
-}
-
-
-const assignRefectoryTablesFlow = ai.defineFlow(
-  {
-    name: 'assignRefectoryTablesFlow',
-    inputSchema: AssignRefectoryTablesInputSchema,
-    outputSchema: AssignRefectoryTablesOutputSchema,
-  },
-  async ({ students, previous }) => {
+    const { students, previous } = input;
     
     const seatingChart = generateSeatingChart(students, previous);
     
@@ -192,5 +180,4 @@ const assignRefectoryTablesFlow = ai.defineFlow(
     });
     
     return Object.values(assignments);
-  }
-);
+}
