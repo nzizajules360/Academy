@@ -47,7 +47,7 @@ export function AcademicSettings() {
         if (!firestore) return;
         try {
             await addDoc(collection(firestore, 'academicYears'), { year: data.year });
-            toast({ title: 'Success', description: 'Academic year created.' });
+            toast.success({ title: 'Success', description: 'Academic year created.' });
             resetYear();
         } catch (error) {
             console.error(error);
@@ -61,7 +61,7 @@ export function AcademicSettings() {
         if (!firestore) return;
         try {
             await setDoc(doc(firestore, 'settings', 'app'), { activeTermId: termId }, { merge: true });
-            toast({ title: 'Success', description: 'Active term has been updated.' });
+            toast.success({ title: 'Success', description: 'Active term has been updated.' });
         } catch (error) {
              console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not set active term.' });
@@ -143,7 +143,7 @@ function AcademicYearItem({ yearDoc, activeTermId, onSetActiveTerm, isUpdating: 
         try {
             const termsCollection = collection(firestore, 'academicYears', yearDoc.id, 'terms');
             await addDoc(termsCollection, { name: newTermName, status: 'active', academicYearId: yearDoc.id });
-            toast({ title: 'Success', description: `Term '${newTermName}' created.` });
+            toast.success({ title: 'Success', description: `Term '${newTermName}' created.` });
             if (availableTerms.length > 1) {
                 setNewTermName(availableTerms[1] as any);
             }
@@ -159,7 +159,7 @@ function AcademicYearItem({ yearDoc, activeTermId, onSetActiveTerm, isUpdating: 
         setIsLocallyUpdating(true);
         try {
             await updateDoc(doc(firestore, 'academicYears', yearDoc.id, 'terms', termId), { status: 'ended' });
-            toast({ title: 'Success', description: 'Term has been marked as ended.' });
+            toast.success({ title: 'Success', description: 'Term has been marked as ended.' });
         } catch (error) {
              console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not end term.' });
@@ -174,7 +174,7 @@ function AcademicYearItem({ yearDoc, activeTermId, onSetActiveTerm, isUpdating: 
             await updateDoc(doc(firestore, 'academicYears', yearDoc.id, 'terms', termId), { 
                 paymentDeadline: format(deadline, 'yyyy-MM-dd')
             });
-            toast({ title: 'Success', description: 'Payment deadline has been set.' });
+            toast.success({ title: 'Success', description: 'Payment deadline has been set.' });
         } catch (error) {
             console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not set payment deadline.' });

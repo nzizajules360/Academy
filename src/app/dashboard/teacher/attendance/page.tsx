@@ -117,7 +117,7 @@ export default function AttendancePage() {
         }
         
         await batch.commit();
-        toast({ title: 'Success', description: 'Attendance has been saved for today.' });
+        toast.success({ title: 'Success', description: 'Attendance has been saved for today.' });
     } catch (error) {
         console.error("Error saving attendance: ", error);
         toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save attendance records.' });

@@ -230,7 +230,7 @@ export default function RefectoryPage() {
 
       await batch.commit();
 
-      toast({
+      toast.success({
         title: 'Assignments Complete',
         description: 'All students have been assigned to refectory tables.',
       });

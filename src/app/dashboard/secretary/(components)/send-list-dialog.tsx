@@ -107,7 +107,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
         students: studentList,
         isRead: false,
       });
-      toast({ title: 'Success!', description: 'The list has been sent to the teacher.' });
+      toast.success({ title: 'Success!', description: 'The list has been sent to the teacher.' });
       onOpenChange(false);
     } catch (error) {
       console.error(error);
@@ -184,30 +184,30 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
               )}
             />
             <div className={cn(listType !== 'class_roster' && 'hidden')}>
-                <FormField
-                    control={form.control}
-                    name="class"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Class</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select a class for the roster" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {availableClasses.map(c => (
-                            <SelectItem key={c} value={c}>
-                                {c}
-                            </SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+              <FormField
+                control={form.control}
+                name="class"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Class</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a class for the roster" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availableClasses.map(c => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <DialogFooter>
               <DialogClose asChild>

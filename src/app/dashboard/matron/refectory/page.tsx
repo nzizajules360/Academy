@@ -215,7 +215,7 @@ const AssignTableDialog = ({ isOpen, onOpenChange, student, meal, allStudents, o
             await updateDoc(studentRef, {
                 [tableField]: Number(selectedTable)
             });
-            toast({ title: 'Success!', description: `${student.name} has been assigned to table ${selectedTable}.`});
+            toast.success({ title: 'Success!', description: `${student.name} has been assigned to table ${selectedTable}.`});
             onAssignSuccess();
             onOpenChange(false);
         } catch (error) {
@@ -331,7 +331,7 @@ export default function RefectoryPage() {
 
       await batch.commit();
 
-      toast({
+      toast.success({
         title: 'Assignments Complete',
         description: 'All students have been assigned to refectory tables.',
       });

@@ -142,7 +142,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+function toast(props: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -170,6 +170,10 @@ function toast({ ...props }: Toast) {
     update,
   }
 }
+
+toast.success = (props: Toast) => {
+    toast({ ...props, variant: "success" });
+};
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)

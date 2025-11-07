@@ -52,7 +52,8 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
                             <p className="text-xs text-muted-foreground">{table.boys.length} / {boyCapacity}</p>
                         </div>
                         <Progress value={boysPercentage} className="h-2" />
-                        {boysNeeded > 0 && <p className="text-xs text-muted-foreground mt-1">{boysNeeded} needed</p>}
+                        {boysNeeded > 0 && <p className="text-xs text-blue-600 mt-1">{boysNeeded} needed</p>}
+                         {boysNeeded === 0 && <p className="text-xs text-green-600 mt-1">Full</p>}
                     </div>
                      <div>
                         <div className="flex justify-between items-center mb-1">
@@ -60,7 +61,8 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
                             <p className="text-xs text-muted-foreground">{table.girls.length} / {girlCapacity}</p>
                         </div>
                         <Progress value={girlsPercentage} className="h-2 [&>div]:bg-pink-400" />
-                        {girlsNeeded > 0 && <p className="text-xs text-muted-foreground mt-1">{girlsNeeded} needed</p>}
+                        {girlsNeeded > 0 && <p className="text-xs text-pink-600 mt-1">{girlsNeeded} needed</p>}
+                        {girlsNeeded === 0 && <p className="text-xs text-green-600 mt-1">Full</p>}
                     </div>
                 </div>
             </CardContent>
@@ -121,7 +123,6 @@ export default function SeatingChartPage() {
             const batch = writeBatch(firestore);
             const studentAssignments = new Map<string, { morning?: number; evening?: number }>();
 
-            // Helper to process tables for a given shift
             const processTables = (tables: RefectoryTable[], shift: 'morning' | 'evening') => {
                 tables.forEach(table => {
                     [...table.boys, ...table.girls].forEach(student => {
@@ -130,28 +131,29 @@ export default function SeatingChartPage() {
                                 studentAssignments.set(student.id, {});
                             }
                             const assignment = studentAssignments.get(student.id)!;
-                            if (shift === 'morning') assignment.morning = table.tableNumber;
-                            if (shift === 'evening') assignment.evening = table.tableNumber;
+                            if (shift === 'morning') {
+                                assignment.morning = table.tableNumber;
+                            } else {
+                                assignment.evening = table.tableNumber;
+                            }
                         }
                     });
                 });
             };
 
-            // Process both shifts to populate the map
             processTables(seatingChart.morning, 'morning');
             processTables(seatingChart.evening, 'evening');
             
-            // Create batch updates from the collected assignments
             studentAssignments.forEach((assignments, studentId) => {
                 const studentRef = doc(firestore, 'students', studentId);
-                batch.update(studentRef, {
-                    refectoryTableMorning: assignments.morning ?? null,
-                    refectoryTableEvening: assignments.evening ?? null,
-                });
+                const updateData: { refectoryTableMorning?: number | null, refectoryTableEvening?: number | null } = {};
+                if (assignments.morning) updateData.refectoryTableMorning = assignments.morning;
+                if (assignments.evening) updateData.refectoryTableEvening = assignments.evening;
+                batch.update(studentRef, updateData);
             });
 
             await batch.commit();
-            toast({ title: 'Success', description: 'Seating assignments saved to database.' });
+            toast.success({ title: 'Success', description: 'Seating assignments saved to database.' });
         } catch (error) {
             console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to save assignments.' });

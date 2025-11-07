@@ -68,7 +68,7 @@ export function FeesForm() {
                     throw serverError;
                 });
 
-            toast({
+            toast.success({
                 title: "Settings Saved",
                 description: "The school fee structure has been updated.",
             });

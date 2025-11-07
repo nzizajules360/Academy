@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestore } from '@/firebase';
-import { addDoc, collection, doc, query, where } from 'firebase/firestore';
+import { addDoc, collection, doc, query, where, getDocs } from 'firebase/firestore';
 import { useCollectionData, useDocumentData } from 'react-firebase-hooks/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -55,7 +55,7 @@ export function StudentForm() {
         defaultValues: {
             name: '',
             class: '',
-            gender: 'male',
+            gender: undefined,
             parentName: '',
             parentPhone: '',
             location: '',
@@ -154,10 +154,24 @@ export function StudentForm() {
             termId: activeTermId,
             refectoryTableMorning: refectoryTable || null,
             refectoryTableEvening: refectoryTable || null,
+            utilities: []
         };
 
         try {
             const studentsCollection = collection(firestore, 'students');
+            // Check for duplicates
+            const q = query(studentsCollection, where("name", "==", data.name), where("termId", "==", activeTermId));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                toast({
+                    variant: 'destructive',
+                    title: "Duplicate Student",
+                    description: `${data.name} is already registered for the active term.`,
+                });
+                setIsLoading(false);
+                return;
+            }
+
             await addDoc(studentsCollection, studentData)
                 .catch((serverError) => {
                     const permissionError = new FirestorePermissionError({
@@ -169,7 +183,7 @@ export function StudentForm() {
                     throw serverError;
                 });
 
-            toast({
+            toast.success({
                 title: "Student Registered",
                 description: `${data.name} has been successfully added to the system for the active term.`,
             });
@@ -242,7 +256,7 @@ export function StudentForm() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Class</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select a class" />
@@ -270,7 +284,7 @@ export function StudentForm() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Gender</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select a gender" />
@@ -304,7 +318,7 @@ export function StudentForm() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Religion</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select a religion" />
