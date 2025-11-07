@@ -1,7 +1,7 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, Users, ClipboardList, AlertCircle, Loader2, FileDown } from 'lucide-react';
+import { DollarSign, Users, ClipboardList, AlertCircle, Loader2, FileDown, TrendingUp, Calendar, BookOpen, CreditCard } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
@@ -12,19 +12,79 @@ import Papa from 'papaparse';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+// Enhanced Stat Card with animations
+const StatCard = ({ 
+  title, 
+  value, 
+  icon: Icon, 
+  description, 
+  trend,
+  color = "blue"
+}: { 
+  title: string, 
+  value: string | number, 
+  icon: React.ElementType, 
+  description?: string,
+  trend?: number,
+  color?: "blue" | "green" | "red" | "purple" | "orange"
+}) => {
+  const colorClasses = {
+    blue: "from-blue-500 to-blue-600",
+    green: "from-green-500 to-green-600",
+    red: "from-red-500 to-red-600",
+    purple: "from-purple-500 to-purple-600",
+    orange: "from-orange-500 to-orange-600"
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -5, scale: 1.02 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+        {/* Gradient accent */}
+        <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${colorClasses[color]}`} />
+        
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pl-4">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+          <div className={`p-2 rounded-lg bg-${color}-500/10 group-hover:scale-110 transition-transform`}>
+            <Icon className={`h-4 w-4 text-${color}-500`} />
+          </div>
         </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        <CardContent className="pl-4">
+          <div className="text-2xl font-bold mb-1">{value}</div>
+          <div className="flex items-center justify-between">
+            {description && (
+              <p className="text-xs text-muted-foreground">{description}</p>
+            )}
+            {trend !== undefined && (
+              <Badge 
+                variant={trend >= 0 ? "default" : "destructive"} 
+                className="text-xs"
+              >
+                {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
+              </Badge>
+            )}
+          </div>
         </CardContent>
-    </Card>
-)
+      </Card>
+    </motion.div>
+  );
+}
+
+// Enhanced Progress Bar with animation
+const AnimatedProgress = ({ value, className = "" }: { value: number; className?: string }) => {
+  return (
+    <motion.div initial={{ width: 0 }} animate={{ width: `${value}%` }} transition={{ duration: 1, ease: "easeOut" }}>
+      <Progress value={value} className={className} />
+    </motion.div>
+  );
+};
 
 const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
     const studentsWithOutstandingFees = students.filter(s => s.feesPaid < s.totalFees);
@@ -61,71 +121,167 @@ const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
         document.body.removeChild(link);
     }
 
-    return (
-         <Card>
-            <CardHeader>
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div>
-                        <CardTitle>Outstanding Fees Report</CardTitle>
-                        <CardDescription>List of students with incomplete fee payments for the active term.</CardDescription>
-                    </div>
-                    <Button onClick={handleExport} disabled={studentsWithOutstandingFees.length === 0}>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        Export to CSV
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {studentsWithOutstandingFees.length === 0 ? (
-                    <p className="text-muted-foreground">No students with outstanding fees.</p>
-                ) : (
-                    <Accordion type="single" collapsible className="w-full" defaultValue={sortedClasses[0]}>
-                        {sortedClasses.map(className => (
-                            <AccordionItem value={className} key={className}>
-                                <AccordionTrigger>{className} ({studentsByClass[className].length} students)</AccordionTrigger>
-                                <AccordionContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Name</TableHead>
-                                                <TableHead>Parent Contact</TableHead>
-                                                <TableHead className="text-right">Outstanding Balance</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {studentsByClass[className].map(student => (
-                                                <TableRow key={student.id}>
-                                                    <TableCell className="font-medium">{student.name}</TableCell>
-                                                    <TableCell>{student.parentName} ({student.parentPhone})</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Badge variant="destructive">
-                                                            RWF {(student.totalFees - student.feesPaid).toLocaleString()}
-                                                        </Badge>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
-                )}
-            </CardContent>
-        </Card>
-    )
-}
+    const totalOutstanding = studentsWithOutstandingFees.reduce((sum, student) => 
+        sum + (student.totalFees - student.feesPaid), 0
+    );
 
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+        >
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-red-500/5 to-orange-500/5 border-b">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                                <AlertCircle className="h-6 w-6 text-red-500" />
+                                Outstanding Fees Report
+                            </CardTitle>
+                            <CardDescription className="text-base">
+                                Students with incomplete fee payments for the active term
+                                {totalOutstanding > 0 && (
+                                    <Badge variant="destructive" className="ml-2">
+                                        RWF {totalOutstanding.toLocaleString()} Total Outstanding
+                                    </Badge>
+                                )}
+                            </CardDescription>
+                        </div>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button 
+                                        onClick={handleExport} 
+                                        disabled={studentsWithOutstandingFees.length === 0}
+                                        variant="outline"
+                                        className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    >
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        Export CSV
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Download detailed report as CSV</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <AnimatePresence mode="wait">
+                        {studentsWithOutstandingFees.length === 0 ? (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="text-center py-12"
+                            >
+                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <TrendingUp className="h-8 w-8 text-green-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-green-600 mb-2">All Fees Collected!</h3>
+                                <p className="text-muted-foreground">No outstanding fees for the current term.</p>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                            >
+                                <Accordion type="single" collapsible className="w-full" defaultValue={sortedClasses[0]}>
+                                    {sortedClasses.map((className, index) => (
+                                        <motion.div
+                                            key={className}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.1 }}
+                                        >
+                                            <AccordionItem value={className} className="border rounded-lg mb-3 hover:shadow-md transition-shadow">
+                                                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                                    <div className="flex items-center justify-between w-full pr-4">
+                                                        <span className="font-semibold text-lg">{className}</span>
+                                                        <div className="flex items-center gap-4">
+                                                            <Badge variant="secondary" className="text-sm">
+                                                                {studentsByClass[className].length} students
+                                                            </Badge>
+                                                            <Badge variant="destructive" className="text-sm">
+                                                                RWF {studentsByClass[className].reduce((sum, s) => sum + (s.totalFees - s.feesPaid), 0).toLocaleString()}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="px-0">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow>
+                                                                <TableHead className="font-semibold">Student Name</TableHead>
+                                                                <TableHead className="font-semibold">Parent Contact</TableHead>
+                                                                <TableHead className="text-right font-semibold">Outstanding Balance</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {studentsByClass[className].map((student, idx) => (
+                                                                <motion.tr
+                                                                    key={student.id}
+                                                                    initial={{ opacity: 0 }}
+                                                                    animate={{ opacity: 1 }}
+                                                                    transition={{ delay: idx * 0.05 }}
+                                                                    className="hover:bg-muted/50 transition-colors"
+                                                                >
+                                                                    <TableCell className="font-medium">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className={`h-2 w-2 rounded-full ${student.gender === 'male' ? 'bg-blue-500' : 'bg-pink-500'}`} />
+                                                                            {student.name}
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <div>
+                                                                            <div className="font-medium">{student.parentName}</div>
+                                                                            <div className="text-sm text-muted-foreground">{student.parentPhone}</div>
+                                                                        </div>
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <Badge variant="destructive" className="text-sm px-3 py-1">
+                                                                            RWF {(student.totalFees - student.feesPaid).toLocaleString()}
+                                                                        </Badge>
+                                                                    </TableCell>
+                                                                </motion.tr>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </motion.div>
+                                    ))}
+                                </Accordion>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </CardContent>
+            </Card>
+        </motion.div>
+    );
+}
 
 export default function ReportsPage() {
     const firestore = useFirestore();
-    const { activeTermId, loading: loadingTerm } = useActiveTerm();
+    const { activeTermId, loading: loadingTerm, activeTerm } = useActiveTerm();
 
     const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
     if (loadingTerm || loadingStudents) {
-        return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return (
+            <div className="flex justify-center items-center h-64">
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                    <Loader2 className="h-8 w-8 text-primary" />
+                </motion.div>
+            </div>
+        );
     }
 
     const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data()})) || [];
@@ -143,65 +299,222 @@ export default function ReportsPage() {
 
     const boys = students.filter(s => s.gender === 'male').length;
     const girls = students.filter(s => s.gender === 'female').length;
+    const boysPercentage = totalStudents > 0 ? (boys / totalStudents) * 100 : 0;
+    const girlsPercentage = totalStudents > 0 ? (girls / totalStudents) * 100 : 0;
 
     const studentsWithOutstandingFees = students.filter(s => s.feesPaid < s.totalFees).length;
 
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold">Comprehensive Reports</h1>
-                    <p className="text-muted-foreground">An overview of key school metrics for the active term.</p>
-                </div>
+        <TooltipProvider>
+            <div className="space-y-8">
+                {/* Header Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                >
+                    <div className="space-y-2">
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                            Comprehensive Reports
+                        </h1>
+                        <p className="text-lg text-muted-foreground max-w-2xl">
+                            Real-time overview of school metrics, financial performance, and student analytics
+                        </p>
+                        {activeTerm && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-accent/50 rounded-lg px-3 py-2 w-fit">
+                                <Calendar className="h-4 w-4" />
+                                <span>Active Term: <strong>{activeTerm.name}</strong></span>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* Enrollment Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                >
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+                        <CardHeader className="bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-b">
+                            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                                <Users className="h-6 w-6 text-blue-500" />
+                                Enrollment Summary
+                            </CardTitle>
+                            <CardDescription className="text-base">
+                                Current student population and demographic breakdown
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <StatCard 
+                                    title="Total Students" 
+                                    value={totalStudents} 
+                                    icon={Users} 
+                                    description="Currently enrolled"
+                                    color="blue"
+                                />
+                                <StatCard 
+                                    title="Male Students" 
+                                    value={boys} 
+                                    icon={Users} 
+                                    description={`${boysPercentage.toFixed(1)}% of total`}
+                                    color="blue"
+                                />
+                                <StatCard 
+                                    title="Female Students" 
+                                    value={girls} 
+                                    icon={Users} 
+                                    description={`${girlsPercentage.toFixed(1)}% of total`}
+                                    color="purple"
+                                />
+                            </div>
+                            
+                            {/* Gender Distribution Visualization */}
+                            {totalStudents > 0 && (
+                                <div className="mt-6 p-4 bg-accent/20 rounded-lg">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium">Gender Distribution</span>
+                                        <span className="text-sm text-muted-foreground">100%</span>
+                                    </div>
+                                    <div className="flex h-4 bg-muted rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${boysPercentage}%` }}
+                                            transition={{ duration: 1, delay: 0.5 }}
+                                            className="bg-blue-500"
+                                        />
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${girlsPercentage}%` }}
+                                            transition={{ duration: 1, delay: 0.5 }}
+                                            className="bg-pink-500"
+                                        />
+                                    </div>
+                                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                                        <span>Boys: {boysPercentage.toFixed(1)}%</span>
+                                        <span>Girls: {girlsPercentage.toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </motion.div>
+
+                {/* Financial Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+                        <CardHeader className="bg-gradient-to-r from-green-500/5 to-emerald-500/5 border-b">
+                            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                                <CreditCard className="h-6 w-6 text-green-500" />
+                                Financial Report
+                            </CardTitle>
+                            <CardDescription className="text-base">
+                                Fee collection performance and outstanding balances
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <StatCard 
+                                    title="Total Fees Expected" 
+                                    value={`RWF ${totalFeesExpected.toLocaleString()}`} 
+                                    icon={DollarSign} 
+                                    color="green"
+                                />
+                                <StatCard 
+                                    title="Total Fees Collected" 
+                                    value={`RWF ${totalFeesPaid.toLocaleString()}`} 
+                                    icon={TrendingUp} 
+                                    color="green"
+                                />
+                                <StatCard 
+                                    title="Outstanding Balance" 
+                                    value={`RWF ${outstandingFees.toLocaleString()}`} 
+                                    icon={AlertCircle} 
+                                    color="red"
+                                />
+                            </div>
+                            
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium">Fee Collection Progress</p>
+                                    <span className="text-sm font-semibold text-green-600">
+                                        {feesPaidPercentage.toFixed(1)}% Complete
+                                    </span>
+                                </div>
+                                <AnimatedProgress value={feesPaidPercentage} className="h-3 [&>div]:bg-green-500" />
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>RWF 0</span>
+                                    <span>RWF {totalFeesExpected.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-green-600">
+                                        {students.length - studentsWithOutstandingFees} students paid
+                                    </span>
+                                    <span className="text-red-600">
+                                        {studentsWithOutstandingFees} students pending
+                                    </span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+
+                {/* Utilities Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                >
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+                        <CardHeader className="bg-gradient-to-r from-orange-500/5 to-amber-500/5 border-b">
+                            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                                <BookOpen className="h-6 w-6 text-orange-500" />
+                                Utilities Report
+                            </CardTitle>
+                            <CardDescription className="text-base">
+                                Learning materials and resource tracking
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <StatCard 
+                                    title="Total Missing Items" 
+                                    value={utilitiesMissing} 
+                                    icon={ClipboardList} 
+                                    description="Across all students for required materials"
+                                    color="orange"
+                                />
+                                <StatCard 
+                                    title="Required Materials" 
+                                    value={requiredMaterialsCount} 
+                                    icon={BookOpen} 
+                                    description="Essential items per student"
+                                    color="orange"
+                                />
+                            </div>
+                            
+                            {utilitiesMissing > 0 && (
+                                <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                                    <div className="flex items-center gap-2 text-orange-800">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span className="text-sm font-medium">
+                                            Action Required: {utilitiesMissing} items missing across student utilities
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </motion.div>
+
+                {/* Outstanding Fees Report */}
+                <OutstandingFeesReport students={students} />
             </div>
-
-            {/* Enrollment Section */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Enrollment Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-3 gap-4">
-                   <StatCard title="Total Students" value={totalStudents} icon={Users} />
-                   <StatCard title="Male Students" value={boys} icon={Users} />
-                   <StatCard title="Female Students" value={girls} icon={Users} />
-                </CardContent>
-            </Card>
-
-            {/* Financial Section */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Financial Report</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="grid md:grid-cols-3 gap-4">
-                        <StatCard title="Total Fees Expected" value={`RWF ${totalFeesExpected.toLocaleString()}`} icon={DollarSign} />
-                        <StatCard title="Total Fees Collected" value={`RWF ${totalFeesPaid.toLocaleString()}`} icon={DollarSign} />
-                        <StatCard title="Outstanding Balance" value={`RWF ${outstandingFees.toLocaleString()}`} icon={AlertCircle} />
-                    </div>
-                     <div>
-                        <p className="text-sm font-medium mb-2">Fee Collection Progress</p>
-                        <Progress value={feesPaidPercentage} className="h-3" />
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                            <span>{feesPaidPercentage.toFixed(1)}% collected</span>
-                            <span>{studentsWithOutstandingFees} students with outstanding fees</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-             {/* Utilities Section */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Utilities Report</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <StatCard title="Total Missing Items" value={utilitiesMissing} icon={ClipboardList} description="Across all students for required materials."/>
-                </CardContent>
-            </Card>
-
-            {/* Outstanding Fees Report */}
-            <OutstandingFeesReport students={students} />
-
-        </div>
+        </TooltipProvider>
     );
 }
