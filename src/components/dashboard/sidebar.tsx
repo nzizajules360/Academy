@@ -10,6 +10,7 @@ import {
   UserPlus,
   Settings,
   Table,
+  FileText,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/admin/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/admin/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/admin/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/admin/reports', icon: FileText, label: 'Reports' },
     { href: '/dashboard/admin/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
   secretary: [
@@ -38,6 +40,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/secretary/students/add', icon: UserPlus, label: 'Enroll Student' },
     { href: '/dashboard/secretary/students', icon: Users, label: 'Manage Students' },
     { href: '/dashboard/secretary/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/secretary/reports', icon: FileText, label: 'Reports' },
     { href: '/dashboard/secretary/settings', icon: Settings, label: 'Settings' },
   ],
   patron: [
@@ -45,6 +48,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/patron/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/patron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/patron/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/patron/reports', icon: FileText, label: 'Reports' },
     { href: '/dashboard/patron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
   matron: [
@@ -52,6 +56,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/matron/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/matron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/matron/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/matron/reports', icon: FileText, label: 'Reports' },
     { href: '/dashboard/matron/daily-planner', icon: ListTodo, label: 'Daily Planner' },
   ],
 };
