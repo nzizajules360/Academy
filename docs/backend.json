@@ -26,7 +26,7 @@
         "role": {
           "type": "string",
           "description": "The user's role.",
-          "enum": ["admin", "secretary", "patron", "matron"]
+          "enum": ["admin", "secretary", "patron", "matron", "teacher"]
         }
       },
       "required": ["uid", "email", "role"]
@@ -197,6 +197,59 @@
             }
         },
         "required": ["class", "date", "termId", "morningActivity", "eveningActivity", "createdBy"]
+    },
+    "teacherAssignment": {
+        "title": "Teacher Assignment",
+        "description": "Assigns a teacher to a specific class.",
+        "type": "object",
+        "properties": {
+            "teacherId": {
+                "type": "string",
+                "description": "The UID of the user with the 'teacher' role."
+            },
+            "class": {
+                "type": "string",
+                "description": "The class assigned to the teacher."
+            }
+        },
+        "required": ["teacherId", "class"]
+    },
+    "attendanceRecord": {
+        "title": "Attendance Record",
+        "description": "Stores a daily attendance record for a student.",
+        "type": "object",
+        "properties": {
+            "studentId": {
+                "type": "string"
+            },
+            "studentName": {
+                "type": "string"
+            },
+            "date": {
+                "type": "string",
+                "format": "date",
+                "description": "The date of the record in YYYY-MM-DD format."
+            },
+            "class": {
+                "type": "string"
+            },
+            "termId": {
+                "type": "string"
+            },
+            "status": {
+                "type": "string",
+                "enum": ["present", "absent"]
+            },
+            "recordedBy": {
+                "type": "string",
+                "description": "The UID of the teacher who recorded the attendance."
+            },
+             "recordedAt": {
+                "type": "string",
+                "format": "date-time"
+            }
+        },
+        "required": ["studentId", "date", "class", "termId", "status", "recordedBy"]
     }
   },
   "auth": {
@@ -244,6 +297,18 @@
             "$ref": "#/entities/dailyActivity"
         },
         "description": "Stores daily activity plans for classes."
+    },
+    "/teacherAssignments/{assignmentId}": {
+        "schema": {
+            "$ref": "#/entities/teacherAssignment"
+        },
+        "description": "Stores assignments of teachers to classes."
+    },
+    "/attendanceRecords/{recordId}": {
+        "schema": {
+            "$ref": "#/entities/attendanceRecord"
+        },
+        "description": "Stores daily attendance records for students."
     }
   }
 }

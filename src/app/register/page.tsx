@@ -23,7 +23,7 @@ const formSchema = z.object({
   displayName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-  role: z.enum(['admin', 'secretary', 'patron', 'matron'], { required_error: 'Please select a role.'}),
+  role: z.enum(['admin', 'secretary', 'patron', 'matron', 'teacher'], { required_error: 'Please select a role.'}),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -106,8 +106,7 @@ export default function RegisterPage() {
         const result = await signInWithPopup(auth, provider);
         
         // For Google Sign-in, we don't know the role, so maybe default to 'admin' or have a post-registration step.
-        // For now, let's ask on the form or default. The form has a role, but this bypasses the form.
-        // Let's assume a default role of 'admin' for now for google sign up.
+        // For now, let's assume a default role of 'admin' for now for google sign up.
         await createUserInFirestore(result.user, 'admin');
 
         toast({ title: 'Sign-In Successful', description: "Welcome!" });
@@ -193,6 +192,7 @@ export default function RegisterPage() {
                                   <SelectItem value="secretary">Secretary</SelectItem>
                                   <SelectItem value="patron">Patron</SelectItem>
                                   <SelectItem value="matron">Matron</SelectItem>
+                                  <SelectItem value="teacher">Teacher</SelectItem>
                               </SelectContent>
                           </Select>
                           <FormMessage />

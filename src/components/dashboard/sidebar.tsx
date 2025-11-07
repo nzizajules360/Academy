@@ -12,6 +12,7 @@ import {
   Table,
   FileText,
   Calendar,
+  ListChecks,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -61,6 +62,10 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/matron/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/matron/reports', icon: FileText, label: 'Reports' },
   ],
+  teacher: [
+    { href: '/dashboard/teacher', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Attendance' },
+  ]
 };
 
 const BsmLogo = () => (
