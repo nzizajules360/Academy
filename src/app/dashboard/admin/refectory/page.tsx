@@ -1,438 +1,268 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, DocumentData, updateDoc, query, where } from 'firebase/firestore';
-import { useCollectionData } from 'react-firebase-hooks/firestore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import React, { useState, useEffect } from 'react';
+import { SeatingChart, RefectoryTable, EnrolledStudent } from '@/types/refectory';
+import { generateSeatingChart } from '@/lib/seating-chart-generator';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { assignRefectoryTables } from '@/lib/assign-refectory-tables';
-import { Loader2, AlertTriangle, User, Users, FileDown, PlusCircle, UserCheck } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Users, Download, Undo } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useUser } from '@/firebase';
-import type { UserRole } from '@/types';
-import { Separator } from '@/components/ui/separator';
-import Papa from 'papaparse';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { useActiveTerm } from '@/hooks/use-active-term';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import * as XLSX from 'xlsx';
+import Link from 'next/link';
+import { useTermManager } from '@/hooks/use-term-manager';
+import { Loader2 } from 'lucide-react';
 
-interface Student extends DocumentData {
-  id: string;
-  name: string;
-  gender: 'male' | 'female';
-  class: string;
-  refectoryTableMorning?: number;
-  refectoryTableEvening?: number;
-}
+const StudentAvatar = ({ student }: { student: EnrolledStudent }) => (
+    <div className="flex items-center gap-2">
+        <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${student.gender === 'male' ? 'bg-blue-500' : 'bg-pink-500'}`}></div>
+        <p className="text-xs text-muted-foreground truncate">{student.fullName}</p>
+    </div>
+);
 
-const TableCapacity = {
-  boys: 3,
-  girls: 7,
-};
 
-const SeriesConfig = {
-    morning: { first: 28, second: 11 },
-    evening: { first: 28, second: 8 },
-};
+const TableCard = ({ table }: { table: RefectoryTable }) => {
+    const boysPercentage = (table.boys.length / 3) * 100;
+    const girlsPercentage = (table.girls.length / 7) * 100;
 
-const TableTotals = {
-    morning: SeriesConfig.morning.first + SeriesConfig.morning.second,
-    evening: SeriesConfig.evening.first + SeriesConfig.evening.second,
-}
-
-const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morning' | 'evening' }) => {
-    const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
-    const series = SeriesConfig[meal];
-
-    const getTableData = (tableNumber: number) => {
-      const studentsAtTable = students.filter(s => s[tableField] === tableNumber);
-      const boys = studentsAtTable.filter(s => s.gender === 'male');
-      const girls = studentsAtTable.filter(s => s.gender === 'female');
-      return {
-        number: tableNumber,
-        students: studentsAtTable,
-        boys,
-        girls,
-        boyCount: boys.length,
-        girlCount: girls.length,
-      };
-    }
-    
-    const firstSeriesTables = Array.from({ length: series.first }, (_, i) => getTableData(i + 1));
-    const secondSeriesTables = Array.from({ length: series.second }, (_, i) => getTableData(series.first + i + 1));
-
-    const renderTableCard = (table: ReturnType<typeof getTableData>, serie: string) => {
-        const boyProgress = (table.boyCount / TableCapacity.boys) * 100;
-        const girlProgress = (table.girlCount / TableCapacity.girls) * 100;
-
-        return (
-            <Card key={`grid-${serie}-${table.number}`}>
-                <CardHeader className="p-4 flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Ameza {table.number}</CardTitle>
-                    <Badge variant="outline">Serie {serie}</Badge>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-sm space-y-4">
+    return (
+        <Card className="flex flex-col hover:shadow-lg transition-shadow">
+            <CardHeader className="p-4">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Ameza {table.tableNumber}</CardTitle>
+                    <Badge variant="outline">Serie {table.serie}</Badge>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 flex-grow">
+                <div className="space-y-3">
                     <div>
-                        <div className="flex justify-between mb-1">
-                            <span>Abahungu</span>
-                            <span>{table.boyCount}/{TableCapacity.boys}</span>
+                        <div className="flex justify-between items-center mb-1">
+                            <p className="text-sm font-medium">Abahungu</p>
+                            <p className="text-xs text-muted-foreground">{table.boys.length} / 3</p>
                         </div>
-                        <Progress value={boyProgress} />
-                        <div className="mt-2 space-y-1">
-                          {table.boys.map(s => (
-                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
-                                <UserCheck className="h-3 w-3 text-green-500" />
-                                <span>{s.name} ({s.class})</span>
-                              </div>
-                          ))}
-                        </div>
+                        <Progress value={boysPercentage} className="h-2" />
                     </div>
                      <div>
-                        <div className="flex justify-between mb-1">
-                            <span>Abakobwa</span>
-                            <span>{table.girlCount}/{TableCapacity.girls}</span>
+                        <div className="flex justify-between items-center mb-1">
+                            <p className="text-sm font-medium">Abakobwa</p>
+                            <p className="text-xs text-muted-foreground">{table.girls.length} / 7</p>
                         </div>
-                        <Progress value={girlProgress} />
-                         <div className="mt-2 space-y-1">
-                          {table.girls.map(s => (
-                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
-                                <UserCheck className="h-3 w-3 text-pink-500" />
-                                <span>{s.name} ({s.class})</span>
-                              </div>
-                          ))}
-                        </div>
+                        <Progress value={girlsPercentage} className="h-2 [&>div]:bg-pink-400" />
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </CardContent>
+             {(table.boys.length > 0 || table.girls.length > 0) && (
+                <CardFooter className="p-4 pt-0">
+                    <ScrollArea className="h-32 w-full pr-3">
+                        <div className="space-y-2">
+                           {table.boys.map(s => <StudentAvatar key={s.id} student={s} />)}
+                           {table.girls.map(s => <StudentAvatar key={s.id} student={s} />)}
+                        </div>
+                    </ScrollArea>
+                </CardFooter>
+            )}
+        </Card>
+    );
+};
+
+
+export default function SeatingChartPage() {
+    const { enrolledStudents, loading } = useTermManager();
+    const [seatingChart, setSeatingChart] = useState<SeatingChart | null>(null);
+    const [previousSeatingChart, setPreviousSeatingChart] = useState<SeatingChart | null>(null);
+
+    const handleGenerateChart = () => {
+        if (enrolledStudents && enrolledStudents.length > 0) {
+            setPreviousSeatingChart(seatingChart); // Save current chart before regenerating
+            setSeatingChart(generateSeatingChart(enrolledStudents, seatingChart || undefined));
+        } else {
+            setSeatingChart(null);
+        }
+    };
+
+     const handleUndo = () => {
+        if (previousSeatingChart) {
+            setSeatingChart(previousSeatingChart);
+            setPreviousSeatingChart(null); // Can only undo once
+        }
+    };
+    
+    useEffect(() => {
+        // Automatically generate chart when enrolled students for the selected term are loaded
+        if (enrolledStudents && enrolledStudents.length > 0) {
+            handleGenerateChart();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enrolledStudents]);
+    
+
+    const handleExcelExport = (shift: 'morning' | 'evening', serie?: 1 | 2) => {
+        if (!seatingChart) return;
+        
+        const shiftTables = shift === 'morning' ? seatingChart.morning : seatingChart.evening;
+        const tablesToExport = serie ? shiftTables.filter(t => t.serie === serie) : shiftTables;
+        
+        const wb = XLSX.utils.book_new();
+
+        const processShiftData = (tables: RefectoryTable[]) => {
+            const data: (string | number)[][] = [];
+            const merges: XLSX.Range[] = [];
+            let rowIndex = 0;
+
+            tables.forEach(table => {
+                data.push([`Nimero y'Ameza: ${table.tableNumber}`]);
+                merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: 2 } });
+                rowIndex++;
+
+                data.push(['Igitsina', 'Izina ry\'Umunyeshuri', 'Ishuri']);
+                rowIndex++;
+
+                const allStudentsInTable = [
+                    ...table.girls.map(s => ({ ...s, gender: 'Umukobwa' })),
+                    ...table.boys.map(s => ({ ...s, gender: 'Umuhungu' }))
+                ];
+
+                allStudentsInTable.forEach(student => {
+                    data.push([student.gender, student.fullName, (student as EnrolledStudent).class]);
+                    rowIndex++;
+                });
+
+                data.push([]);
+                rowIndex++;
+            });
+
+            return { data, merges };
+        };
+
+        const { data, merges } = processShiftData(tablesToExport);
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        ws['!merges'] = merges;
+        
+        const sheetName = `${shift === 'morning' ? 'Mu Gitondo' : 'Nimugoroba'}${serie ? ` - Serie ${serie}` : ''}`;
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        
+        const fileName = `imyicarire_${shift}${serie ? `_serie_${serie}` : ''}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    };
+
+    const renderShift = (tables: RefectoryTable[], shiftName: 'morning' | 'evening') => {
+         if (!tables || tables.length === 0) {
+            return (
+                <div className="text-center text-muted-foreground py-12">
+                    <Users className="mx-auto h-12 w-12" />
+                    <p className="mt-4">Nta myicarire iraboneka.</p>
+                </div>
+            );
+        }
+        const serie1Tables = tables.filter(t => t.serie === 1);
+        const serie2Tables = tables.filter(t => t.serie === 2);
+
+        return (
+            <div className="space-y-8">
+                <div>
+                    <div className="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 className="text-xl font-semibold">Ameza ya Serie 1</h3>
+                         <Button onClick={() => handleExcelExport(shiftName, 1)} variant="outline" size="sm" disabled={!seatingChart}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Kohereza Serie 1
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {serie1Tables.map(table => (
+                            <TableCard key={table.tableNumber} table={table} />
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <div className="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 className="text-xl font-semibold">Ameza ya Serie 2</h3>
+                         <Button onClick={() => handleExcelExport(shiftName, 2)} variant="outline" size="sm" disabled={!seatingChart}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Kohereza Serie 2
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                         {serie2Tables.map(table => (
+                            <TableCard key={table.tableNumber} table={table} />
+                        ))}
+                    </div>
+                </div>
+            </div>
         );
+    };
+
+    const renderContent = () => {
+        if (loading) {
+            return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+        }
+        if (!enrolledStudents || enrolledStudents.length === 0) {
+            return (
+                <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
+                    <Users className="mx-auto h-12 w-12" />
+                    <p className="mt-4 font-semibold">Nta banyeshuri biyandikishije mu gihembwe cyatoranijwe.</p>
+                    <p className="mt-1 text-sm">Hitamo ikindi gihembwe cyangwa wandike abanyeshuri kugira ngo ukore imyicarire.</p>
+                    <Link href="/dashboard/secretary/students/add">
+                        <Button className="mt-4">Andika Abanyeshuri</Button>
+                    </Link>
+                </div>
+            )
+        }
+        if (!seatingChart) {
+             return (
+                <div className="text-center text-muted-foreground py-12">Kanda kuri "Kora Imyicarire" kugira ngo utange imyanya.</div>
+            );
+        }
+
+        return (
+             <Tabs defaultValue="morning">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="morning">🌅 Mu Gitondo ({seatingChart.morning.length} ameza)</TabsTrigger>
+                    <TabsTrigger value="evening">🌙 Nimugoroba ({seatingChart.evening.length} ameza)</TabsTrigger>
+                </TabsList>
+                <TabsContent value="morning" className="mt-6">
+                    {renderShift(seatingChart.morning, 'morning')}
+                </TabsContent>
+                <TabsContent value="evening" className="mt-6">
+                    {renderShift(seatingChart.evening, 'evening')}
+                </TabsContent>
+            </Tabs>
+        )
     }
 
     return (
         <div className="space-y-8">
-            <div>
-                <h3 className="text-xl font-semibold mb-4">Ameza ya Serie 1 ({series.first} Tables)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {firstSeriesTables.map(table => renderTableCard(table, '1'))}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold">Imyicarire mu Byumba byo Kuriramo</h1>
+                    <p className="text-muted-foreground">Gutanga imyanya ku banyeshuri mu buryo bwikora mu gihembwe gikora.</p>
+                </div>
+                <div className="flex gap-2">
+                     <Button onClick={handleUndo} variant="outline" disabled={!previousSeatingChart}>
+                        <Undo className="mr-2 h-4 w-4" />
+                        Subiza Inyuma
+                    </Button>
+                    <Button onClick={handleGenerateChart} disabled={loading || !enrolledStudents || enrolledStudents.length === 0}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Kora Imyicarire
+                    </Button>
                 </div>
             </div>
-             <div>
-                <h3 className="text-xl font-semibold mb-4">Ameza ya Serie 2 ({series.second} Tables)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {secondSeriesTables.map(table => renderTableCard(table, '2'))}
-                </div>
-            </div>
+
+            <Card>
+                 <CardHeader>
+                    <CardTitle>Imyanya yatanzwe</CardTitle>
+                    <CardDescription>
+                        Ameza atangwa kugeza yuzuye, abahungu batatu n'abakobwa barindwi kuri buri meza.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {renderContent()}
+                </CardContent>
+            </Card>
         </div>
     );
 }
-
-const StudentView = ({ students, meal, onAssign }: { students: Student[], meal: 'morning' | 'evening', onAssign: (student: Student, meal: 'morning' | 'evening') => void}) => {
-    const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
-    const sortedStudents = [...students].sort((a,b) => a.name.localeCompare(b.name));
-    return (
-         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Student Name</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Gender</TableHead>
-              <TableHead>Assigned Table</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedStudents.map(student => (
-              <TableRow key={student.id}>
-                <TableCell>{student.name}</TableCell>
-                <TableCell>{student.class}</TableCell>
-                <TableCell>{student.gender}</TableCell>
-                <TableCell>
-                    {student[tableField] ? student[tableField] : <Badge variant="outline">Unassigned</Badge>}
-                </TableCell>
-                 <TableCell className="text-right">
-                    {!student[tableField] && (
-                        <Button size="sm" variant="outline" onClick={() => onAssign(student, meal)}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Assign
-                        </Button>
-                    )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-    )
-}
-
-interface AssignDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  student: Student | null;
-  meal: 'morning' | 'evening';
-  allStudents: Student[];
-  onAssignSuccess: () => void;
-}
-
-const AssignTableDialog = ({ isOpen, onOpenChange, student, meal, allStudents, onAssignSuccess }: AssignDialogProps) => {
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [selectedTable, setSelectedTable] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    
-    useEffect(() => {
-        if (!isOpen) {
-            setSelectedTable('');
-        }
-    }, [isOpen]);
-
-    if (!student) return null;
-
-    const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
-    const totalTables = TableTotals[meal];
-    
-    const availableTables = Array.from({ length: totalTables }, (_, i) => i + 1).filter(tableNum => {
-        const studentsAtTable = allStudents.filter(s => s[tableField] === tableNum);
-        const capacity = student.gender === 'male' ? TableCapacity.boys : TableCapacity.girls;
-        const currentCount = studentsAtTable.filter(s => s.gender === student.gender).length;
-        return currentCount < capacity;
-    });
-
-    const handleSave = async () => {
-        if (!firestore || !student || !student.id || !selectedTable) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Student data is incomplete.' });
-            return;
-        }
-        setIsSaving(true);
-        try {
-            const studentRef = doc(firestore, 'students', student.id);
-            await updateDoc(studentRef, {
-                [tableField]: Number(selectedTable)
-            });
-            toast({ title: 'Success!', description: `${student.name} has been assigned to table ${selectedTable}.`});
-            onAssignSuccess();
-            onOpenChange(false);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not assign table.' });
-        } finally {
-            setIsSaving(false);
-        }
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Assign Table for {student.name}</DialogTitle>
-                    <DialogDescription>
-                        Assigning for {meal === 'morning' ? 'Morning & Lunch' : 'Evening'} meal.
-                        Only tables with available spots for a {student.gender} are shown.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                     <Select onValueChange={setSelectedTable} value={selectedTable}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a table" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableTables.map(tableNum => (
-                                <SelectItem key={tableNum} value={String(tableNum)}>
-                                    Table {tableNum}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
-                    <Button onClick={handleSave} disabled={isSaving || !selectedTable}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Save Assignment
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-export default function RefectoryPage() {
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [isAssigning, setIsAssigning] = useState(false);
-  const { user } = useUser();
-  const role = user?.role as UserRole | undefined;
-  const [viewType, setViewType] = useState<'table' | 'student'>('table');
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [selectedMeal, setSelectedMeal] = useState<'morning' | 'evening'>('morning');
-  const { activeTermId, loading: loadingTerm } = useActiveTerm();
-
-  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
-  const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' });
-
-  const handleAssignTables = async () => {
-    setIsAssigning(true);
-    if (!firestore || !students) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Firestore or student data not available.',
-      });
-      setIsAssigning(false);
-      return;
-    }
-
-    try {
-      const allStudents = students.map(s => ({
-          id: s.id,
-          name: s.name,
-          gender: s.gender,
-          class: s.class,
-      }));
-
-      const assignments = await assignRefectoryTables({ students: allStudents });
-
-      const batch = writeBatch(firestore);
-      assignments.forEach(assignment => {
-        const studentRef = doc(firestore, 'students', assignment.studentId);
-        batch.update(studentRef, {
-          refectoryTableMorning: assignment.morningTable,
-          refectoryTableEvening: assignment.eveningTable,
-        });
-      });
-
-      await batch.commit();
-
-      toast({
-        title: 'Assignments Complete',
-        description: 'All students have been assigned to refectory tables.',
-      });
-    } catch (e) {
-      console.error(e);
-      toast({
-        variant: 'destructive',
-        title: 'Assignment Failed',
-        description: 'An error occurred while assigning tables. Please try again.',
-      });
-    } finally {
-      setIsAssigning(false);
-    }
-  };
-  
-  const handleExport = () => {
-    if (!students) return;
-
-    const dataToExport = students.sort((a,b) => a.name.localeCompare(b.name)).map(s => ({
-        "Student Name": s.name,
-        "Class": s.class,
-        "Gender": s.gender,
-        "Morning & Lunch Table": s.refectoryTableMorning || 'Unassigned',
-        "Evening Table": s.refectoryTableEvening || 'Unassigned',
-    }));
-
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `refectory_assignments_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  const handleOpenAssignDialog = (student: Student, meal: 'morning' | 'evening') => {
-    setSelectedStudent(student);
-    setSelectedMeal(meal);
-    setIsAssignDialogOpen(true);
-  }
-
-  const unassignedStudents = students?.filter(s => !s.refectoryTableMorning || !s.refectoryTableEvening).length || 0;
-
-  return (
-    <>
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle>Refectory Seating</CardTitle>
-            <CardDescription>Manage and view student seating arrangements for meals.</CardDescription>
-             {unassignedStudents > 0 && !loading && (
-                <div className="mt-4 flex items-center gap-2 text-sm text-destructive font-medium">
-                    <AlertTriangle className="h-4 w-4" />
-                    There are {unassignedStudents} students without a complete table assignment.
-                </div>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {(role === 'admin' || role === 'secretary') && (
-              <Button onClick={handleAssignTables} disabled={isAssigning || loading}>
-                {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Assign All Students
-              </Button>
-            )}
-             <Button onClick={handleExport} variant="outline" disabled={!students || students.length === 0}>
-                <FileDown className="mr-2 h-4 w-4" />
-                Export CSV
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {(loading || loadingTerm) && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
-        {error && <p className="text-destructive">Error loading students: {error.message}</p>}
-        {students && (
-          <Tabs defaultValue="morning">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="morning">Morning & Lunch ({TableTotals.morning} tables)</TabsTrigger>
-              <TabsTrigger value="evening">Evening ({TableTotals.evening} tables)</TabsTrigger>
-            </TabsList>
-            <div className="mt-4">
-                <div className="flex justify-between items-center mb-4">
-                     <Tabs value={viewType} onValueChange={(v) => setViewType(v as 'table' | 'student')} className="mt-4">
-                        <TabsList>
-                            <TabsTrigger value="table"><Users className="mr-2"/>View by Table</TabsTrigger>
-                            <TabsTrigger value="student"><User className="mr-2"/>View by Student</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </div>
-                <Separator />
-                <div className="mt-4">
-                    <TabsContent value="morning">
-                        {viewType === 'student' ? (
-                            <StudentView students={students as Student[]} meal="morning" onAssign={handleOpenAssignDialog} />
-                        ) : (
-                            <TableSeriesView students={students as Student[]} meal="morning" />
-                        )}
-                    </TabsContent>
-                    <TabsContent value="evening">
-                        {viewType === 'student' ? (
-                            <StudentView students={students as Student[]} meal="evening" onAssign={handleOpenAssignDialog} />
-                        ) : (
-                            <TableSeriesView students={students as Student[]} meal="evening" />
-                        )}
-                    </TabsContent>
-                </div>
-            </div>
-          </Tabs>
-        )}
-      </CardContent>
-    </Card>
-
-    <AssignTableDialog
-      isOpen={isAssignDialogOpen}
-      onOpenChange={setIsAssignDialogOpen}
-      student={selectedStudent}
-      meal={selectedMeal}
-      allStudents={students as Student[] || []}
-      onAssignSuccess={() => { /* Data will refetch automatically through react-firebase-hooks */ }}
-    />
-    </>
-  );
-}
-
-    

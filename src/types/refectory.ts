@@ -1,6 +1,6 @@
 export type EnrolledStudent = {
     id: string;
-    name: string;
+    fullName: string;
     class: string;
     gender: 'male' | 'female';
 };
