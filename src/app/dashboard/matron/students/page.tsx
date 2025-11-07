@@ -1,0 +1,167 @@
+'use client';
+import { useState } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { Button } from '@/components/ui/button';
+import { Loader2, Pencil } from 'lucide-react';
+import { useFirestore } from '@/firebase';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, DocumentData, query, where } from 'firebase/firestore';
+import { useActiveTerm } from '@/hooks/use-active-term';
+import { EditStudentForm } from './(components)/edit-student-form';
+
+
+interface StudentData extends DocumentData {
+  id: string;
+  name: string;
+  class: string;
+  location: string;
+  religion: string;
+}
+
+interface StudentListByClassProps {
+  students: StudentData[];
+  onEdit: (student: StudentData) => void;
+}
+
+const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
+  const studentsByClass = students.reduce((acc, student) => {
+    const { class: studentClass } = student;
+    if (!acc[studentClass]) {
+      acc[studentClass] = [];
+    }
+    acc[studentClass].push(student);
+    return acc;
+  }, {} as Record<string, StudentData[]>);
+
+  const sortedClasses = Object.keys(studentsByClass).sort();
+
+  return (
+    <Accordion type="single" collapsible className="w-full" defaultValue={sortedClasses[0]}>
+      {sortedClasses.map((className) => (
+        <AccordionItem value={className} key={className}>
+          <AccordionTrigger>{className} ({studentsByClass[className].length})</AccordionTrigger>
+          <AccordionContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Religion</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {studentsByClass[className].map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell>{student.location}</TableCell>
+                    <TableCell>{student.religion}</TableCell>
+                    <TableCell className="text-right">
+                       <Button variant="ghost" size="icon" onClick={() => onEdit(student)}>
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit Student</span>
+                       </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
+  );
+};
+
+
+export default function StudentsPage() {
+  const firestore = useFirestore();
+  const { activeTermId, loading: loadingTerm } = useActiveTerm();
+
+  const studentsQuery = firestore && activeTermId 
+    ? query(
+        collection(firestore, 'students'), 
+        where('termId', '==', activeTermId),
+        where('gender', '==', 'female')
+      ) 
+    : null;
+  const [studentsSnapshot, loading, error] = useCollection(studentsQuery);
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
+
+  const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentData)) || [];
+
+  const handleEdit = (student: StudentData) => {
+    setSelectedStudent(student);
+    setIsFormOpen(true);
+  };
+  
+  const handleUpdate = () => {
+    setSelectedStudent(null);
+    setIsFormOpen(false);
+  }
+
+  return (
+    <>
+    <Card>
+      <CardHeader>
+        <CardTitle>Students (Girls)</CardTitle>
+        <CardDescription>View and manage student information for the active term.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {(loading || loadingTerm) && (
+            <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )}
+        {error && <p className="text-destructive p-4">Error loading students: {error.message}</p>}
+        {!(loading || loadingTerm) && !error && (
+          students.length > 0 ? (
+            <StudentListByClass students={students} onEdit={handleEdit} />
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              {activeTermId ? "No female students found for the active term." : "No active term set. Please set an active term in the settings."}
+            </div>
+          )
+        )}
+      </CardContent>
+      <CardFooter>
+        <div className="text-xs text-muted-foreground">
+            { !loading && `Showing ${students.length} students.`}
+        </div>
+      </CardFooter>
+    </Card>
+
+    {selectedStudent && (
+        <EditStudentForm
+            isOpen={isFormOpen}
+            onOpenChange={setIsFormOpen}
+            student={selectedStudent}
+            onUpdate={handleUpdate}
+        />
+    )}
+    </>
+  );
+}
