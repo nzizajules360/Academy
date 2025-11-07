@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, doc, updateDoc, writeBatch, getDocs, query, where, setDoc } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,8 +36,8 @@ export function AcademicSettings() {
     const [yearsSnapshot, loadingYears] = useCollection(yearsCollection);
 
     const appSettingsRef = firestore ? doc(firestore, 'settings', 'app') : null;
-    const [appSettingsSnapshot, loadingAppSettings] = useCollection(yearsCollection);
-    const activeTermId = appSettingsSnapshot?.docs.find(d => d.id === 'app')?.data()?.activeTermId;
+    const [appSettings, loadingAppSettings] = useDocumentData(appSettingsRef);
+    const activeTermId = appSettings?.activeTermId;
     
     const { register: registerYear, handleSubmit: handleYearSubmit, formState: { errors: yearErrors }, reset: resetYear } = useForm({
         resolver: zodResolver(yearSchema),
