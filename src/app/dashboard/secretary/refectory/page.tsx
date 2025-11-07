@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { assignRefectoryTables } from '@/lib/assign-refectory-tables';
+import { generateSeatingChart } from '@/lib/seating-chart-generator';
 import { Loader2, AlertTriangle, User, Users, FileDown, PlusCircle, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useActiveTerm } from '@/hooks/use-active-term';
+import { EnrolledStudent } from '@/types/refectory';
 
 interface Student extends DocumentData {
   id: string;
@@ -186,23 +187,65 @@ export default function RefectoryPage() {
     }
 
     try {
-      const allStudents = students.map(s => ({
+      const enrolledStudents: EnrolledStudent[] = students.map(s => ({
           id: s.id,
-          name: s.name,
+          fullName: s.name,
           gender: s.gender,
           class: s.class,
       }));
 
-      const assignments = await assignRefectoryTables({ students: allStudents });
+      const { morning, evening } = generateSeatingChart(enrolledStudents);
 
       const batch = writeBatch(firestore);
-      assignments.forEach(assignment => {
-        const studentRef = doc(firestore, 'students', assignment.studentId);
+      
+      const updateStudent = (student: EnrolledStudent, morningTable: number | undefined, eveningTable: number | undefined) => {
+        if (!student.id) return;
+        const studentRef = doc(firestore, 'students', student.id);
         batch.update(studentRef, {
-          refectoryTableMorning: assignment.morningTable,
-          refectoryTableEvening: assignment.eveningTable,
+          refectoryTableMorning: morningTable,
+          refectoryTableEvening: eveningTable,
         });
+      };
+      
+      morning.forEach(table => {
+          table.boys.forEach(student => updateStudent(student, table.tableNumber, undefined));
+          table.girls.forEach(student => updateStudent(student, table.tableNumber, undefined));
       });
+      
+      evening.forEach(table => {
+          table.boys.forEach(student => updateStudent(student, undefined, table.tableNumber));
+          table.girls.forEach(student => updateStudent(student, undefined, table.tableNumber));
+      });
+      
+      // A bit inefficient but we need to combine assignments
+      const studentAssignments = new Map<string, {morning?: number, evening?: number}>();
+      
+      const processTables = (tables: any[], shift: 'morning' | 'evening') => {
+          tables.forEach(table => {
+              [...table.boys, ...table.girls].forEach((student: EnrolledStudent) => {
+                  if (student.id) {
+                      if (!studentAssignments.has(student.id)) {
+                          studentAssignments.set(student.id, {});
+                      }
+                      const assignment = studentAssignments.get(student.id)!;
+                      if(shift === 'morning') assignment.morning = table.tableNumber;
+                      if(shift === 'evening') assignment.evening = table.tableNumber;
+                  }
+              });
+          });
+      };
+      
+      processTables(morning, 'morning');
+      processTables(evening, 'evening');
+      
+      studentAssignments.forEach((assignments, studentId) => {
+           const studentRef = doc(firestore, 'students', studentId);
+            batch.update(studentRef, {
+              refectoryTableMorning: assignments.morning,
+              refectoryTableEvening: assignments.evening,
+            });
+      })
+
 
       await batch.commit();
 
@@ -248,7 +291,7 @@ export default function RefectoryPage() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <CardTitle>Refectory Seating</CardTitle>
             <CardDescription>Manage and view student seating arrangements for meals.</CardDescription>
@@ -259,14 +302,14 @@ export default function RefectoryPage() {
                 </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {(role === 'admin' || role === 'secretary') && (
-              <Button onClick={handleAssignTables} disabled={isAssigning || loading}>
+              <Button onClick={handleAssignTables} disabled={isAssigning || loading} className="w-full sm:w-auto">
                 {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Assign All Students
               </Button>
             )}
-             <Button onClick={handleExport} variant="outline" disabled={!students || students.length === 0}>
+             <Button onClick={handleExport} variant="outline" disabled={!students || students.length === 0} className="w-full sm:w-auto">
                 <FileDown className="mr-2 h-4 w-4" />
                 Export CSV
             </Button>

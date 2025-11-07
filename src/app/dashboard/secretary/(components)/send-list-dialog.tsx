@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -61,7 +62,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
     }
     setIsSending(true);
 
-    let studentList = [];
+    let studentList: any[] = [];
     let listTitle = '';
 
     if (data.listType === 'outstanding_fees') {
@@ -115,7 +116,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
 
   useEffect(() => {
     if (!isOpen) {
-      form.reset({ listType: 'outstanding_fees', class: undefined });
+      form.reset({ listType: 'outstanding_fees', class: undefined, teacherId: undefined });
     }
   }, [isOpen, form]);
 
@@ -167,7 +168,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="outstanding_fees">Outstanding Fees</SelectItem>
+                      <SelectItem value="outstanding_fees">Students with Outstanding Fees</SelectItem>
                       <SelectItem value="class_roster">Class Roster</SelectItem>
                     </SelectContent>
                   </Select>
@@ -185,7 +186,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a class" />
+                          <SelectValue placeholder="Select a class for the roster" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
