@@ -67,8 +67,11 @@ export function StudentForm() {
     
     useEffect(() => {
         if (feeSettings) {
-             const isOLevel = ['S1', 'S2', 'S3'].includes(form.getValues('class'));
-             form.setValue('totalFees', isOLevel ? feeSettings.oLevelFee : feeSettings.aLevelFee, { shouldValidate: true });
+             const currentClass = form.getValues('class');
+             if (currentClass) {
+                const isOLevel = ['S1', 'S2', 'S3'].includes(currentClass);
+                form.setValue('totalFees', isOLevel ? feeSettings.oLevelFee : feeSettings.aLevelFee, { shouldValidate: true });
+             }
         }
     }, [feeSettings, form])
 
