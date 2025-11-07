@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -86,8 +87,8 @@ export default function SentListsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.students.map((student: any) => (
-                  <TableRow key={student.id}>
+                {list.students.map((student: any, index: number) => (
+                  <TableRow key={`${list.id}-${student.name}-${index}`}>
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     {list.listType === 'outstanding_fees' && (
