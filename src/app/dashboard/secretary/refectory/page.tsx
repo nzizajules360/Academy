@@ -77,7 +77,7 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 text-sm">
-                                    {table.students.length > 0 ? table.students.map(s => s.name).join(', ') : <span className="text-muted-foreground">Empty</span>}
+                                    {table.students.length > 0 ? table.students.map(s => `${s.name} (${s.class})`).join(', ') : <span className="text-muted-foreground">Empty</span>}
                                 </CardContent>
                             </Card>
                         ))}
@@ -96,7 +96,7 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0 text-sm">
-                                     {table.students.length > 0 ? table.students.map(s => s.name).join(', ') : <span className="text-muted-foreground">Empty</span>}
+                                     {table.students.length > 0 ? table.students.map(s => `${s.name} (${s.class})`).join(', ') : <span className="text-muted-foreground">Empty</span>}
                                 </CardContent>
                             </Card>
                         ))}
@@ -125,7 +125,7 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                                 <TableCell className="font-bold">{table.number}</TableCell>
                                 <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
                                 <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
-                                <TableCell>{table.students.map(s => s.name).join(', ')}</TableCell>
+                                <TableCell>{table.students.map(s => `${s.name} (${s.class})`).join(', ')}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -148,7 +148,7 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
                                 <TableCell className="font-bold">{table.number}</TableCell>
                                 <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
                                 <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
-                                <TableCell>{table.students.map(s => s.name).join(', ')}</TableCell>
+                                <TableCell>{table.students.map(s => `${s.name} (${s.class})`).join(', ')}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -217,6 +217,7 @@ export default function RefectoryPage() {
           id: s.id,
           name: s.name,
           gender: s.gender,
+          class: s.class,
       }));
 
       const assignments = await assignRefectoryTables({ students: allStudents });

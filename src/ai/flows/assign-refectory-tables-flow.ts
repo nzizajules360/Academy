@@ -16,6 +16,7 @@ const StudentSchema = z.object({
     id: z.string().describe('The unique identifier for the student.'),
     name: z.string().describe('The name of the student.'),
     gender: z.enum(['male', 'female']).describe('The gender of the student.'),
+    class: z.string().describe('The class of the student.'),
 });
 
 // Define the overall input schema for the flow
