@@ -106,7 +106,7 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
         students: studentList,
         isRead: false,
       });
-      toast.success({ title: 'Success!', description: 'The list has been sent to the teacher.' });
+      toast({ title: 'Success!', description: 'The list has been sent to the teacher.' });
       onOpenChange(false);
     } catch (error) {
       console.error(error);
@@ -174,8 +174,12 @@ export function SendListDialog({ isOpen, onOpenChange, students }: SendListDialo
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="outstanding_fees">Students with Outstanding Fees</SelectItem>
-                      <SelectItem value="class_roster">Class Roster</SelectItem>
+                      <SelectItem key="outstanding_fees" value="outstanding_fees">
+                        Students with Outstanding Fees
+                      </SelectItem>
+                      <SelectItem key="class_roster" value="class_roster">
+                        Class Roster
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
