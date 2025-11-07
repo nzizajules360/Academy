@@ -74,13 +74,13 @@ const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morni
         return (
             <Card key={`grid-${serie}-${table.number}`}>
                 <CardHeader className="p-4 flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Ameza {table.number}</CardTitle>
+                    <CardTitle className="text-lg">Table {table.number}</CardTitle>
                     <Badge variant="outline">Serie {serie}</Badge>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 text-sm space-y-4">
                     <div>
                         <div className="flex justify-between mb-1">
-                            <span>Abahungu</span>
+                            <span>Boys</span>
                             <span>{table.boyCount}/{TableCapacity.boys}</span>
                         </div>
                         <Progress value={boyProgress} />
@@ -95,7 +95,7 @@ const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morni
                     </div>
                      <div>
                         <div className="flex justify-between mb-1">
-                            <span>Abakobwa</span>
+                            <span>Girls</span>
                             <span>{table.girlCount}/{TableCapacity.girls}</span>
                         </div>
                         <Progress value={girlProgress} />
@@ -116,13 +116,13 @@ const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morni
     return (
         <div className="space-y-8">
             <div>
-                <h3 className="text-xl font-semibold mb-4">Ameza ya Serie 1 ({series.first} Tables)</h3>
+                <h3 className="text-xl font-semibold mb-4">Serie 1 Tables ({series.first} Tables)</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {firstSeriesTables.map(table => renderTableCard(table, '1'))}
                 </div>
             </div>
              <div>
-                <h3 className="text-xl font-semibold mb-4">Ameza ya Serie 2 ({series.second} Tables)</h3>
+                <h3 className="text-xl font-semibold mb-4">Serie 2 Tables ({series.second} Tables)</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {secondSeriesTables.map(table => renderTableCard(table, '2'))}
                 </div>
@@ -434,7 +434,3 @@ export default function RefectoryPage() {
     </>
   );
 }
-
-    
-
-    

@@ -30,7 +30,7 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
         <Card className="flex flex-col hover:shadow-lg transition-shadow">
             <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Ameza {table.tableNumber}</CardTitle>
+                    <CardTitle className="text-lg">Table {table.tableNumber}</CardTitle>
                     <Badge variant="outline">Serie {table.serie}</Badge>
                 </div>
             </CardHeader>
@@ -38,14 +38,14 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
                 <div className="space-y-3">
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <p className="text-sm font-medium">Abahungu</p>
+                            <p className="text-sm font-medium">Boys</p>
                             <p className="text-xs text-muted-foreground">{table.boys.length} / 3</p>
                         </div>
                         <Progress value={boysPercentage} className="h-2" />
                     </div>
                      <div>
                         <div className="flex justify-between items-center mb-1">
-                            <p className="text-sm font-medium">Abakobwa</p>
+                            <p className="text-sm font-medium">Girls</p>
                             <p className="text-xs text-muted-foreground">{table.girls.length} / 7</p>
                         </div>
                         <Progress value={girlsPercentage} className="h-2 [&>div]:bg-pink-400" />
@@ -110,16 +110,16 @@ export default function SeatingChartPage() {
             let rowIndex = 0;
 
             tables.forEach(table => {
-                data.push([`Nimero y'Ameza: ${table.tableNumber}`]);
+                data.push([`Table Number: ${table.tableNumber}`]);
                 merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: 2 } });
                 rowIndex++;
 
-                data.push(['Igitsina', 'Izina ry\'Umunyeshuri', 'Ishuri']);
+                data.push(['Gender', 'Student Name', 'Class']);
                 rowIndex++;
 
                 const allStudentsInTable = [
-                    ...table.girls.map(s => ({ ...s, genderLabel: 'Umukobwa' })),
-                    ...table.boys.map(s => ({ ...s, genderLabel: 'Umuhungu' }))
+                    ...table.girls.map(s => ({ ...s, genderLabel: 'Girl' })),
+                    ...table.boys.map(s => ({ ...s, genderLabel: 'Boy' }))
                 ];
 
                 allStudentsInTable.forEach(student => {
@@ -139,10 +139,10 @@ export default function SeatingChartPage() {
         const ws = XLSX.utils.aoa_to_sheet(data);
         ws['!merges'] = merges;
         
-        const sheetName = `${shift === 'morning' ? 'Mu Gitondo' : 'Nimugoroba'}${serie ? ` - Serie ${serie}` : ''}`;
+        const sheetName = `${shift === 'morning' ? 'Morning' : 'Evening'}${serie ? ` - Serie ${serie}` : ''}`;
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
         
-        const fileName = `imyicarire_${shift}${serie ? `_serie_${serie}` : ''}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        const fileName = `seating_${shift}${serie ? `_serie_${serie}` : ''}_${new Date().toISOString().split('T')[0]}.xlsx`;
         XLSX.writeFile(wb, fileName);
     };
 
@@ -151,7 +151,7 @@ export default function SeatingChartPage() {
             return (
                 <div className="text-center text-muted-foreground py-12">
                     <Users className="mx-auto h-12 w-12" />
-                    <p className="mt-4">Nta myicarire iraboneka.</p>
+                    <p className="mt-4">No seating chart available.</p>
                 </div>
             );
         }
@@ -162,10 +162,10 @@ export default function SeatingChartPage() {
             <div className="space-y-8">
                 <div>
                     <div className="flex justify-between items-center mb-4 border-b pb-2">
-                        <h3 className="text-xl font-semibold">Ameza ya Serie 1</h3>
+                        <h3 className="text-xl font-semibold">Serie 1 Tables</h3>
                          <Button onClick={() => handleExcelExport(shiftName, 1)} variant="outline" size="sm" disabled={!seatingChart}>
                             <Download className="mr-2 h-4 w-4" />
-                            Kohereza Serie 1
+                            Export Serie 1
                         </Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -176,10 +176,10 @@ export default function SeatingChartPage() {
                 </div>
                 <div>
                     <div className="flex justify-between items-center mb-4 border-b pb-2">
-                        <h3 className="text-xl font-semibold">Ameza ya Serie 2</h3>
+                        <h3 className="text-xl font-semibold">Serie 2 Tables</h3>
                          <Button onClick={() => handleExcelExport(shiftName, 2)} variant="outline" size="sm" disabled={!seatingChart}>
                             <Download className="mr-2 h-4 w-4" />
-                            Kohereza Serie 2
+                            Export Serie 2
                         </Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -200,25 +200,25 @@ export default function SeatingChartPage() {
             return (
                 <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
                     <Users className="mx-auto h-12 w-12" />
-                    <p className="mt-4 font-semibold">Nta banyeshuri biyandikishije mu gihembwe cyatoranijwe.</p>
-                    <p className="mt-1 text-sm">Hitamo ikindi gihembwe cyangwa wandike abanyeshuri kugira ngo ukore imyicarire.</p>
+                    <p className="mt-4 font-semibold">No students are enrolled for the selected term.</p>
+                    <p className="mt-1 text-sm">Select another term or enroll students to generate a seating chart.</p>
                     <Link href="/dashboard/secretary/students/add">
-                        <Button className="mt-4">Andika Abanyeshuri</Button>
+                        <Button className="mt-4">Enroll Students</Button>
                     </Link>
                 </div>
             )
         }
         if (!seatingChart) {
              return (
-                <div className="text-center text-muted-foreground py-12">Kanda kuri "Kora Imyicarire" kugira ngo utange imyanya.</div>
+                <div className="text-center text-muted-foreground py-12">Click "Generate Chart" to assign seats.</div>
             );
         }
 
         return (
              <Tabs defaultValue="morning">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="morning">🌅 Mu Gitondo ({seatingChart.morning.length} ameza)</TabsTrigger>
-                    <TabsTrigger value="evening">🌙 Nimugoroba ({seatingChart.evening.length} ameza)</TabsTrigger>
+                    <TabsTrigger value="morning">🌅 Morning & Lunch ({seatingChart.morning.length} tables)</TabsTrigger>
+                    <TabsTrigger value="evening">🌙 Evening ({seatingChart.evening.length} tables)</TabsTrigger>
                 </TabsList>
                 <TabsContent value="morning" className="mt-6">
                     {renderShift(seatingChart.morning, 'morning')}
@@ -234,26 +234,26 @@ export default function SeatingChartPage() {
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Imyicarire mu Byumba byo Kuriramo</h1>
-                    <p className="text-muted-foreground">Gutanga imyanya ku banyeshuri mu buryo bwikora mu gihembwe gikora.</p>
+                    <h1 className="text-3xl font-bold">Refectory Seating Arrangement</h1>
+                    <p className="text-muted-foreground">Automatically assign seats to students for the active term.</p>
                 </div>
                 <div className="flex gap-2">
                      <Button onClick={handleUndo} variant="outline" disabled={!previousSeatingChart}>
                         <Undo className="mr-2 h-4 w-4" />
-                        Subiza Inyuma
+                        Undo
                     </Button>
                     <Button onClick={handleGenerateChart} disabled={loading || !enrolledStudents || enrolledStudents.length === 0}>
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        Kora Imyicarire
+                        Generate Chart
                     </Button>
                 </div>
             </div>
 
             <Card>
                  <CardHeader>
-                    <CardTitle>Imyanya yatanzwe</CardTitle>
+                    <CardTitle>Seat Assignments</CardTitle>
                     <CardDescription>
-                        Ameza atangwa kugeza yuzuye, abahungu batatu n'abakobwa barindwi kuri buri meza.
+                        Tables are filled with up to three boys and seven girls per table.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
