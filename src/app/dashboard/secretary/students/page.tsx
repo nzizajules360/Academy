@@ -37,6 +37,7 @@ interface StudentData extends DocumentData {
   name: string;
   class: string;
   location: string;
+  region: string;
   parentName: string;
   parentPhone: string;
   totalFees: number;
@@ -72,6 +73,7 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                   <TableHead>Name</TableHead>
                   <TableHead>Parent Name</TableHead>
                   <TableHead>Parent Phone</TableHead>
+                  <TableHead>Region</TableHead>
                   <TableHead>Fee Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -84,6 +86,7 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>{student.parentName}</TableCell>
                     <TableCell>{student.parentPhone}</TableCell>
+                    <TableCell>{student.region}</TableCell>
                     <TableCell>
                       <Badge variant={hasOutstanding ? 'destructive' : 'secondary'}>
                         {hasOutstanding && <AlertTriangle className="mr-1 h-3 w-3" />}

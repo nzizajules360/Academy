@@ -24,6 +24,7 @@ const studentFormSchema = z.object({
   class: z.string().min(1, 'Please select a class.'),
   gender: z.enum(['male', 'female'], { required_error: 'Please select a gender.'}),
   location: z.string().min(2, 'Location is required.'),
+  region: z.string().min(2, 'Region is required.'),
   parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
   parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
   totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
@@ -54,6 +55,7 @@ export function StudentForm() {
             parentName: '',
             parentPhone: '',
             location: '',
+            region: '',
             totalFees: 0,
             feesPaid: 0,
         },
@@ -238,6 +240,19 @@ export function StudentForm() {
                                             <FormLabel>Home Location</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="Capital City" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="region"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Region</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="e.g. Eastern Province" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>

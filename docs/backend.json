@@ -57,6 +57,10 @@
           "type": "string",
           "description": "The student's home location."
         },
+        "region": {
+            "type": "string",
+            "description": "The student's home region."
+        },
         "parentName": {
           "type": "string",
           "description": "The name of the student's parent or guardian."
