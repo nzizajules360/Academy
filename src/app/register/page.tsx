@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +40,7 @@ const roles = [
 ];
 
 export default function RegisterPage() {
+  const { user, loading: userLoading } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({ 
@@ -60,6 +62,12 @@ export default function RegisterPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!userLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   const handleValidation = () => {
     const newErrors = { displayName: '', email: '', password: '', role: '' };
@@ -151,7 +159,7 @@ export default function RegisterPage() {
         email: user.email,
         role: formData.role,
         photoURL: user.photoURL,
-      }, { merge: true }); // Merge to avoid overwriting existing data if user logs in differently
+      }, { merge: true });
 
       router.push('/dashboard');
     } catch (error: any) {
@@ -171,6 +179,14 @@ export default function RegisterPage() {
     setShowRoleDropdown(false);
     setErrors({...errors, role: ''});
   };
+
+  if (userLoading || user) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const selectedRole = roles.find(r => r.value === formData.role);
 
@@ -449,3 +465,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    

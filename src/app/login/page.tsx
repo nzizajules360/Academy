@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Loader2, GraduationCap, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +30,7 @@ const GoogleIcon = () => (
 );
 
 export default function LoginPage() {
+  const { user, loading: userLoading } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -37,6 +39,12 @@ export default function LoginPage() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!userLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   const handleValidation = () => {
     const newErrors = { email: '', password: '' };
@@ -88,8 +96,6 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // After successful sign-in, the useUser hook will redirect to the dashboard.
-      // A fallback redirect can be placed here if needed.
       router.push('/dashboard');
     } catch (error: any) {
       console.error(error);
@@ -102,6 +108,14 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   };
+
+  if (userLoading || user) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
@@ -280,3 +294,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
