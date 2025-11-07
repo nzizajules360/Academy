@@ -28,8 +28,9 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2, AlertTriangle, Pencil } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, DocumentData } from 'firebase/firestore';
+import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { StudentFeesForm } from '../(components)/student-fees-form';
+import { useActiveTerm } from '@/hooks/use-active-term';
 
 interface StudentData extends DocumentData {
   id: string;
@@ -109,10 +110,10 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
 
 export default function StudentsPage() {
   const firestore = useFirestore();
-  
-  const [studentsSnapshot, loading, error] = useCollection(
-    firestore ? collection(firestore, 'students') : null
-  );
+  const { activeTermId, loading: loadingTerm } = useActiveTerm();
+
+  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+  const [studentsSnapshot, loading, error] = useCollection(studentsQuery);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
@@ -137,7 +138,7 @@ export default function StudentsPage() {
         <div className="flex items-center justify-between">
             <div>
                 <CardTitle>Students</CardTitle>
-                <CardDescription>Manage student records, view details, and track enrollment.</CardDescription>
+                <CardDescription>Manage student records for the active term.</CardDescription>
             </div>
             <Link href={`/dashboard/secretary/students/add`} passHref>
                 <Button>
@@ -148,7 +149,7 @@ export default function StudentsPage() {
         </div>
       </CardHeader>
       <CardContent>
-        {loading && (
+        {(loading || loadingTerm) && (
             <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -159,7 +160,7 @@ export default function StudentsPage() {
             <StudentListByClass students={students} onEditFees={handleEditFees} />
           ) : (
             <div className="text-center text-muted-foreground py-8">
-              No students found. Use the "Add Student" button to enroll the first student.
+              {activeTermId ? "No students found for the active term. Use the 'Add Student' button to enroll the first student." : "No active term set. Please set an active term in the settings."}
             </div>
           )
         )}
