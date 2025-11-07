@@ -1,11 +1,17 @@
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, Users, ClipboardList, AlertCircle, Loader2 } from 'lucide-react';
+import { DollarSign, Users, ClipboardList, AlertCircle, Loader2, FileDown } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { collection, DocumentData } from 'firebase/firestore';
+import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { materials } from '@/lib/data';
+import { useActiveTerm } from '@/hooks/use-active-term';
+import { Button } from '@/components/ui/button';
+import Papa from 'papaparse';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
     <Card>
@@ -20,17 +26,109 @@ const StatCard = ({ title, value, icon: Icon, description }: { title: string, va
     </Card>
 )
 
+const OutstandingFeesReport = ({ students }: { students: DocumentData[] }) => {
+    const studentsWithOutstandingFees = students.filter(s => s.feesPaid < s.totalFees);
+
+    const studentsByClass = studentsWithOutstandingFees.reduce((acc, student) => {
+        const { class: studentClass } = student;
+        if (!acc[studentClass]) {
+          acc[studentClass] = [];
+        }
+        acc[studentClass].push(student);
+        return acc;
+      }, {} as Record<string, DocumentData[]>);
+    
+    const sortedClasses = Object.keys(studentsByClass).sort();
+    
+    const handleExport = () => {
+        const dataToExport = studentsWithOutstandingFees.map(s => ({
+            "Student Name": s.name,
+            "Class": s.class,
+            "Parent Name": s.parentName,
+            "Parent Phone": s.parentPhone,
+            "Total Fees": s.totalFees,
+            "Fees Paid": s.feesPaid,
+            "Outstanding Balance": s.totalFees - s.feesPaid,
+        }));
+
+        const csv = Papa.unparse(dataToExport);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `outstanding_fees_report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    return (
+         <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Outstanding Fees Report</CardTitle>
+                        <CardDescription>List of students with incomplete fee payments for the active term.</CardDescription>
+                    </div>
+                    <Button onClick={handleExport} disabled={studentsWithOutstandingFees.length === 0}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export to CSV
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {studentsWithOutstandingFees.length === 0 ? (
+                    <p className="text-muted-foreground">No students with outstanding fees.</p>
+                ) : (
+                    <Accordion type="single" collapsible className="w-full" defaultValue={sortedClasses[0]}>
+                        {sortedClasses.map(className => (
+                            <AccordionItem value={className} key={className}>
+                                <AccordionTrigger>{className} ({studentsByClass[className].length} students)</AccordionTrigger>
+                                <AccordionContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>Parent Contact</TableHead>
+                                                <TableHead className="text-right">Outstanding Balance</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {studentsByClass[className].map(student => (
+                                                <TableRow key={student.id}>
+                                                    <TableCell className="font-medium">{student.name}</TableCell>
+                                                    <TableCell>{student.parentName} ({student.parentPhone})</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Badge variant="destructive">
+                                                            RWF {(student.totalFees - student.feesPaid).toLocaleString()}
+                                                        </Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
+
+
 export default function ReportsPage() {
     const firestore = useFirestore();
-    const [studentsSnapshot, loading] = useCollection(
-        firestore ? collection(firestore, 'students') : null
-    );
+    const { activeTermId, loading: loadingTerm } = useActiveTerm();
 
-    if (loading) {
+    const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+    const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
+
+    if (loadingTerm || loadingStudents) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
-    const students = studentsSnapshot?.docs.map(doc => doc.data()) || [];
+    const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data()})) || [];
     const totalStudents = students.length;
     const totalFeesPaid = students.reduce((acc, s) => acc + (s.feesPaid || 0), 0);
     const totalFeesExpected = students.reduce((acc, s) => acc + (s.totalFees || 0), 0);
@@ -53,7 +151,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Comprehensive Reports</h1>
-                    <p className="text-muted-foreground">An overview of key school metrics.</p>
+                    <p className="text-muted-foreground">An overview of key school metrics for the active term.</p>
                 </div>
             </div>
 
@@ -61,7 +159,6 @@ export default function ReportsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Enrollment Summary</CardTitle>
-                    <CardDescription>Breakdown of the student population.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-3 gap-4">
                    <StatCard title="Total Students" value={totalStudents} icon={Users} />
@@ -74,7 +171,6 @@ export default function ReportsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Financial Report</CardTitle>
-                    <CardDescription>Summary of school fee collections.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid md:grid-cols-3 gap-4">
@@ -97,12 +193,14 @@ export default function ReportsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Utilities Report</CardTitle>
-                    <CardDescription>Status of required student materials.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <StatCard title="Total Missing Items" value={utilitiesMissing} icon={ClipboardList} description="Across all students for required materials."/>
                 </CardContent>
             </Card>
+
+            {/* Outstanding Fees Report */}
+            <OutstandingFeesReport students={students} />
 
         </div>
     );

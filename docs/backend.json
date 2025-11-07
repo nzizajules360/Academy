@@ -140,6 +140,11 @@
                 "type": "string",
                 "description": "The status of the term.",
                 "enum": ["active", "ended"]
+            },
+            "paymentDeadline": {
+                "type": "string",
+                "format": "date",
+                "description": "The deadline for school fee payments for this term."
             }
         },
         "required": ["academicYearId", "name", "status"]

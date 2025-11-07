@@ -8,8 +8,10 @@ export const useActiveTerm = () => {
     const appSettingsRef = firestore ? doc(firestore, 'settings', 'app') : null;
     const [appSettings, loading, error] = useDocumentData(appSettingsRef);
 
+    const activeTermId = appSettings?.activeTermId;
+
     return {
-        activeTermId: appSettings?.activeTermId,
+        activeTermId: activeTermId,
         loading,
         error
     };
