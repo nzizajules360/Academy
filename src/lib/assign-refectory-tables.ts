@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -142,14 +143,14 @@ export async function assignRefectoryTables(input: AssignRefectoryTablesInput): 
     
     const seatingChart = generateSeatingChart(students, previous);
     
-    const assignments: Record<string, { studentId: string, studentName: string, morningTable: number, eveningTable: number }> = {};
+    const assignments: Record<string, { studentId: string, studentName: string, morningTable: number | null, eveningTable: number | null }> = {};
 
     students.forEach(s => {
         assignments[s.id] = {
             studentId: s.id,
             studentName: s.name,
-            morningTable: 0,
-            eveningTable: 0,
+            morningTable: null,
+            eveningTable: null,
         };
     });
 
@@ -179,5 +180,10 @@ export async function assignRefectoryTables(input: AssignRefectoryTablesInput): 
         });
     });
     
-    return Object.values(assignments);
+    return Object.values(assignments).map(a => ({
+      studentId: a.studentId,
+      studentName: a.studentName,
+      morningTable: a.morningTable || 0,
+      eveningTable: a.eveningTable || 0,
+    }));
 }
