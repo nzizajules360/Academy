@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { assignRefectoryTables } from '@/ai/flows/assign-refectory-tables-flow';
-import { Loader2, AlertTriangle, User, Users, LayoutGrid, List } from 'lucide-react';
+import { Loader2, AlertTriangle, User, Users, LayoutGrid, List, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
 import { Separator } from '@/components/ui/separator';
+import Papa from 'papaparse';
 
 interface Student extends DocumentData {
   id: string;
@@ -246,6 +247,27 @@ export default function RefectoryPage() {
       setIsAssigning(false);
     }
   };
+  
+  const handleExport = () => {
+    if (!students) return;
+
+    const dataToExport = students.sort((a,b) => a.name.localeCompare(b.name)).map(s => ({
+        "Student Name": s.name,
+        "Class": s.class,
+        "Gender": s.gender,
+        "Morning & Lunch Table": s.refectoryTableMorning || 'Unassigned',
+        "Evening Table": s.refectoryTableEvening || 'Unassigned',
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `refectory_assignments_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 
   const unassignedStudents = students?.filter(s => !s.refectoryTableMorning || !s.refectoryTableEvening).length || 0;
 
@@ -256,19 +278,25 @@ export default function RefectoryPage() {
           <div>
             <CardTitle>Refectory Seating</CardTitle>
             <CardDescription>Manage and view student seating arrangements for meals.</CardDescription>
-             {unassignedStudents > 0 && (
+             {unassignedStudents > 0 && !loading && (
                 <div className="mt-4 flex items-center gap-2 text-sm text-destructive font-medium">
                     <AlertTriangle className="h-4 w-4" />
                     There are {unassignedStudents} students without a complete table assignment.
                 </div>
             )}
           </div>
-          {(role === 'admin' || role === 'secretary') && (
-            <Button onClick={handleAssignTables} disabled={isAssigning || loading}>
-              {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Assign All Students
+          <div className="flex gap-2">
+            {(role === 'admin' || role === 'secretary') && (
+              <Button onClick={handleAssignTables} disabled={isAssigning || loading}>
+                {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Assign All Students
+              </Button>
+            )}
+             <Button onClick={handleExport} variant="outline" disabled={!students || students.length === 0}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export CSV
             </Button>
-          )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
