@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,8 +34,8 @@ export function FeesForm() {
     const form = useForm<FeesSettingsValues>({
         resolver: zodResolver(feesSettingsSchema),
         defaultValues: {
-            oLevelFee: 1800,
-            aLevelFee: 2000,
+            oLevelFee: 0,
+            aLevelFee: 0,
         },
     });
 

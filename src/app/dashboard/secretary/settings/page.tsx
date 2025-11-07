@@ -1,4 +1,4 @@
-import { FeesForm } from './fees-form';
+import { FeesForm } from './fees/fees-form';
 import { AcademicSettings } from './academic-settings';
 
 export default function SettingsPage() {
