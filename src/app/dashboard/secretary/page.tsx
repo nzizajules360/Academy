@@ -20,11 +20,11 @@ const OutstandingFeesAlert = () => {
     const firestore = useFirestore();
 
     // Get active term details
-    const activeTermQuery = firestore && activeTermId ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) : null;
+    const activeTermQuery = (firestore && activeTermId) ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) : null;
     const [termSnapshot, loadingTermDetails] = useDocument(activeTermQuery);
 
     // Get students with outstanding fees for the active term
-    const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+    const studentsQuery = (firestore && activeTermId) ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
     if (loadingTerm || loadingTermDetails || loadingStudents) {
@@ -38,6 +38,11 @@ const OutstandingFeesAlert = () => {
                 </CardHeader>
             </Card>
         );
+    }
+    
+    if (!activeTermId) {
+        // Don't render anything if there's no active term.
+        return null;
     }
     
     const deadline = termSnapshot?.data()?.paymentDeadline;
