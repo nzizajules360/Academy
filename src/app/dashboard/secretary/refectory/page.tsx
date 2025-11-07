@@ -9,13 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { assignRefectoryTables } from '@/ai/flows/assign-refectory-tables-flow';
-import { Loader2, AlertTriangle, User, Users, LayoutGrid, List, FileDown } from 'lucide-react';
+import { Loader2, AlertTriangle, User, Users, FileDown, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import Papa from 'papaparse';
+import { Progress } from '@/components/ui/progress';
 
 interface Student extends DocumentData {
   id: string;
@@ -41,10 +42,10 @@ const TableTotals = {
     evening: SeriesConfig.evening.first + SeriesConfig.evening.second,
 }
 
-const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 'morning' | 'evening', view: 'list' | 'grid' }) => {
+const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morning' | 'evening' }) => {
     const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
     const series = SeriesConfig[meal];
-    
+
     const getTableData = (tableNumber: number) => {
       const studentsAtTable = students.filter(s => s[tableField] === tableNumber);
       const boys = studentsAtTable.filter(s => s.gender === 'male');
@@ -52,6 +53,8 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
       return {
         number: tableNumber,
         students: studentsAtTable,
+        boys,
+        girls,
         boyCount: boys.length,
         girlCount: girls.length,
       };
@@ -60,102 +63,68 @@ const TableSeriesView = ({ students, meal, view }: { students: Student[], meal: 
     const firstSeriesTables = Array.from({ length: series.first }, (_, i) => getTableData(i + 1));
     const secondSeriesTables = Array.from({ length: series.second }, (_, i) => getTableData(series.first + i + 1));
 
+    const renderTableCard = (table: ReturnType<typeof getTableData>, serie: string) => {
+        const boyProgress = (table.boyCount / TableCapacity.boys) * 100;
+        const girlProgress = (table.girlCount / TableCapacity.girls) * 100;
 
-    if (view === 'grid') {
         return (
-            <div className="space-y-8">
-                <div>
-                    <h3 className="text-lg font-semibold mb-4">First Series ({series.first} Tables)</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {firstSeriesTables.map(table => (
-                            <Card key={`grid-1-${table.number}`}>
-                                <CardHeader className="p-4">
-                                    <CardTitle>Table {table.number}</CardTitle>
-                                    <CardDescription className="flex items-center gap-4">
-                                        <Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>Boys: {table.boyCount}/{TableCapacity.boys}</Badge>
-                                        <Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>Girls: {table.girlCount}/{TableCapacity.girls}</Badge>
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0 text-sm">
-                                    {table.students.length > 0 ? table.students.map(s => `${s.name} (${s.class})`).join(', ') : <span className="text-muted-foreground">Empty</span>}
-                                </CardContent>
-                            </Card>
-                        ))}
+            <Card key={`grid-${serie}-${table.number}`}>
+                <CardHeader className="p-4 flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg">Ameza {table.number}</CardTitle>
+                    <Badge variant="outline">Serie {serie}</Badge>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 text-sm space-y-4">
+                    <div>
+                        <div className="flex justify-between mb-1">
+                            <span>Abahungu</span>
+                            <span>{table.boyCount}/{TableCapacity.boys}</span>
+                        </div>
+                        <Progress value={boyProgress} />
+                        <div className="mt-2 space-y-1">
+                          {table.boys.map(s => (
+                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
+                                <UserCheck className="h-3 w-3 text-green-500" />
+                                <span>{s.name} ({s.class})</span>
+                              </div>
+                          ))}
+                        </div>
                     </div>
-                </div>
-                 <div>
-                    <h3 className="text-lg font-semibold mb-4">Second Series ({series.second} Tables)</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {secondSeriesTables.map(table => (
-                            <Card key={`grid-2-${table.number}`}>
-                                <CardHeader className="p-4">
-                                    <CardTitle>Table {table.number}</CardTitle>
-                                    <CardDescription className="flex items-center gap-4">
-                                        <Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>Boys: {table.boyCount}/{TableCapacity.boys}</Badge>
-                                        <Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>Girls: {table.girlCount}/{TableCapacity.girls}</Badge>
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0 text-sm">
-                                     {table.students.length > 0 ? table.students.map(s => `${s.name} (${s.class})`).join(', ') : <span className="text-muted-foreground">Empty</span>}
-                                </CardContent>
-                            </Card>
-                        ))}
+                     <div>
+                        <div className="flex justify-between mb-1">
+                            <span>Abakobwa</span>
+                            <span>{table.girlCount}/{TableCapacity.girls}</span>
+                        </div>
+                        <Progress value={girlProgress} />
+                         <div className="mt-2 space-y-1">
+                          {table.girls.map(s => (
+                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
+                                <UserCheck className="h-3 w-3 text-pink-500" />
+                                <span>{s.name} ({s.class})</span>
+                              </div>
+                          ))}
+                        </div>
                     </div>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
         );
     }
 
     return (
         <div className="space-y-8">
             <div>
-                <h3 className="text-lg font-semibold mb-4">First Series</h3>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Table No.</TableHead>
-                            <TableHead>Boys</TableHead>
-                            <TableHead>Girls</TableHead>
-                            <TableHead>Students</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {firstSeriesTables.map(table => (
-                            <TableRow key={`list-1-${table.number}`}>
-                                <TableCell className="font-bold">{table.number}</TableCell>
-                                <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
-                                <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
-                                <TableCell>{table.students.map(s => `${s.name} (${s.class})`).join(', ')}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                <h3 className="text-xl font-semibold mb-4">Ameza ya Serie 1 ({series.first} Tables)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {firstSeriesTables.map(table => renderTableCard(table, '1'))}
+                </div>
             </div>
-            <div>
-                <h3 className="text-lg font-semibold mb-4">Second Series</h3>
-                <Table>
-                     <TableHeader>
-                        <TableRow>
-                            <TableHead>Table No.</TableHead>
-                            <TableHead>Boys</TableHead>
-                            <TableHead>Girls</TableHead>
-                            <TableHead>Students</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                         {secondSeriesTables.map(table => (
-                            <TableRow key={`list-2-${table.number}`}>
-                                <TableCell className="font-bold">{table.number}</TableCell>
-                                <TableCell><Badge variant={table.boyCount > TableCapacity.boys ? 'destructive' : 'secondary'}>{table.boyCount} / {TableCapacity.boys}</Badge></TableCell>
-                                <TableCell><Badge variant={table.girlCount > TableCapacity.girls ? 'destructive' : 'secondary'}>{table.girlCount} / {TableCapacity.girls}</Badge></TableCell>
-                                <TableCell>{table.students.map(s => `${s.name} (${s.class})`).join(', ')}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+             <div>
+                <h3 className="text-xl font-semibold mb-4">Ameza ya Serie 2 ({series.second} Tables)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {secondSeriesTables.map(table => renderTableCard(table, '2'))}
+                </div>
             </div>
         </div>
-    )
+    );
 }
 
 const StudentView = ({ students, meal }: { students: Student[], meal: 'morning' | 'evening'}) => {
@@ -195,7 +164,6 @@ export default function RefectoryPage() {
   const { user } = useUser();
   const role = user?.role as UserRole | undefined;
   const [viewType, setViewType] = useState<'table' | 'student'>('table');
-  const [tableDisplay, setTableDisplay] = useState<'list' | 'grid'>('list');
   
   const studentsCollection = firestore ? collection(firestore, 'students') : null;
   const [students, loading, error] = useCollectionData(studentsCollection, { idField: 'id' });
@@ -317,12 +285,6 @@ export default function RefectoryPage() {
                             <TabsTrigger value="student"><User className="mr-2"/>View by Student</TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    {viewType === 'table' && (
-                        <div>
-                             <Button variant={tableDisplay === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTableDisplay('list')}><List className="h-4 w-4"/></Button>
-                             <Button variant={tableDisplay === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setTableDisplay('grid')}><LayoutGrid className="h-4 w-4"/></Button>
-                        </div>
-                    )}
                 </div>
                 <Separator />
                 <div className="mt-4">
@@ -330,14 +292,14 @@ export default function RefectoryPage() {
                         {viewType === 'student' ? (
                             <StudentView students={students as Student[]} meal="morning" />
                         ) : (
-                            <TableSeriesView students={students as Student[]} meal="morning" view={tableDisplay} />
+                            <TableSeriesView students={students as Student[]} meal="morning" />
                         )}
                     </TabsContent>
                     <TabsContent value="evening">
                         {viewType === 'student' ? (
                             <StudentView students={students as Student[]} meal="evening" />
                         ) : (
-                            <TableSeriesView students={students as Student[]} meal="evening" view={tableDisplay} />
+                            <TableSeriesView students={students as Student[]} meal="evening" />
                         )}
                     </TabsContent>
                 </div>
