@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, DocumentData, updateDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, DocumentData, updateDoc, query, where } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import Papa from 'papaparse';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { useActiveTerm } from '@/hooks/use-active-term';
 
 interface Student extends DocumentData {
   id: string;
@@ -265,9 +267,10 @@ export default function RefectoryPage() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<'morning' | 'evening'>('morning');
-  
-  const studentsCollection = firestore ? collection(firestore, 'students') : null;
-  const [students, loading, error] = useCollectionData(studentsCollection, { idField: 'id' });
+  const { activeTermId, loading: loadingTerm } = useActiveTerm();
+
+  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+  const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' });
 
   const handleAssignTables = async () => {
     setIsAssigning(true);
@@ -377,7 +380,7 @@ export default function RefectoryPage() {
         </div>
       </CardHeader>
       <CardContent>
-        {loading && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
+        {(loading || loadingTerm) && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
         {error && <p className="text-destructive">Error loading students: {error.message}</p>}
         {students && (
           <Tabs defaultValue="morning">
@@ -422,9 +425,11 @@ export default function RefectoryPage() {
       onOpenChange={setIsAssignDialogOpen}
       student={selectedStudent}
       meal={selectedMeal}
-      allStudents={students as Student[]}
+      allStudents={students as Student[] || []}
       onAssignSuccess={() => { /* Data will refetch automatically through react-firebase-hooks */ }}
     />
     </>
   );
 }
+
+    

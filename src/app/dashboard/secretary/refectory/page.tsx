@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -17,6 +18,8 @@ import type { UserRole } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import Papa from 'papaparse';
 import { Progress } from '@/components/ui/progress';
+import { useActiveTerm } from '@/hooks/use-active-term';
+import { query, where } from 'firebase/firestore';
 
 interface Student extends DocumentData {
   id: string;
@@ -164,9 +167,10 @@ export default function RefectoryPage() {
   const { user } = useUser();
   const role = user?.role as UserRole | undefined;
   const [viewType, setViewType] = useState<'table' | 'student'>('table');
+  const { activeTermId, loading: loadingTerm } = useActiveTerm();
   
-  const studentsCollection = firestore ? collection(firestore, 'students') : null;
-  const [students, loading, error] = useCollectionData(studentsCollection, { idField: 'id' });
+  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+  const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' });
 
   const handleAssignTables = async () => {
     setIsAssigning(true);
@@ -269,7 +273,7 @@ export default function RefectoryPage() {
         </div>
       </CardHeader>
       <CardContent>
-        {loading && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
+        {(loading || loadingTerm) && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
         {error && <p className="text-destructive">Error loading students: {error.message}</p>}
         {students && (
           <Tabs defaultValue="morning">
@@ -310,3 +314,5 @@ export default function RefectoryPage() {
     </Card>
   );
 }
+
+    
