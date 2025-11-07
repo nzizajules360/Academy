@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, doc, updateDoc, writeBatch, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, writeBatch, getDocs, query, where, setDoc } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,7 +75,7 @@ export function AcademicSettings() {
         setIsUpdating(true);
         if (!firestore) return;
         try {
-            await updateDoc(doc(firestore, 'settings', 'app'), { activeTermId: termId });
+            await setDoc(doc(firestore, 'settings', 'app'), { activeTermId: termId }, { merge: true });
             toast({ title: 'Success', description: 'Active term has been updated.' });
         } catch (error) {
              console.error(error);
