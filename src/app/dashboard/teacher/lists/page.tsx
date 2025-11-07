@@ -50,7 +50,7 @@ export default function SentListsPage() {
   const isLoading = loadingUser || loadingLists;
 
   const ListAccordion = ({ list }: { list: any }) => (
-     <AccordionItem value={list.id} key={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
+     <AccordionItem value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
         <AccordionTrigger
             className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
             onClick={() => !list.isRead && handleMarkAsRead(list.id)}
@@ -148,7 +148,16 @@ export default function SentListsPage() {
                     <div>
                         <h3 className="text-lg font-semibold mb-4 text-primary">Unread</h3>
                         <Accordion type="multiple" className="w-full">
-                            {unreadLists.map((list) => <ListAccordion key={list.id} list={list} />)}
+                            {unreadLists.map((list) => (
+                                <motion.div
+                                    key={list.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                >
+                                    <ListAccordion list={list} />
+                                </motion.div>
+                            ))}
                         </Accordion>
                     </div>
                 )}
@@ -160,7 +169,16 @@ export default function SentListsPage() {
                     <div>
                         <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Read</h3>
                         <Accordion type="multiple" className="w-full">
-                           {readLists.map((list) => <ListAccordion key={list.id} list={list} />)}
+                           {readLists.map((list) => (
+                               <motion.div
+                                    key={list.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                               >
+                                    <ListAccordion list={list} />
+                               </motion.div>
+                           ))}
                         </Accordion>
                     </div>
                 )}
