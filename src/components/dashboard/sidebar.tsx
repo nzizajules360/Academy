@@ -13,6 +13,7 @@ import {
   FileText,
   Calendar,
   ListChecks,
+  Send,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -65,6 +66,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
   teacher: [
     { href: '/dashboard/teacher', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Attendance' },
+    { href: '/dashboard/teacher/lists', icon: Send, label: 'Sent Lists' },
   ]
 };
 

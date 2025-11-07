@@ -250,6 +250,33 @@
             }
         },
         "required": ["studentId", "date", "class", "termId", "status", "recordedBy"]
+    },
+     "sentList": {
+      "title": "Sent List",
+      "description": "A list of students sent from a secretary to a teacher.",
+      "type": "object",
+      "properties": {
+        "sentToTeacherId": { "type": "string" },
+        "sentBy": { "type": "string", "description": "Display name of the sender" },
+        "sentAt": { "type": "string", "format": "date-time" },
+        "listType": { "type": "string", "enum": ["outstanding_fees", "class_roster"] },
+        "title": { "type": "string" },
+        "termId": { "type": "string" },
+        "students": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "class": { "type": "string" },
+              "outstandingBalance": { "type": "number" }
+            }
+          }
+        },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["sentToTeacherId", "sentBy", "sentAt", "listType", "title", "termId", "students", "isRead"]
     }
   },
   "auth": {
@@ -309,6 +336,12 @@
             "$ref": "#/entities/attendanceRecord"
         },
         "description": "Stores daily attendance records for students."
+    },
+    "/sentLists/{listId}": {
+      "schema": {
+        "$ref": "#/entities/sentList"
+      },
+      "description": "Stores lists sent from secretaries to teachers."
     }
   }
 }

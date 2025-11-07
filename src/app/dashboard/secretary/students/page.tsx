@@ -25,12 +25,13 @@ import {
 } from "@/components/ui/accordion"
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, AlertTriangle, Pencil } from 'lucide-react';
+import { PlusCircle, Loader2, AlertTriangle, Pencil, Send } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { StudentFeesForm } from '../(components)/student-fees-form';
 import { useActiveTerm } from '@/hooks/use-active-term';
+import { SendListDialog } from '../(components)/send-list-dialog';
 
 interface StudentData extends DocumentData {
   id: string;
@@ -118,21 +119,21 @@ export default function StudentsPage() {
   const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
   const [studentsSnapshot, loading, error] = useCollection(studentsQuery);
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isFeesFormOpen, setIsFeesFormOpen] = useState(false);
+  const [isSendListOpen, setIsSendListOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
   const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentData)) || [];
 
   const handleEditFees = (student: StudentData) => {
     setSelectedStudent(student);
-    setIsFormOpen(true);
+    setIsFeesFormOpen(true);
   };
   
   const handleUpdate = () => {
     setSelectedStudent(null);
-    setIsFormOpen(false);
+    setIsFeesFormOpen(false);
   }
-
 
   return (
     <>
@@ -143,12 +144,18 @@ export default function StudentsPage() {
                 <CardTitle>Students</CardTitle>
                 <CardDescription>Manage student records for the active term.</CardDescription>
             </div>
-            <Link href={`/dashboard/secretary/students/add`} passHref>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Student
+            <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsSendListOpen(true)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Send List to Teacher
                 </Button>
-            </Link>
+                <Link href={`/dashboard/secretary/students/add`} passHref>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Student
+                    </Button>
+                </Link>
+            </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -177,8 +184,8 @@ export default function StudentsPage() {
 
     {selectedStudent && (
         <StudentFeesForm
-            isOpen={isFormOpen}
-            onOpenChange={setIsFormOpen}
+            isOpen={isFeesFormOpen}
+            onOpenChange={setIsFeesFormOpen}
             studentId={selectedStudent.id}
             studentName={selectedStudent.name}
             totalFees={selectedStudent.totalFees}
@@ -186,6 +193,12 @@ export default function StudentsPage() {
             onUpdate={handleUpdate}
         />
     )}
+
+    <SendListDialog 
+        isOpen={isSendListOpen} 
+        onOpenChange={setIsSendListOpen} 
+        students={students}
+    />
     </>
   );
 }
