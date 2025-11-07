@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { assignRefectoryTables } from '@/ai/flows/assign-refectory-tables-flow';
+import { assignRefectoryTables } from '@/lib/assign-refectory-tables';
 import { Loader2, AlertTriangle, User, Users, FileDown, PlusCircle, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
