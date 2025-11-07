@@ -25,7 +25,7 @@ const studentFormSchema = z.object({
   gender: z.enum(['male', 'female'], { required_error: 'Please select a gender.'}),
   location: z.string().min(2, 'Location is required.'),
   parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
-  parentPhone: z.string().regex(/^\d{3}-\d{3}-\d{4}$/, 'Invalid phone number format (e.g., 123-456-7890).'),
+  parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
   totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
   feesPaid: z.coerce.number().min(0, 'Fees paid must be a positive number.'),
 }).refine(data => data.feesPaid <= data.totalFees, {
@@ -210,7 +210,7 @@ export function StudentForm() {
                                         <FormItem>
                                             <FormLabel>Parent/Guardian Phone</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="123-456-7890" {...field} />
+                                                <Input placeholder="0788123456" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
