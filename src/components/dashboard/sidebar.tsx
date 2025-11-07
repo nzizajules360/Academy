@@ -14,7 +14,8 @@ import {
   Calendar,
   ListChecks,
   Send,
-  DollarSign
+  DollarSign,
+  BedDouble
 } from 'lucide-react';
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
   patron: [
     { href: '/dashboard/patron', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/patron/students', icon: Users, label: 'Students' },
+    { href: '/dashboard/patron/dormitory', icon: BedDouble, label: 'Dormitory' },
     { href: '/dashboard/patron/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/patron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/patron/refectory', icon: Table, label: 'Refectory' },
@@ -57,6 +59,7 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
   matron: [
     { href: '/dashboard/matron', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/matron/students', icon: Users, label: 'Students' },
+    { href: '/dashboard/matron/dormitory', icon: BedDouble, label: 'Dormitory' },
     { href: '/dashboard/matron/utilities', icon: ClipboardList, label: 'Utilities' },
     { href: '/dashboard/matron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/matron/refectory', icon: Table, label: 'Refectory' },

@@ -95,6 +95,10 @@
         "refectoryTableEvening": {
             "type": "number",
             "description": "Assigned table for evening."
+        },
+        "dormitoryBed": {
+            "type": "number",
+            "description": "The assigned dormitory bed number for the student."
         }
       },
       "required": ["termId", "name", "class", "gender", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]

@@ -24,12 +24,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from '@/components/ui/button';
-import { Loader2, Pencil, Users } from 'lucide-react';
+import { Loader2, Pencil, Users, BedDouble } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { EditStudentForm } from './(components)/edit-student-form';
+import { AssignDormForm } from './(components)/assign-dorm-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -40,14 +41,16 @@ interface StudentData extends DocumentData {
   class: string;
   location: string;
   religion: string;
+  dormitoryBed?: number;
 }
 
 interface StudentListByClassProps {
   students: StudentData[];
   onEdit: (student: StudentData) => void;
+  onAssignBed: (student: StudentData) => void;
 }
 
-const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
+const StudentListByClass = ({ students, onEdit, onAssignBed }: StudentListByClassProps) => {
   const studentsByClass = students.reduce((acc, student) => {
     const { class: studentClass } = student;
     if (!acc[studentClass]) {
@@ -82,8 +85,8 @@ const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="pl-6">Name</TableHead>
-                  <TableHead className="hidden sm:table-cell">Location</TableHead>
                   <TableHead className="hidden md:table-cell">Religion</TableHead>
+                  <TableHead>Dormitory</TableHead>
                   <TableHead className="text-right pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -101,12 +104,16 @@ const StudentListByClass = ({ students, onEdit }: StudentListByClassProps) => {
                             </div>
                         </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.location}</TableCell>
                     <TableCell className="hidden md:table-cell">{student.religion}</TableCell>
+                     <TableCell>
+                        {student.dormitoryBed ? `Bed ${student.dormitoryBed}` : <Badge variant="outline">Unassigned</Badge>}
+                    </TableCell>
                     <TableCell className="text-right pr-6">
-                       <Button variant="ghost" size="icon" onClick={() => onEdit(student)}>
+                       <Button variant="ghost" size="icon" onClick={() => onAssignBed(student)} title="Assign Bed">
+                            <BedDouble className="h-4 w-4" />
+                       </Button>
+                       <Button variant="ghost" size="icon" onClick={() => onEdit(student)} title="Edit Student">
                             <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Edit Student</span>
                        </Button>
                     </TableCell>
                   </TableRow>
@@ -135,19 +142,26 @@ export default function StudentsPage() {
     : null;
   const [studentsSnapshot, loading, error] = useCollection(studentsQuery);
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [isDormFormOpen, setIsDormFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
   const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentData)) || [];
 
   const handleEdit = (student: StudentData) => {
     setSelectedStudent(student);
-    setIsFormOpen(true);
+    setIsEditFormOpen(true);
   };
   
+  const handleAssignBed = (student: StudentData) => {
+    setSelectedStudent(student);
+    setIsDormFormOpen(true);
+  }
+
   const handleUpdate = () => {
     setSelectedStudent(null);
-    setIsFormOpen(false);
+    setIsEditFormOpen(false);
+    setIsDormFormOpen(false);
   }
 
   return (
@@ -175,7 +189,7 @@ export default function StudentsPage() {
         {!(loading || loadingTerm) && !error && (
             <AnimatePresence>
                 {students.length > 0 ? (
-                    <StudentListByClass students={students} onEdit={handleEdit} />
+                    <StudentListByClass students={students} onEdit={handleEdit} onAssignBed={handleAssignBed} />
                 ) : (
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -202,9 +216,18 @@ export default function StudentsPage() {
 
     {selectedStudent && (
         <EditStudentForm
-            isOpen={isFormOpen}
-            onOpenChange={setIsFormOpen}
+            isOpen={isEditFormOpen}
+            onOpenChange={setIsEditFormOpen}
             student={selectedStudent}
+            onUpdate={handleUpdate}
+        />
+    )}
+     {selectedStudent && (
+        <AssignDormForm
+            isOpen={isDormFormOpen}
+            onOpenChange={setIsDormFormOpen}
+            student={selectedStudent}
+            allStudents={students}
             onUpdate={handleUpdate}
         />
     )}
