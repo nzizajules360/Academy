@@ -29,8 +29,12 @@ const StudentAvatar = ({ student }: { student: EnrolledStudent }) => (
 
 
 const TableCard = ({ table }: { table: RefectoryTable }) => {
-    const boysPercentage = (table.boys.length / 3) * 100;
-    const girlsPercentage = (table.girls.length / 7) * 100;
+    const boyCapacity = 3;
+    const girlCapacity = 7;
+    const boysNeeded = boyCapacity - table.boys.length;
+    const girlsNeeded = girlCapacity - table.girls.length;
+    const boysPercentage = (table.boys.length / boyCapacity) * 100;
+    const girlsPercentage = (table.girls.length / girlCapacity) * 100;
 
     return (
         <Card className="flex flex-col hover:shadow-lg transition-shadow">
@@ -45,16 +49,18 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
                     <div>
                         <div className="flex justify-between items-center mb-1">
                             <p className="text-sm font-medium">Boys</p>
-                            <p className="text-xs text-muted-foreground">{table.boys.length} / 3</p>
+                            <p className="text-xs text-muted-foreground">{table.boys.length} / {boyCapacity}</p>
                         </div>
                         <Progress value={boysPercentage} className="h-2" />
+                        {boysNeeded > 0 && <p className="text-xs text-muted-foreground mt-1">{boysNeeded} needed</p>}
                     </div>
                      <div>
                         <div className="flex justify-between items-center mb-1">
                             <p className="text-sm font-medium">Girls</p>
-                            <p className="text-xs text-muted-foreground">{table.girls.length} / 7</p>
+                            <p className="text-xs text-muted-foreground">{table.girls.length} / {girlCapacity}</p>
                         </div>
                         <Progress value={girlsPercentage} className="h-2 [&>div]:bg-pink-400" />
+                        {girlsNeeded > 0 && <p className="text-xs text-muted-foreground mt-1">{girlsNeeded} needed</p>}
                     </div>
                 </div>
             </CardContent>
@@ -62,8 +68,8 @@ const TableCard = ({ table }: { table: RefectoryTable }) => {
                 <CardFooter className="p-4 pt-0">
                     <ScrollArea className="h-32 w-full pr-3">
                         <div className="space-y-2">
-                           {table.boys.map((s, i) => <StudentAvatar key={`boy-${s.id || i}`} student={s} />)}
-                           {table.girls.map((s, i) => <StudentAvatar key={`girl-${s.id || i}`} student={s} />)}
+                           {table.boys.map((s, i) => <StudentAvatar key={`boy-${s.id || i}-${Math.random()}`} student={s} />)}
+                           {table.girls.map((s, i) => <StudentAvatar key={`girl-${s.id || i}-${Math.random()}`} student={s} />)}
                         </div>
                     </ScrollArea>
                 </CardFooter>
