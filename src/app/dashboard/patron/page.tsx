@@ -16,24 +16,26 @@ import {
 } from '@/components/ui/table';
 import { Users, AlertCircle } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
+import { useActiveTerm } from '@/hooks/use-active-term';
 
 export default function PatronDashboard() {
     const firestore = useFirestore();
-    const [studentsSnapshot, loading] = useCollection(
-        firestore ? collection(firestore, 'students') : null
-    );
+    const { activeTermId, loading: loadingTerm } = useActiveTerm();
 
-    const genderToMonitor = 'male';
+    const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', 'male')) : null;
+    const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
+
     const studentsToMonitor = studentsSnapshot?.docs
-        .map(doc => doc.data())
-        .filter(s => s.gender === genderToMonitor) || [];
+        .map(doc => ({id: doc.id, ...doc.data()})) || [];
 
     const studentCount = studentsToMonitor.length;
     const missingCount = 0;
 
-    if (loading) {
+    const isLoading = loadingTerm || loadingStudents;
+
+    if (isLoading) {
         return <div>Loading...</div>
     }
 
