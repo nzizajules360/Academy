@@ -16,23 +16,67 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { students, materials } from '@/lib/data';
+import { useFirestore } from '@/firebase';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { materials } from '@/lib/data';
 import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
   } from "@/components/ui/collapsible"
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function UtilitiesPage() {
-  const relevantStudents = students.filter(student => student.type === 'boarding');
+  const firestore = useFirestore();
+  const [studentsSnapshot, loadingStudents] = useCollection(
+    firestore ? collection(firestore, 'students') : null
+  );
 
-  const getStatus = (studentId: string, materialId: string) => {
-    const student = students.find(s => s.id === studentId);
-    const utility = student?.utilities.find(u => u.materialId === materialId);
-    return utility ? utility.status === 'present' : false;
+  const relevantStudents = studentsSnapshot?.docs.map(doc => ({id: doc.id, ...doc.data()}))
+    .filter((student: any) => student.gender === 'male' || student.gender === 'female'); // Assuming all students are relevant for admin
+
+  const handleUtilityChange = async (studentId: string, materialId: string, checked: boolean) => {
+    if (!firestore) return;
+    const studentRef = doc(firestore, 'students', studentId);
+    const utility = { materialId, status: checked ? 'present' : 'missing' };
+    
+    // To update an array, we first remove the old item and then add the new one.
+    // This is a simplified approach. A more robust solution might involve transactions.
+    try {
+        const studentDoc = relevantStudents?.find(s => s.id === studentId);
+        if (!studentDoc) return;
+        const existingUtility = studentDoc.utilities?.find((u: any) => u.materialId === materialId);
+
+        if (existingUtility) {
+             await updateDoc(studentRef, {
+                utilities: arrayRemove(existingUtility)
+            });
+        }
+       
+        await updateDoc(studentRef, {
+            utilities: arrayUnion(utility)
+        });
+
+    } catch (error) {
+        console.error("Error updating utility: ", error);
+    }
   };
+
+  const getStatus = (student: any, materialId: string) => {
+    return student.utilities?.find((u: any) => u.materialId === materialId)?.status === 'present';
+  };
+  
+  const getPresentCount = (student: any) => {
+    return student.utilities?.filter((u: any) => u.status === 'present').length || 0;
+  }
+  
+  const requiredMaterialsCount = materials.filter(m => m.required).length;
+
+  if (loadingStudents) {
+      return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <Card>
@@ -52,10 +96,10 @@ export default function UtilitiesPage() {
                         <TableHead className="text-right">Status</TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody>
-                    {relevantStudents.map(student => (
-                    <Collapsible asChild key={student.id} tag="tbody">
-                       <React.Fragment>
+                
+                    {relevantStudents?.map(student => (
+                    <Collapsible asChild key={student.id} tag="tbody" className="w-full">
+                       <>
                             <TableRow>
                                 <TableCell className="font-medium">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
@@ -63,7 +107,7 @@ export default function UtilitiesPage() {
                                     <CollapsibleTrigger asChild>
                                         <Button variant="ghost" size="sm">
                                             <span className="mr-2">
-                                                {student.utilities.filter(u => u.status === 'present').length}/{materials.filter(m => m.required).length} Present
+                                                {getPresentCount(student)}/{requiredMaterialsCount} Present
                                             </span>
                                             <ChevronDown className="h-4 w-4" />
                                             <span className="sr-only">Toggle</span>
@@ -80,15 +124,15 @@ export default function UtilitiesPage() {
                                             {materials.filter(m => m.required).map(material => (
                                                 <div key={material.id} className="flex items-center space-x-2">
                                                     <Checkbox
-                                                    id={`${student.id}-${material.id}`}
-                                                    checked={getStatus(student.id, material.id)}
-                                                    disabled 
+                                                        id={`${student.id}-${material.id}`}
+                                                        checked={getStatus(student, material.id)}
+                                                        onCheckedChange={(checked) => handleUtilityChange(student.id, material.id, !!checked)}
                                                     />
                                                     <label
-                                                    htmlFor={`${student.id}-${material.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                        htmlFor={`${student.id}-${material.id}`}
+                                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                                     >
-                                                    {material.name}
+                                                        {material.name}
                                                     </label>
                                                 </div>
                                             ))}
@@ -97,9 +141,11 @@ export default function UtilitiesPage() {
                                     </td>
                                 </tr>
                             </CollapsibleContent>
-                        </React.Fragment>
+                        </>
                     </Collapsible>
                     ))}
+                <TableBody>
+
                 </TableBody>
             </Table>
         </div>
