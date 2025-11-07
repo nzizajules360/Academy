@@ -17,6 +17,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useRouter } from 'next/navigation';
 import { useActiveTerm } from '@/hooks/use-active-term';
+import Link from 'next/link';
 
 const studentFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
