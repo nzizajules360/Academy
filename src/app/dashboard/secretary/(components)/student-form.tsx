@@ -11,13 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc } from 'firebase/firestore';
+import { useDocumentData } from 'react-firebase-hooks/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useRouter } from 'next/navigation';
-
-const A_LEVEL_FEE = 2000;
-const O_LEVEL_FEE = 1800;
 
 const studentFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -41,6 +39,9 @@ export function StudentForm() {
     const firestore = useFirestore();
     const router = useRouter();
 
+    const feesDocRef = firestore ? doc(firestore, 'settings', 'fees') : null;
+    const [feeSettings, loadingFees] = useDocumentData(feesDocRef);
+
     const form = useForm<StudentFormValues>({
         resolver: zodResolver(studentFormSchema),
         defaultValues: {
@@ -50,7 +51,7 @@ export function StudentForm() {
             parentName: '',
             parentPhone: '',
             location: '',
-            totalFees: A_LEVEL_FEE,
+            totalFees: 0,
             feesPaid: 0,
         },
     });
@@ -58,11 +59,18 @@ export function StudentForm() {
     const selectedClass = form.watch('class');
 
     useEffect(() => {
-        if (selectedClass) {
-            const isOLevel = selectedClass.startsWith('S1') || selectedClass.startsWith('S2') || selectedClass.startsWith('S3');
-            form.setValue('totalFees', isOLevel ? O_LEVEL_FEE : A_LEVEL_FEE);
+        if (selectedClass && feeSettings) {
+            const isOLevel = ['S1', 'S2', 'S3'].includes(selectedClass);
+            form.setValue('totalFees', isOLevel ? feeSettings.oLevelFee : feeSettings.aLevelFee);
         }
-    }, [selectedClass, form]);
+    }, [selectedClass, form, feeSettings]);
+    
+    useEffect(() => {
+        if (feeSettings) {
+             const isOLevel = ['S1', 'S2', 'S3'].includes(form.getValues('class'));
+             form.setValue('totalFees', isOLevel ? feeSettings.oLevelFee : feeSettings.aLevelFee, { shouldValidate: true });
+        }
+    }, [feeSettings, form])
 
     async function onSubmit(data: StudentFormValues) {
         setIsLoading(true);
@@ -226,7 +234,7 @@ export function StudentForm() {
                         <div className="grid md:grid-cols-2 gap-8 pt-4 border-t">
                             <div>
                                 <FormLabel>Total School Fees</FormLabel>
-                                <Input type="text" value={`$${form.getValues('totalFees').toLocaleString()}`} readOnly disabled className="mt-2" />
+                                 {loadingFees ? <Loader2 className="mt-2 h-4 w-4 animate-spin" /> : <Input type="text" value={`RWF ${form.getValues('totalFees').toLocaleString()}`} readOnly disabled className="mt-2" /> }
                             </div>
                              <FormField
                                 control={form.control}
@@ -242,8 +250,8 @@ export function StudentForm() {
                                 )}
                             />
                         </div>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={isLoading || loadingFees}>
+                            {(isLoading || loadingFees) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Add Student
                         </Button>
                     </form>

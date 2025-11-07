@@ -103,7 +103,7 @@ export function StudentFeesForm({ studentId, studentName, totalFees, currentFees
                 <DialogHeader>
                     <DialogTitle>Update Fees for {studentName}</DialogTitle>
                     <DialogDescription>
-                        Total fees: ${totalFees.toLocaleString()}. Current paid: ${currentFeesPaid.toLocaleString()}.
+                        Total fees: RWF {totalFees.toLocaleString()}. Current paid: RWF {currentFeesPaid.toLocaleString()}.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>

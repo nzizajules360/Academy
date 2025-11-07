@@ -19,6 +19,7 @@ import { DollarSign, Users, ClipboardList } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
+import { materials } from '@/lib/data';
 
 
 const RecentEnrollments = ({ students }: { students: DocumentData[] }) => (
@@ -60,7 +61,11 @@ export default function AdminDashboard() {
     const totalFeesExpected = students.reduce((acc, s) => acc + (s.totalFees || 0), 0);
     const feesPaidPercentage = totalFeesExpected > 0 ? (totalFeesPaid / totalFeesExpected) * 100 : 0;
     
-    const utilitiesMissing = 0; 
+    const requiredMaterialsCount = materials.filter(m => m.required).length;
+    const utilitiesMissing = students.reduce((totalMissing, student) => {
+        const presentCount = student.utilities?.filter((u: any) => u.status === 'present').length || 0;
+        return totalMissing + (requiredMaterialsCount - presentCount);
+    }, 0);
     
     if (loading) {
         return <div>Loading...</div>
@@ -87,9 +92,9 @@ export default function AdminDashboard() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">${totalFeesPaid.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">RWF {totalFeesPaid.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">
-                        of ${totalFeesExpected.toLocaleString()} collected
+                        of RWF {totalFeesExpected.toLocaleString()} collected
                     </p>
                     <Progress value={feesPaidPercentage} className="mt-2 h-2" />
                     </CardContent>

@@ -86,7 +86,7 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                     <TableCell>
                       <Badge variant={hasOutstanding ? 'destructive' : 'secondary'}>
                         {hasOutstanding && <AlertTriangle className="mr-1 h-3 w-3" />}
-                        ${student.feesPaid.toLocaleString()} / ${student.totalFees.toLocaleString()}
+                        RWF {student.feesPaid.toLocaleString()} / {student.totalFees.toLocaleString()}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

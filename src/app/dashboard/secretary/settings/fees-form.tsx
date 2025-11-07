@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
-
-const A_LEVEL_FEE = 2000;
-const O_LEVEL_FEE = 1800;
+import { useState, useEffect } from 'react';
+import { useFirestore } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useDocumentData } from 'react-firebase-hooks/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const feesSettingsSchema = z.object({
   oLevelFee: z.coerce.number().min(0, 'Fee must be a positive number.'),
@@ -23,35 +25,79 @@ type FeesSettingsValues = z.infer<typeof feesSettingsSchema>;
 export function FeesForm() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const firestore = useFirestore();
+
+    const feesDocRef = firestore ? doc(firestore, 'settings', 'fees') : null;
+    const [feeSettings, loadingFees] = useDocumentData(feesDocRef);
 
     const form = useForm<FeesSettingsValues>({
         resolver: zodResolver(feesSettingsSchema),
         defaultValues: {
-            oLevelFee: O_LEVEL_FEE,
-            aLevelFee: A_LEVEL_FEE,
+            oLevelFee: 1800,
+            aLevelFee: 2000,
         },
     });
 
+    useEffect(() => {
+        if (feeSettings) {
+            form.reset({
+                oLevelFee: feeSettings.oLevelFee,
+                aLevelFee: feeSettings.aLevelFee,
+            });
+        }
+    }, [feeSettings, form]);
+
     async function onSubmit(data: FeesSettingsValues) {
         setIsLoading(true);
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        console.log('Updated Fee Settings:', data);
+        if (!firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Firestore not available.' });
+            setIsLoading(false);
+            return;
+        }
 
-        toast({
-            title: "Settings Saved",
-            description: "The school fee structure has been updated.",
-        });
+        try {
+            await setDoc(doc(firestore, 'settings', 'fees'), data, { merge: true })
+                .catch((serverError) => {
+                    const permissionError = new FirestorePermissionError({
+                        path: 'settings/fees',
+                        operation: 'update',
+                        requestResourceData: data,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                    throw serverError;
+                });
 
-        setIsLoading(false);
+            toast({
+                title: "Settings Saved",
+                description: "The school fee structure has been updated.",
+            });
+        } catch (e) {
+            console.error("Failed to save settings:", e);
+            if (!(e instanceof FirestorePermissionError)) {
+                 toast({
+                    variant: 'destructive',
+                    title: "Save Failed",
+                    description: "Could not save fee settings. Check permissions or network.",
+                });
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    if (loadingFees) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>School Fee Settings</CardTitle>
-                <CardDescription>Define the standard tuition fees for O-Level and A-Level students.</CardDescription>
+                <CardDescription>Define the standard tuition fees for O-Level and A-Level students in RWF.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
@@ -62,9 +108,9 @@ export function FeesForm() {
                                 name="oLevelFee"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>O-Level Fee (Grades 9 & 10)</FormLabel>
+                                        <FormLabel>O-Level Fee (S1-S3)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="e.g., 1800" {...field} />
+                                            <Input type="number" placeholder="e.g., 500000" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -75,9 +121,9 @@ export function FeesForm() {
                                 name="aLevelFee"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>A-Level Fee (Grades 11 & 12)</FormLabel>
+                                        <FormLabel>A-Level Fee (S4-L5)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="e.g., 2000" {...field} />
+                                            <Input type="number" placeholder="e.g., 600000" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

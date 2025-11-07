@@ -68,9 +68,35 @@
         "feesPaid": {
           "type": "number",
           "description": "The amount of school fees the student has paid."
+        },
+         "utilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "materialId": { "type": "string" },
+              "status": { "type": "string", "enum": ["present", "missing"] }
+            }
+          }
         }
       },
       "required": ["name", "class", "gender", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]
+    },
+    "feeSettings": {
+        "title": "Fee Settings",
+        "description": "Stores the school fee structure.",
+        "type": "object",
+        "properties": {
+            "oLevelFee": {
+                "type": "number",
+                "description": "The tuition fee for O-Level students."
+            },
+            "aLevelFee": {
+                "type": "number",
+                "description": "The tuition fee for A-Level students."
+            }
+        },
+        "required": ["oLevelFee", "aLevelFee"]
     }
   },
   "auth": {
@@ -88,6 +114,12 @@
         "$ref": "#/entities/student"
       },
       "description": "Stores student enrollment information."
+    },
+    "/settings/fees": {
+        "schema": {
+            "$ref": "#/entities/feeSettings"
+        },
+        "description": "Stores the application-wide fee settings."
     }
   }
 }
