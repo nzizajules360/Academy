@@ -57,9 +57,10 @@
           "type": "string",
           "description": "The student's home location."
         },
-        "region": {
+        "religion": {
             "type": "string",
-            "description": "The student's home region."
+            "description": "The student's religion.",
+            "enum": ["Adventist", "Abahamya", "Catholic", "Ajepra", "Muslim"]
         },
         "parentName": {
           "type": "string",

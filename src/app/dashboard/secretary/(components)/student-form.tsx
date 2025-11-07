@@ -24,7 +24,7 @@ const studentFormSchema = z.object({
   class: z.string().min(1, 'Please select a class.'),
   gender: z.enum(['male', 'female'], { required_error: 'Please select a gender.'}),
   location: z.string().min(2, 'Location is required.'),
-  region: z.string().min(2, 'Region is required.'),
+  religion: z.enum(['Adventist', 'Abahamya', 'Catholic', 'Ajepra', 'Muslim'], { required_error: 'Please select a religion.'}),
   parentName: z.string().min(2, 'Parent name must be at least 2 characters.'),
   parentPhone: z.string().regex(/^(07)\d{8}$/, 'Invalid phone number format (e.g., 0788123456).'),
   totalFees: z.coerce.number().min(0, 'Total fees must be a positive number.'),
@@ -55,7 +55,7 @@ export function StudentForm() {
             parentName: '',
             parentPhone: '',
             location: '',
-            region: '',
+            religion: 'Catholic',
             totalFees: 0,
             feesPaid: 0,
         },
@@ -247,13 +247,24 @@ export function StudentForm() {
                                 />
                                 <FormField
                                     control={form.control}
-                                    name="region"
+                                    name="religion"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Region</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="e.g. Eastern Province" {...field} />
-                                            </FormControl>
+                                            <FormLabel>Religion</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a religion" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="Adventist">Adventist</SelectItem>
+                                                    <SelectItem value="Abahamya">Abahamya</SelectItem>
+                                                    <SelectItem value="Catholic">Catholic</SelectItem>
+                                                    <SelectItem value="Ajepra">Ajepra</SelectItem>
+                                                    <SelectItem value="Muslim">Muslim</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}
