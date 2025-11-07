@@ -17,16 +17,17 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { DollarSign, Users, ClipboardList } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { collection, DocumentData } from 'firebase/firestore';
+import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { materials } from '@/lib/data';
+import { useActiveTerm } from '@/hooks/use-active-term';
 
 
 const RecentEnrollments = ({ students }: { students: DocumentData[] }) => (
   <Card>
     <CardHeader>
       <CardTitle>Recent Enrollments</CardTitle>
-      <CardDescription>A list of the most recently added students.</CardDescription>
+      <CardDescription>A list of the most recently added students for the active term.</CardDescription>
     </CardHeader>
     <CardContent>
       <Table>
@@ -51,9 +52,10 @@ const RecentEnrollments = ({ students }: { students: DocumentData[] }) => (
 
 export default function AdminDashboard() {
     const firestore = useFirestore();
-    const [studentsSnapshot, loading] = useCollection(
-        firestore ? collection(firestore, 'students') : null
-    );
+    const { activeTermId, loading: loadingTerm } = useActiveTerm();
+    
+    const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+    const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
     const students = studentsSnapshot?.docs.map(doc => doc.data()) || [];
     const totalStudents = students.length;
@@ -67,7 +69,7 @@ export default function AdminDashboard() {
         return totalMissing + (requiredMaterialsCount - presentCount);
     }, 0);
     
-    if (loading) {
+    if (loadingStudents || loadingTerm) {
         return <div>Loading...</div>
     }
 
@@ -79,7 +81,7 @@ export default function AdminDashboard() {
             <div className="space-y-8">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                    <CardTitle className="text-sm font-medium">Total Students (Active Term)</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>

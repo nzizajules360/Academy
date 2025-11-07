@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection, doc } from 'firebase/firestore';
@@ -16,6 +16,7 @@ import { useDocumentData } from 'react-firebase-hooks/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useRouter } from 'next/navigation';
+import { useActiveTerm } from '@/hooks/use-active-term';
 
 const studentFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -38,6 +39,7 @@ export function StudentForm() {
     const [isLoading, setIsLoading] = useState(false);
     const firestore = useFirestore();
     const router = useRouter();
+    const { activeTermId, loading: loadingTerm } = useActiveTerm();
 
     const feesDocRef = firestore ? doc(firestore, 'settings', 'fees') : null;
     const [feeSettings, loadingFees] = useDocumentData(feesDocRef);
@@ -87,14 +89,26 @@ export function StudentForm() {
             return;
         }
 
+        if (!activeTermId) {
+            toast({
+                variant: 'destructive',
+                title: 'No Active Term',
+                description: 'Cannot enroll student because no academic term is active. Please set one in the settings.',
+            });
+            setIsLoading(false);
+            return;
+        }
+        
+        const studentData = { ...data, termId: activeTermId };
+
         try {
             const studentsCollection = collection(firestore, 'students');
-            await addDoc(studentsCollection, data)
+            await addDoc(studentsCollection, studentData)
                 .catch((serverError) => {
                     const permissionError = new FirestorePermissionError({
                         path: studentsCollection.path,
                         operation: 'create',
-                        requestResourceData: data,
+                        requestResourceData: studentData,
                     });
                     errorEmitter.emit('permission-error', permissionError);
                     throw serverError;
@@ -102,7 +116,7 @@ export function StudentForm() {
 
             toast({
                 title: "Student Registered",
-                description: `${data.name} has been successfully added to the system.`,
+                description: `${data.name} has been successfully added to the system for the active term.`,
             });
             form.reset();
             router.push('/dashboard/secretary/students');
@@ -117,12 +131,36 @@ export function StudentForm() {
             setIsLoading(false);
         }
     }
+    
+    if (loadingTerm) {
+        return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    }
+
+    if (!activeTermId) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Enroll New Student</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="p-8 flex flex-col items-center justify-center text-center gap-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <AlertTriangle className="h-10 w-10 text-destructive" />
+                        <h3 className="text-xl font-bold text-destructive">No Active Term</h3>
+                        <p className="text-destructive/80">
+                            You cannot enroll a new student because there is no active academic term.
+                            Please go to <Link href="/dashboard/secretary/settings/academic" className="underline font-bold">Academic Settings</Link> to create and activate a term.
+                        </p>
+                    </div>
+                </CardContent>
+             </Card>
+        )
+    }
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Enroll New Student</CardTitle>
-                <CardDescription>Fill out the form below to register a new student in the system.</CardDescription>
+                <CardDescription>Fill out the form below to register a new student in the system. They will be enrolled in the current active term.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>

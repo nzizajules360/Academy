@@ -33,9 +33,13 @@
     },
     "student": {
       "title": "Student",
-      "description": "A student enrolled in the school.",
+      "description": "A student enrolled in the school for a specific term.",
       "type": "object",
       "properties": {
+        "termId": {
+            "type": "string",
+            "description": "The ID of the term the student is enrolled in."
+        },
         "name": {
           "type": "string",
           "description": "The student's full name."
@@ -63,11 +67,11 @@
         },
         "totalFees": {
           "type": "number",
-          "description": "The total school fees for the student."
+          "description": "The total school fees for the student for the term."
         },
         "feesPaid": {
           "type": "number",
-          "description": "The amount of school fees the student has paid."
+          "description": "The amount of school fees the student has paid for the term."
         },
          "utilities": {
           "type": "array",
@@ -88,7 +92,7 @@
             "description": "Assigned table for evening."
         }
       },
-      "required": ["name", "class", "gender", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]
+      "required": ["termId", "name", "class", "gender", "location", "parentName", "parentPhone", "totalFees", "feesPaid"]
     },
     "feeSettings": {
         "title": "Fee Settings",
@@ -105,6 +109,51 @@
             }
         },
         "required": ["oLevelFee", "aLevelFee"]
+    },
+    "academicYear": {
+        "title": "Academic Year",
+        "description": "Represents a school academic year.",
+        "type": "object",
+        "properties": {
+            "year": {
+                "type": "string",
+                "description": "The academic year range, e.g., '2024-2025'."
+            }
+        },
+        "required": ["year"]
+    },
+    "term": {
+        "title": "Term",
+        "description": "Represents a term within an academic year.",
+        "type": "object",
+        "properties": {
+            "academicYearId": {
+                "type": "string",
+                "description": "The ID of the parent academic year."
+            },
+            "name": {
+                "type": "string",
+                "description": "The name of the term.",
+                "enum": ["First Term", "Second Term", "Third Term"]
+            },
+            "status": {
+                "type": "string",
+                "description": "The status of the term.",
+                "enum": ["active", "ended"]
+            }
+        },
+        "required": ["academicYearId", "name", "status"]
+    },
+    "appSettings": {
+        "title": "Application Settings",
+        "description": "Global settings for the application.",
+        "type": "object",
+        "properties": {
+            "activeTermId": {
+                "type": "string",
+                "description": "The ID of the currently active term for data entry and display."
+            }
+        }
     }
   },
   "auth": {
@@ -121,13 +170,31 @@
       "schema": {
         "$ref": "#/entities/student"
       },
-      "description": "Stores student enrollment information."
+      "description": "Stores student enrollment information for a specific term."
     },
     "/settings/fees": {
         "schema": {
             "$ref": "#/entities/feeSettings"
         },
         "description": "Stores the application-wide fee settings."
+    },
+    "/academicYears/{yearId}": {
+        "schema": {
+            "$ref": "#/entities/academicYear"
+        },
+        "description": "Stores academic years."
+    },
+    "/academicYears/{yearId}/terms/{termId}": {
+        "schema": {
+            "$ref": "#/entities/term"
+        },
+        "description": "Stores terms for a given academic year."
+    },
+    "/settings/app": {
+        "schema": {
+            "$ref": "#/entities/appSettings"
+        },
+        "description": "Stores global application settings like the active term."
     }
   }
 }

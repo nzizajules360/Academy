@@ -18,7 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, doc, updateDoc, arrayUnion, arrayRemove, query, where } from 'firebase/firestore';
 import { materials } from '@/lib/data';
 import {
     Collapsible,
@@ -27,12 +27,14 @@ import {
   } from "@/components/ui/collapsible"
 import { ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useActiveTerm } from '@/hooks/use-active-term';
 
 export default function UtilitiesPage() {
   const firestore = useFirestore();
-  const [studentsSnapshot, loadingStudents] = useCollection(
-    firestore ? collection(firestore, 'students') : null
-  );
+  const { activeTermId, loading: loadingTerm } = useActiveTerm();
+
+  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
+  const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
   const relevantStudents = studentsSnapshot?.docs.map(doc => ({id: doc.id, ...doc.data()}))
     .filter((student: any) => student.gender === 'male' || student.gender === 'female'); // Assuming all students are relevant for admin
@@ -72,7 +74,7 @@ export default function UtilitiesPage() {
   
   const requiredMaterialsCount = materials.filter(m => m.required).length;
 
-  if (loadingStudents) {
+  if (loadingStudents || loadingTerm) {
       return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -81,7 +83,7 @@ export default function UtilitiesPage() {
       <CardHeader>
         <CardTitle>Student Utility Tracking</CardTitle>
         <CardDescription>
-          Monitor and manage the status of materials for each boarding student.
+          Monitor and manage the status of materials for each boarding student in the active term.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -98,7 +100,7 @@ export default function UtilitiesPage() {
                     {relevantStudents?.map(student => (
                     <Collapsible asChild key={student.id} tag="tbody">
                        <>
-                            <TableRow>
+                            <tr className="border-b">
                                 <TableCell className="font-medium">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
                                 <TableCell className="text-right">
@@ -112,7 +114,7 @@ export default function UtilitiesPage() {
                                         </Button>
                                     </CollapsibleTrigger>
                                 </TableCell>
-                            </TableRow>
+                            </tr>
                             <CollapsibleContent asChild>
                                 <tr className="bg-muted/50 hover:bg-muted/50">
                                     <td colSpan={3} className="p-0">

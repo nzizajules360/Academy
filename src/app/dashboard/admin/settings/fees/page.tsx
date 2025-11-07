@@ -1,11 +1,9 @@
 import { FeesForm } from './fees-form';
-import { AcademicSettings } from './academic-settings';
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-8">
+    <div className="max-w-2xl">
       <FeesForm />
-      <AcademicSettings />
     </div>
   );
 }
