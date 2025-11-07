@@ -42,8 +42,6 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/secretary', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/secretary/students/add', icon: UserPlus, label: 'Enroll Student' },
     { href: '/dashboard/secretary/students', icon: Users, label: 'Manage Students' },
-    { href: '/dashboard/secretary/refectory', icon: Table, label: 'Refectory' },
-    { href: '/dashboard/secretary/reports', icon: FileText, label: 'Reports' },
     { href: '/dashboard/secretary/settings/fees', icon: Settings, label: 'Fee Settings' },
     { href: '/dashboard/secretary/settings/academic', icon: Calendar, label: 'Academic Settings' },
   ],
