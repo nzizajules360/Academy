@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, doc, updateDoc, orderBy, Firestore } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -28,11 +28,6 @@ export default function SentListsPage() {
     : null;
 
   const [lists, loadingLists, error] = useCollectionData(listsQuery, { idField: 'id' });
-
-  const unreadLists = lists?.filter(list => !list.isRead) || [];
-  const readLists = lists?.filter(list => list.isRead) || [];
-
-  const isLoading = loadingUser || loadingLists;
 
   const handleMarkAsRead = async (listId: string) => {
     if (!firestore || updatingLists[listId]) return;
@@ -106,6 +101,12 @@ export default function SentListsPage() {
     );
   };
 
+  const unreadLists = lists?.filter(list => !list.isRead) || [];
+  const readLists = lists?.filter(list => list.isRead) || [];
+
+  const isLoading = loadingUser || loadingLists;
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -149,7 +150,7 @@ export default function SentListsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-primary">Unread</h3>
                       <Accordion type="multiple" className="w-full">
-                        {unreadLists.map((list) => React.cloneElement(renderList(list), { key: list.id }))}
+                        {unreadLists.map((list) => renderList(list))}
                       </Accordion>
                     </div>
                   )}
@@ -161,7 +162,7 @@ export default function SentListsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Read</h3>
                       <Accordion type="multiple" className="w-full">
-                        {readLists.map((list) => React.cloneElement(renderList(list), { key: list.id }))}
+                        {readLists.map((list) => renderList(list))}
                       </Accordion>
                     </div>
                   )}
