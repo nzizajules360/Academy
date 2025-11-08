@@ -61,10 +61,10 @@ export default function AttendancePage() {
 
   // 3. Fetch today's attendance records to pre-fill the form
    useEffect(() => {
-    if (students && firestore && activeTermId) {
+    if (students && firestore && activeTermId && students.length > 0) {
       const fetchAttendance = async () => {
         const studentIds = students.map(s => s.id);
-        if (studentIds.length === 0) return;
+        if (studentIds.length === 0 || studentIds.includes(undefined)) return;
 
         const q = query(
           collection(firestore, 'attendanceRecords'),
@@ -103,7 +103,7 @@ export default function AttendancePage() {
             const studentId = student.id;
             const status = attendance[studentId];
 
-            if (status) { // Only save if a status is selected
+            if (status && studentId) { // Only save if a status is selected and ID is valid
                 const recordId = `${activeTermId}_${todayDate}_${studentId}`;
                 const recordRef = doc(firestore, 'attendanceRecords', recordId);
                 

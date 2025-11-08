@@ -1,10 +1,9 @@
 
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, orderBy, Firestore } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -15,41 +14,24 @@ import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 
-export default function SentListsPage() {
-  const { user, loading: loadingUser } = useUser();
-  const firestore = useFirestore();
-
-  const listsQuery = (firestore && user)
-    ? query(
-        collection(firestore, 'sentLists'),
-        where('sentToTeacherId', '==', user.uid),
-        orderBy('sentAt', 'desc')
-      )
-    : null;
-
-  const [lists, loadingLists, error] = useCollectionData(listsQuery, { idField: 'id' });
-  const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
-
-  const unreadLists = lists?.filter(list => !list.isRead) || [];
-  const readLists = lists?.filter(list => list.isRead) || [];
+const ListAccordion = ({ list, firestore }: { list: any, firestore: Firestore | null }) => {
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleMarkAsRead = async (listId: string) => {
-    if (!firestore || isUpdating[listId]) return;
+    if (!firestore || isUpdating) return;
     
-    setIsUpdating(prev => ({ ...prev, [listId]: true }));
+    setIsUpdating(true);
     try {
       const listRef = doc(firestore, 'sentLists', listId);
       await updateDoc(listRef, { isRead: true });
     } catch (error) {
       console.error("Failed to mark as read:", error);
     } finally {
-      setIsUpdating(prev => ({ ...prev, [listId]: false }));
+      setIsUpdating(false);
     }
   };
-
-  const isLoading = loadingUser || loadingLists;
-
-  const ListAccordion = ({ list }: { list: any }) => (
+    
+  return (
      <AccordionItem value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
         <AccordionTrigger
             className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
@@ -57,7 +39,7 @@ export default function SentListsPage() {
         >
           <div className="flex justify-between items-center w-full">
             <div className="flex items-center gap-3 text-left">
-                {isUpdating[list.id] ? (
+                {isUpdating ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                 ) : list.isRead ? (
                     <MailOpen className="h-5 w-5 text-muted-foreground" />
@@ -88,7 +70,7 @@ export default function SentListsPage() {
               </TableHeader>
               <TableBody>
                 {list.students.map((student: any, index: number) => (
-                  <TableRow key={`${list.id}-${student.name}-${index}`}>
+                  <TableRow key={`${list.id}-${student.id || student.name}-${index}`}>
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     {list.listType === 'outstanding_fees' && (
@@ -104,6 +86,27 @@ export default function SentListsPage() {
         </AccordionContent>
     </AccordionItem>
   );
+}
+
+
+export default function SentListsPage() {
+  const { user, loading: loadingUser } = useUser();
+  const firestore = useFirestore();
+
+  const listsQuery = (firestore && user)
+    ? query(
+        collection(firestore, 'sentLists'),
+        where('sentToTeacherId', '==', user.uid),
+        orderBy('sentAt', 'desc')
+      )
+    : null;
+
+  const [lists, loadingLists, error] = useCollectionData(listsQuery, { idField: 'id' });
+  
+  const unreadLists = lists?.filter(list => !list.isRead) || [];
+  const readLists = lists?.filter(list => list.isRead) || [];
+
+  const isLoading = loadingUser || loadingLists;
 
   return (
     <motion.div
@@ -155,7 +158,7 @@ export default function SentListsPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.1 }}
                                 >
-                                    <ListAccordion list={list} />
+                                    <ListAccordion list={list} firestore={firestore} />
                                 </motion.div>
                             ))}
                         </Accordion>
@@ -176,7 +179,7 @@ export default function SentListsPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.1 }}
                                >
-                                    <ListAccordion list={list} />
+                                    <ListAccordion list={list} firestore={firestore} />
                                </motion.div>
                            ))}
                         </Accordion>
