@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -71,7 +70,6 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/teacher', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Attendance' },
     { href: '/dashboard/teacher/lists', icon: Send, label: 'Sent Lists' },
-    { href: '/dashboard/admin/materials', icon: BookUser, label: 'Materials' },
   ]
 };
 
