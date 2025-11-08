@@ -4,6 +4,7 @@ import { UserNav } from '@/components/dashboard/user-nav';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Bell, Sun, Moon } from 'lucide-react';
+import { EnableNotifications } from '@/components/notifications/EnableNotifications';
 import { useTheme } from 'next-themes';
 
 
@@ -14,11 +15,12 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <SidebarTrigger className="sm:hidden" />
       <Breadcrumbs />
-      <div className="relative ml-auto flex items-center md:grow-0 gap-2">
-        <Button variant="outline" size="icon" className="h-8 w-8">
-            <Bell className="h-4 w-4" />
-            <span className="sr-only">Toggle notifications</span>
-        </Button>
+    <div className="relative ml-auto flex items-center md:grow-0 gap-2">
+    <EnableNotifications />
+    <Button variant="outline" size="icon" className="h-8 w-8">
+      <span className="sr-only">Toggle notifications</span>
+      <Bell className="h-4 w-4" />
+    </Button>
         <Button
             variant="outline"
             size="icon"

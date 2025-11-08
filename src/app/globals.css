@@ -82,3 +82,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Responsive helpers */
+@layer utilities {
+  .img-responsive {
+    max-width: 100%;
+    height: auto;
+  }
+  .card-responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+}
