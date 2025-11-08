@@ -2,9 +2,13 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ListChecks, Send, ArrowRight, BookCheck } from 'lucide-react';
+import { ListChecks, Send, ArrowRight, BookCheck, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useUser, useFirestore } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { useCollectionData } from 'react-firebase-hooks/firestore';
+import { Badge } from '@/components/ui/badge';
 
 const ActionCard = ({ title, description, icon: Icon, href, buttonText }: { title: string, description: string, icon: React.ElementType, href: string, buttonText: string }) => (
     <motion.div whileHover={{ y: -5, scale: 1.02 }} className="h-full">
@@ -33,6 +37,20 @@ const ActionCard = ({ title, description, icon: Icon, href, buttonText }: { titl
 )
 
 export default function TeacherDashboard() {
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+
+  const unreadListsQuery = (firestore && user)
+    ? query(
+        collection(firestore, 'sentLists'),
+        where('sentToTeacherId', '==', user.uid),
+        where('isRead', '==', false)
+      )
+    : null;
+  const [unreadLists, loadingLists] = useCollectionData(unreadListsQuery);
+
+  const isLoading = userLoading || loadingLists;
+
   return (
     <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -66,13 +84,26 @@ export default function TeacherDashboard() {
             buttonText="View Reports"
         />
 
-        <ActionCard
-            title="Received Lists"
-            description="View important lists of students sent to you by the school secretary."
-            icon={Send}
-            href="/dashboard/teacher/lists"
-            buttonText="View Lists"
-        />
+        <div className="relative">
+            <ActionCard
+                title="Received Lists"
+                description="View important lists of students sent to you by the school secretary."
+                icon={Send}
+                href="/dashboard/teacher/lists"
+                buttonText="View Lists"
+            />
+             {isLoading ? (
+                <div className="absolute -top-2 -right-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+            ) : (
+                unreadLists && unreadLists.length > 0 && (
+                <Badge className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
+                    {unreadLists.length}
+                </Badge>
+                )
+            )}
+        </div>
       </div>
     </motion.div>
   );
