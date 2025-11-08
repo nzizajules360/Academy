@@ -2,7 +2,7 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ListChecks, Send, ArrowRight } from 'lucide-react';
+import { ListChecks, Send, ArrowRight, BookCheck } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -49,13 +49,21 @@ export default function TeacherDashboard() {
             </p>
         </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <ActionCard
-            title="Class Attendance"
+            title="Daily Attendance"
             description="Take daily attendance for your assigned class to keep records up-to-date."
             icon={ListChecks}
             href="/dashboard/teacher/attendance"
             buttonText="Take Attendance"
+        />
+
+        <ActionCard
+            title="Attendance Reports"
+            description="View historical attendance data for your class for any term or date range."
+            icon={BookCheck}
+            href="/dashboard/teacher/attendance/report"
+            buttonText="View Reports"
         />
 
         <ActionCard

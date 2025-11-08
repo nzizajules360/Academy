@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -5,18 +6,14 @@ import {
   BookUser,
   ClipboardList,
   LayoutDashboard,
-  ListTodo,
   Users,
-  UserPlus,
   Settings,
   Table,
   FileText,
-  Calendar,
   ListChecks,
   Send,
-  DollarSign,
   BedDouble,
-  Book,
+  BookCheck
 } from 'lucide-react';
 import {
   Sidebar,
@@ -68,8 +65,9 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
   ],
   teacher: [
     { href: '/dashboard/teacher', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Attendance' },
-    { href: '/dashboard/teacher/lists', icon: Send, label: 'Sent Lists' },
+    { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Daily Attendance' },
+    { href: '/dashboard/teacher/attendance/report', icon: BookCheck, label: 'Attendance Report' },
+    { href: '/dashboard/teacher/lists', icon: Send, label: 'Received Lists' },
   ]
 };
 
