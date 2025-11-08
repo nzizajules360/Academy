@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, doc, query, where, getDocs, writeBatch, Timestamp, DocumentData } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -41,12 +41,16 @@ export default function AttendancePage() {
         if (!querySnapshot.empty) {
           const assignment = querySnapshot.docs[0].data();
           setAssignedClass(assignment.class);
+        } else {
+            setAssignedClass(null);
         }
         setLoadingAssignment(false);
       };
       fetchAssignment();
+    } else if (!loadingUser) {
+        setLoadingAssignment(false);
     }
-  }, [user, firestore]);
+  }, [user, firestore, loadingUser]);
 
   // 2. Fetch students for the assigned class and active term
   const studentsQuery = (firestore && activeTermId && assignedClass)
@@ -61,10 +65,15 @@ export default function AttendancePage() {
   // 3. Fetch today's attendance and merge with student list
   useEffect(() => {
     const mergeData = async () => {
-      if (!students || !firestore || !activeTermId) {
-        if(students) setStudentsWithAttendance(students.map(s => ({ ...s, attendance: 'unset' })));
+      if (!students) {
+        setStudentsWithAttendance([]);
         return;
       };
+
+      if (!firestore || !activeTermId) {
+        setStudentsWithAttendance(students.map(s => ({ ...s, attendance: 'unset' })));
+        return;
+      }
 
       const studentIds = students.map(s => s.id);
       if (studentIds.length === 0) {
@@ -138,7 +147,7 @@ export default function AttendancePage() {
     }
   };
   
-  const allMarked = studentsWithAttendance.every(s => s.attendance !== 'unset');
+  const allMarked = studentsWithAttendance.length > 0 && studentsWithAttendance.every(s => s.attendance !== 'unset');
   const isLoading = loadingUser || loadingTerm || loadingAssignment || loadingStudents;
 
   const summary = {
