@@ -2,7 +2,7 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ListChecks, Send, ArrowRight, BookOpen } from 'lucide-react';
+import { ListChecks, Send, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -49,7 +49,7 @@ export default function TeacherDashboard() {
             </p>
         </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <ActionCard
             title="Class Attendance"
             description="Take daily attendance for your assigned class to keep records up-to-date."
@@ -64,14 +64,6 @@ export default function TeacherDashboard() {
             icon={Send}
             href="/dashboard/teacher/lists"
             buttonText="View Lists"
-        />
-
-         <ActionCard
-            title="Material List"
-            description="View the official list of required materials for all boarding students."
-            icon={BookOpen}
-            href="/dashboard/admin/materials"
-            buttonText="View Materials"
         />
       </div>
     </motion.div>
