@@ -1,24 +1,23 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, doc, query, where, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
+import { collection, doc, query, where, getDocs, writeBatch, Timestamp, DocumentData } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, CheckCircle, ListChecks, Users } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, ListChecks, Users, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
-type AttendanceStatus = 'present' | 'absent';
+type AttendanceStatus = 'present' | 'absent' | 'unset';
+type StudentWithAttendance = DocumentData & { id: string; attendance: AttendanceStatus };
 
 export default function AttendancePage() {
   const { user, loading: loadingUser } = useUser();
@@ -28,7 +27,7 @@ export default function AttendancePage() {
   
   const [assignedClass, setAssignedClass] = useState<string | null>(null);
   const [loadingAssignment, setLoadingAssignment] = useState(true);
-  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
+  const [studentsWithAttendance, setStudentsWithAttendance] = useState<StudentWithAttendance[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [todayDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
@@ -59,38 +58,50 @@ export default function AttendancePage() {
     : null;
   const [students, loadingStudents, errorStudents] = useCollectionData(studentsQuery, { idField: 'id' });
 
-  // 3. Fetch today's attendance records to pre-fill the form
-   useEffect(() => {
-    if (students && firestore && activeTermId && students.length > 0) {
-      const fetchAttendance = async () => {
-        const studentIds = students.map(s => s.id);
-        if (studentIds.length === 0 || studentIds.includes(undefined)) return;
-
-        const q = query(
-          collection(firestore, 'attendanceRecords'),
-          where('termId', '==', activeTermId),
-          where('date', '==', todayDate),
-          where('studentId', 'in', studentIds)
-        );
-        const querySnapshot = await getDocs(q);
-        const existingAttendance: Record<string, AttendanceStatus> = {};
-        querySnapshot.forEach(doc => {
-          const record = doc.data();
-          existingAttendance[record.studentId] = record.status;
-        });
-        setAttendance(existingAttendance);
+  // 3. Fetch today's attendance and merge with student list
+  useEffect(() => {
+    const mergeData = async () => {
+      if (!students || !firestore || !activeTermId) {
+        if(students) setStudentsWithAttendance(students.map(s => ({ ...s, attendance: 'unset' })));
+        return;
       };
-      fetchAttendance();
-    }
+
+      const studentIds = students.map(s => s.id);
+      if (studentIds.length === 0) {
+        setStudentsWithAttendance([]);
+        return;
+      }
+      
+      const q = query(
+        collection(firestore, 'attendanceRecords'),
+        where('termId', '==', activeTermId),
+        where('date', '==', todayDate),
+        where('studentId', 'in', studentIds)
+      );
+      const querySnapshot = await getDocs(q);
+      const existingAttendance = new Map<string, AttendanceStatus>();
+      querySnapshot.forEach(doc => {
+        const record = doc.data();
+        existingAttendance.set(record.studentId, record.status);
+      });
+      
+      setStudentsWithAttendance(students.map(s => ({
+        ...s,
+        attendance: existingAttendance.get(s.id) || 'unset'
+      })));
+    };
+    
+    mergeData();
   }, [students, firestore, activeTermId, todayDate]);
 
-
-  const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
-    setAttendance(prev => ({ ...prev, [studentId]: status }));
+  const handleStatusChange = (studentId: string, status: 'present' | 'absent') => {
+    setStudentsWithAttendance(prev => 
+      prev.map(s => s.id === studentId ? { ...s, attendance: status } : s)
+    );
   };
 
   const handleSaveAttendance = async () => {
-    if (!firestore || !students || !activeTermId || !assignedClass || !user) {
+    if (!firestore || !studentsWithAttendance || !activeTermId || !assignedClass || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'Missing required data to save.' });
         return;
     }
@@ -99,24 +110,21 @@ export default function AttendancePage() {
     try {
         const batch = writeBatch(firestore);
         
-        for (const student of students) {
-            const studentId = student.id;
-            const status = attendance[studentId];
-
-            if (status && studentId) { // Only save if a status is selected and ID is valid
-                const recordId = `${activeTermId}_${todayDate}_${studentId}`;
+        for (const student of studentsWithAttendance) {
+            if (student.attendance !== 'unset' && student.id) {
+                const recordId = `${activeTermId}_${todayDate}_${student.id}`;
                 const recordRef = doc(firestore, 'attendanceRecords', recordId);
                 
                 batch.set(recordRef, {
-                    studentId,
+                    studentId: student.id,
                     studentName: student.name,
                     date: todayDate,
                     class: assignedClass,
                     termId: activeTermId,
-                    status,
+                    status: student.attendance,
                     recordedBy: user.uid,
                     recordedAt: Timestamp.now(),
-                });
+                }, { merge: true });
             }
         }
         
@@ -130,8 +138,14 @@ export default function AttendancePage() {
     }
   };
   
-  const allMarked = students && students.length > 0 && students.every(s => !!attendance[s.id]);
+  const allMarked = studentsWithAttendance.every(s => s.attendance !== 'unset');
   const isLoading = loadingUser || loadingTerm || loadingAssignment || loadingStudents;
+
+  const summary = {
+    present: studentsWithAttendance.filter(s => s.attendance === 'present').length,
+    absent: studentsWithAttendance.filter(s => s.attendance === 'absent').length,
+    pending: studentsWithAttendance.filter(s => s.attendance === 'unset').length,
+  };
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -175,7 +189,7 @@ export default function AttendancePage() {
       <CardContent className="p-0">
         {errorStudents && <p className="text-destructive p-6">Error loading students: {errorStudents.message}</p>}
         <AnimatePresence>
-        {students && students.length === 0 && (
+        {studentsWithAttendance.length === 0 && !loadingStudents &&(
             <motion.div initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} className="text-center text-muted-foreground p-16">
                 <Users className="mx-auto h-12 w-12 mb-4 opacity-50"/>
                 <h3 className="text-lg font-semibold">No Students in Class</h3>
@@ -183,17 +197,17 @@ export default function AttendancePage() {
             </motion.div>
         )}
         </AnimatePresence>
-        {students && students.length > 0 && (
+        {studentsWithAttendance.length > 0 && (
             <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead className="pl-6 w-[60%]">Student Name</TableHead>
+                    <TableHead className="pl-6 w-[60%]">Student</TableHead>
                     <TableHead className="text-right pr-6">Status</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {students.map((student, index) => (
-                    <motion.tr 
+                    {studentsWithAttendance.map((student, index) => (
+                    <motion.tr
                         key={student.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -209,20 +223,29 @@ export default function AttendancePage() {
                             </div>
                         </TableCell>
                         <TableCell className="text-right pr-6">
-                        <RadioGroup
-                            value={attendance[student.id]}
-                            onValueChange={(value) => handleStatusChange(student.id, value as AttendanceStatus)}
-                            className="flex justify-end gap-6"
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="present" id={`${student.id}-present`} />
-                                <Label htmlFor={`${student.id}-present`}>Present</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="absent" id={`${student.id}-absent`} className="border-destructive text-destructive" />
-                                <Label htmlFor={`${student.id}-absent`}>Absent</Label>
-                            </div>
-                        </RadioGroup>
+                          <div className="flex justify-end gap-2">
+                             <Button
+                                size="sm"
+                                variant={student.attendance === 'present' ? 'default' : 'outline'}
+                                onClick={() => handleStatusChange(student.id, 'present')}
+                                className={cn(
+                                    "w-24",
+                                    student.attendance === 'present' && "bg-green-600 hover:bg-green-700"
+                                )}
+                              >
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Present
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={student.attendance === 'absent' ? 'destructive' : 'outline'}
+                                onClick={() => handleStatusChange(student.id, 'absent')}
+                                className="w-24"
+                              >
+                                <UserX className="mr-2 h-4 w-4" />
+                                Absent
+                              </Button>
+                          </div>
                         </TableCell>
                     </motion.tr>
                     ))}
@@ -230,11 +253,18 @@ export default function AttendancePage() {
             </Table>
         )}
       </CardContent>
-      <CardFooter className="bg-gradient-to-r from-primary/5 to-primary/10 border-t">
-        <p className="text-xs text-muted-foreground">
-            {allMarked ? 'All students have been marked.' : 'Please mark all students to save.'}
-        </p>
-      </CardFooter>
+      {studentsWithAttendance.length > 0 && (
+        <CardFooter className="bg-gradient-to-r from-primary/5 to-primary/10 border-t flex-wrap gap-4 justify-between">
+            <p className="text-xs text-muted-foreground">
+                {allMarked ? 'All students have been marked.' : 'Please mark all students to save.'}
+            </p>
+            <div className="flex items-center gap-4 text-sm">
+                <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">{summary.present} Present</Badge>
+                <Badge variant="destructive">{summary.absent} Absent</Badge>
+                <Badge variant="outline">{summary.pending} Pending</Badge>
+            </div>
+        </CardFooter>
+      )}
     </Card>
     </motion.div>
   );
