@@ -93,8 +93,8 @@ const StudentListByClass = ({ students, onEdit, onAssignBed }: StudentListByClas
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {studentsByClass[className].map((student) => (
-                  <TableRow key={student.id} className="hover:bg-card/50">
+                {studentsByClass[className].map((student, idx) => (
+                  <TableRow key={student.id ?? `${className}-${idx}-${student.name ?? idx}`} className="hover:bg-card/50">
                     <TableCell className="font-medium pl-6">
                         <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -154,7 +154,10 @@ export default function StudentsPage() {
   const [isDormFormOpen, setIsDormFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
-  const students = studentsSnapshot?.docs.map(doc => doc.data() as StudentData) || [];
+  const students = studentsSnapshot?.docs.map(d => {
+    const data = d.data() as StudentData;
+    return { id: d.id, ...data };
+  }) || [];
 
   const handleEdit = (student: StudentData) => {
     setSelectedStudent(student);
