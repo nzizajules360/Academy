@@ -69,6 +69,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                     description: `Information for ${student.name} has been updated.`,
                 });
                 onUpdate();
+                onOpenChange(false);
             })
             .catch(serverError => {
                  const permissionError = new FirestorePermissionError({
@@ -81,7 +82,6 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
             })
             .finally(() => {
                 setIsLoading(false);
-                onOpenChange(false);
             });
     }
 
