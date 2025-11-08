@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -34,12 +35,11 @@ export default function SentListsPage() {
   const isLoading = loadingUser || loadingLists;
 
   const handleMarkAsRead = async (listId: string) => {
-    const db = firestore; // Capture firestore in a constant
-    if (!db || updatingLists[listId]) return;
+    if (!firestore || updatingLists[listId]) return;
     
     setUpdatingLists(prev => ({...prev, [listId]: true }));
     try {
-      const listRef = doc(db, 'sentLists', listId);
+      const listRef = doc(firestore, 'sentLists', listId);
       await updateDoc(listRef, { isRead: true });
     } catch (error) {
       console.error("Failed to mark as read:", error);
@@ -88,7 +88,7 @@ export default function SentListsPage() {
               </TableHeader>
               <TableBody>
                 {list.students.map((student: any, index: number) => (
-                  <TableRow key={`${list.id}-${student.id || index}`}>
+                  <TableRow key={`${list.id}-${student.name}-${index}`}>
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     {list.listType === 'outstanding_fees' && (
@@ -150,9 +150,7 @@ export default function SentListsPage() {
                       <h3 className="text-lg font-semibold mb-4 text-primary">Unread</h3>
                       <Accordion type="multiple" className="w-full">
                         {unreadLists.map((list) => (
-                          <div key={list.id}>
-                            {renderList(list)}
-                          </div>
+                           renderList(list)
                         ))}
                       </Accordion>
                     </div>
@@ -166,9 +164,7 @@ export default function SentListsPage() {
                       <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Read</h3>
                       <Accordion type="multiple" className="w-full">
                         {readLists.map((list) => (
-                          <div key={list.id}>
-                            {renderList(list)}
-                          </div>
+                           renderList(list)
                         ))}
                       </Accordion>
                     </div>
