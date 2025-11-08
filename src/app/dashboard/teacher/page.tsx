@@ -40,13 +40,14 @@ export default function TeacherDashboard() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  const unreadListsQuery = (firestore && user)
+  const unreadListsQuery = (firestore && user?.uid) // Guard: ensure user.uid exists
     ? query(
         collection(firestore, 'sentLists'),
         where('sentToTeacherId', '==', user.uid),
         where('isRead', '==', false)
       )
     : null;
+
   const [unreadLists, loadingLists] = useCollectionData(unreadListsQuery);
 
   const isLoading = userLoading || loadingLists;
