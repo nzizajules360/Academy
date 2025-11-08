@@ -41,7 +41,7 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
     useEffect(() => {
         if (isOpen && student) {
             form.reset({
-                 dormitoryBed: student.dormitoryBed || undefined
+                 dormitoryBed: student.dormitoryBed || ''
             });
         }
     }, [isOpen, student, form]);
@@ -72,14 +72,14 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
               });
               onUpdate();
           })
-          .catch(serverError => {
-              const permissionError = new FirestorePermissionError({
-                  path: studentRef.path,
-                  operation: 'update',
-                  requestResourceData: updateData,
-              });
-              errorEmitter.emit('permission-error', permissionError);
-              console.error("Failed to assign bed:", serverError);
+          .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: studentRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                console.error("Failed to assign bed:", serverError);
           })
           .finally(() => {
               setIsLoading(false);

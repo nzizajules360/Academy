@@ -45,7 +45,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
         if (isOpen && student) {
             form.reset({
                  location: student.location || '',
-                 religion: student.religion || undefined,
+                 religion: student.religion,
                  parentName: student.parentName || '',
                  parentPhone: student.parentPhone || ''
             });

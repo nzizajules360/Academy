@@ -41,7 +41,7 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
     useEffect(() => {
         if (isOpen && student) {
             form.reset({
-                 dormitoryBed: student.dormitoryBed || undefined
+                 dormitoryBed: student.dormitoryBed || ''
             });
         }
     }, [isOpen, student, form]);
