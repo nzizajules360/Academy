@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -160,6 +161,12 @@ function AcademicYearItem({ yearDoc, activeTermId, onSetActiveTerm, isUpdating: 
         try {
             await updateDoc(doc(firestore, 'academicYears', yearDoc.id, 'terms', termId), { status: 'ended' });
             toast.success({ title: 'Success', description: 'Term has been marked as ended.' });
+
+            if (activeTermId === `${yearDoc.id}_${termId}`) {
+                await setDoc(doc(firestore, 'settings', 'app'), { activeTermId: null }, { merge: true });
+                toast({ title: 'Active Term Cleared', description: 'The ended term was the active term. Please set a new active term.' });
+            }
+
         } catch (error) {
              console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not end term.' });
@@ -266,3 +273,5 @@ function AcademicYearItem({ yearDoc, activeTermId, onSetActiveTerm, isUpdating: 
         </AccordionItem>
     );
 }
+
+    
