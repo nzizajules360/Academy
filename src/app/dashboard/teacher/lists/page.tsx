@@ -149,9 +149,7 @@ export default function SentListsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-primary">Unread</h3>
                       <Accordion type="multiple" className="w-full">
-                        {unreadLists.map((list) => (
-                           renderList(list)
-                        ))}
+                        {unreadLists.map((list) => React.cloneElement(renderList(list), { key: list.id }))}
                       </Accordion>
                     </div>
                   )}
@@ -163,9 +161,7 @@ export default function SentListsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Read</h3>
                       <Accordion type="multiple" className="w-full">
-                        {readLists.map((list) => (
-                           renderList(list)
-                        ))}
+                        {readLists.map((list) => React.cloneElement(renderList(list), { key: list.id }))}
                       </Accordion>
                     </div>
                   )}
