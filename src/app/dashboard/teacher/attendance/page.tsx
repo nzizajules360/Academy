@@ -42,7 +42,22 @@ export default function AttendancePage() {
           const assignment = querySnapshot.docs[0].data();
           setAssignedClass(assignment.class);
         } else {
-            setAssignedClass(null);
+            // Fallback: some installations store the assigned class on the user document
+            try {
+              // Try to read the user document directly
+              const userDocSnapshot = await getDocs(query(collection(firestore, 'users'), where('__name__', '==', user.uid)));
+              if (!userDocSnapshot.empty) {
+                const userData = userDocSnapshot.docs[0].data() as any;
+                // try common fields: assignedClass or class
+                const altClass = userData.assignedClass || userData.class || null;
+                setAssignedClass(altClass);
+              } else {
+                setAssignedClass(null);
+              }
+            } catch (err) {
+              console.warn('Failed to read user profile for class fallback', err);
+              setAssignedClass(null);
+            }
         }
         setLoadingAssignment(false);
       };

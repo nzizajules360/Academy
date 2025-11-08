@@ -88,9 +88,9 @@ const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morni
                         <Progress value={boyProgress} />
                         <div className="mt-2 space-y-1">
                           {table.boys.map(s => (
-                              <div key={`${s.id}-${Math.random()}`} className="flex items-center gap-2 text-muted-foreground">
+                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
                                 <UserCheck className="h-3 w-3 text-green-500" />
-                                <span>{s.name} ({s.class})</span>
+                                <span>{s.fullName} ({s.class})</span>
                               </div>
                           ))}
                         </div>
@@ -103,9 +103,9 @@ const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morni
                         <Progress value={girlProgress} />
                          <div className="mt-2 space-y-1">
                           {table.girls.map(s => (
-                              <div key={`${s.id}-${Math.random()}`} className="flex items-center gap-2 text-muted-foreground">
+                              <div key={s.id} className="flex items-center gap-2 text-muted-foreground">
                                 <UserCheck className="h-3 w-3 text-pink-500" />
-                                <span>{s.name} ({s.class})</span>
+                                <span>{s.fullName} ({s.class})</span>
                               </div>
                           ))}
                         </div>

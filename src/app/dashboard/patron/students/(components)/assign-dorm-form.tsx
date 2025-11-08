@@ -48,7 +48,7 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
     useEffect(() => {
         if (isOpen && student) {
             form.reset({
-                 dormitoryBed: student.dormitoryBed || undefined
+                 dormitoryBed: student.dormitoryBed ?? undefined
             });
         }
     }, [isOpen, student, form]);
@@ -185,6 +185,8 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
                                                             type="number" 
                                                             placeholder="e.g., 101" 
                                                             {...field}
+                                                            // keep controlled: show empty string when undefined
+                                                            value={field.value ?? ''}
                                                             className="border-gray-300 focus:border-purple-500 focus:ring-purple-500 h-11 text-lg font-semibold"
                                                         />
                                                     </FormControl>
