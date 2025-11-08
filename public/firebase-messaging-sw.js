@@ -16,11 +16,20 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  const isPaymentAlert = payload.data?.type === 'payment';
+  
   const notificationTitle = payload.notification?.title || 'New notification';
   const notificationOptions = {
     body: payload.notification?.body || '',
-    icon: payload.notification?.icon || '/favicon.ico',
-    data: payload.data || {}
+    icon: isPaymentAlert ? '/payment-alert.png' : (payload.notification?.icon || '/favicon.ico'),
+    badge: isPaymentAlert ? '/payment-badge.png' : undefined,
+    tag: isPaymentAlert ? 'payment-alert' : undefined,
+    priority: isPaymentAlert ? 'high' : 'default',
+    data: payload.data || {},
+    actions: isPaymentAlert ? [
+      { action: 'view', title: 'View Details' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ] : undefined
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

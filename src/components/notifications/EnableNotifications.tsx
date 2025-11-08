@@ -39,10 +39,33 @@ export function EnableNotifications() {
 
     setLoading(true);
     try {
+      // Check if notifications were previously denied
+      if (Notification.permission === 'denied') {
+        toast({ 
+          variant: 'destructive', 
+          title: 'Permission denied', 
+          description: 'Please enable notifications in your browser settings and try again.' 
+        });
+        setLoading(false);
+        return;
+      }
+
       const vapidKey = process.env.NEXT_PUBLIC_FCM_VAPID_KEY ?? null;
-      const token = await requestNotificationPermissionAndGetToken({ firebaseApp, vapidKey });
+      const token = await requestNotificationPermissionAndGetToken({ firebaseApp, vapidKey })
+        .catch(error => {
+          console.error('Notification setup error:', error);
+          if (error.message.includes('not supported')) {
+            throw new Error('Your browser does not support notifications');
+          }
+          return null;
+        });
+
       if (!token) {
-        toast({ variant: 'destructive', title: 'Permission denied', description: 'Notification permission not granted.' });
+        toast({ 
+          variant: 'destructive', 
+          title: 'Notification setup failed', 
+          description: 'Could not set up notifications. Please check your browser settings.' 
+        });
         setLoading(false);
         return;
       }
