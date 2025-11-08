@@ -323,10 +323,11 @@ export default function RefectoryPage() {
 
       studentAssignments.forEach((assignments, studentId) => {
         const studentRef = doc(firestore, 'students', studentId);
-        batch.update(studentRef, { 
+        // Use set with merge to ensure the document is created/updated safely
+        batch.set(studentRef, {
             refectoryTableMorning: assignments.morning ?? null,
             refectoryTableEvening: assignments.evening ?? null
-        });
+        }, { merge: true });
       });
 
       await batch.commit();
@@ -392,7 +393,7 @@ export default function RefectoryPage() {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {(role === 'admin' || role === 'secretary') && (
+            {(role === 'admin' || role === 'secretary' || role === 'matron') && (
               <Button onClick={handleAssignTables} disabled={isAssigning || loading} className="w-full sm:w-auto">
                 {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Assign All Students

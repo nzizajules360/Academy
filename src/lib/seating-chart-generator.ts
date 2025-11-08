@@ -6,9 +6,9 @@ const TABLE_CAPACITY = {
     girls: 7,
 };
 
-const REFEFCTORY_CONFIG = {
-  serie1: 28,
-  serie2: { morning: 11, evening: 8 },
+const REFECTORY_CONFIG = {
+    morning: { first: 28, second: 11 },
+    evening: { first: 28, second: 8 },
 };
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -25,7 +25,7 @@ function initializeTables(totalTables: number): RefectoryTable[] {
     for (let i = 1; i <= totalTables; i++) {
         tables.push({
             tableNumber: i,
-            serie: i <= REFEFCTORY_CONFIG.serie1 ? 1 : 2,
+            serie: i <= REFECTORY_CONFIG.morning.first ? 1 : 2,
             boys: [],
             girls: [],
         });
@@ -34,7 +34,7 @@ function initializeTables(totalTables: number): RefectoryTable[] {
 }
 
 export function generateSeatingChart(students: EnrolledStudent[], previous?: SeatingChart): SeatingChart {
-    const totalMorningTables = REFEFCTORY_CONFIG.serie1 + REFEFCTORY_CONFIG.serie2.morning;
+    const totalMorningTables = REFECTORY_CONFIG.morning.first + REFECTORY_CONFIG.morning.second;
     
     const masterTables = initializeTables(totalMorningTables);
     const assignedIds = new Set<string>();
@@ -91,8 +91,8 @@ export function generateSeatingChart(students: EnrolledStudent[], previous?: Sea
         }))
         .filter(table => {
             if (table.serie === 1) return true;
-            const serie2TableIndex = table.tableNumber - REFEFCTORY_CONFIG.serie1;
-            return serie2TableIndex <= REFEFCTORY_CONFIG.serie2.evening;
+            const serie2TableIndex = table.tableNumber - REFECTORY_CONFIG.morning.first;
+            return serie2TableIndex <= REFECTORY_CONFIG.evening.second;
         });
 
     return {
