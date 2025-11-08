@@ -1,4 +1,3 @@
-
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -61,7 +60,9 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        if (!firestore) {
+        const db = firestore;
+        
+        if (!db) {
             toast({ 
                 variant: 'destructive', 
                 title: 'Error', 
@@ -81,30 +82,38 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
             return;
         }
         
-        const studentRef = doc(firestore, 'students', student.id);
-
-        updateDoc(studentRef, data)
-            .then(() => {
-                toast.success({
-                    title: "✓ Student Updated",
-                    description: `Information for ${student.name} has been updated successfully.`,
-                });
-                onUpdate();
-                onOpenChange(false);
-                form.reset();
-            })
-            .catch(serverError => {
-                const permissionError = new FirestorePermissionError({
-                    path: studentRef.path,
-                    operation: 'update',
-                    requestResourceData: data,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                console.error("Failed to update student:", serverError);
-            })
-            .finally(() => {
-                setIsLoading(false);
+        try {
+            const studentRef = doc(db, 'students', student.id);
+            await updateDoc(studentRef, data);
+            
+            toast({
+                title: "✓ Student Updated",
+                description: `Information for ${student.name} has been updated successfully.`,
+                className: "bg-green-50 border-green-200",
             });
+            
+            onUpdate();
+            onOpenChange(false);
+            form.reset();
+        } catch (serverError) {
+            const studentRef = doc(db, 'students', student.id);
+            const permissionError = new FirestorePermissionError({
+                path: studentRef.path,
+                operation: 'update',
+                requestResourceData: data,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            
+            console.error("Failed to update student:", serverError);
+            
+            toast({
+                variant: 'destructive',
+                title: '✗ Update Failed',
+                description: 'Could not update student information. Please check your permissions and try again.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const handleCancel = () => {
