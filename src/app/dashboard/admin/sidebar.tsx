@@ -12,6 +12,7 @@ import {
   FileText,
   Calendar,
   DollarSign,
+  Book,
 } from 'lucide-react';
 import {
   Sidebar,

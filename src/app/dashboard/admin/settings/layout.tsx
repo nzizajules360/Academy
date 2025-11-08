@@ -1,7 +1,7 @@
 
 'use client';
 import { Button } from "@/components/ui/button";
-import { Settings, Calendar, DollarSign } from "lucide-react";
+import { Settings, Calendar, DollarSign, Book } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -14,6 +14,7 @@ export default function SettingsLayout({
     const settingsNav = [
         { href: '/dashboard/admin/settings/fees', label: 'Fee Settings', icon: DollarSign },
         { href: '/dashboard/admin/settings/academic', label: 'Academic Settings', icon: Calendar },
+        { href: '/dashboard/admin/settings/assignments', label: 'Assignments', icon: Book },
     ];
     
     return (
