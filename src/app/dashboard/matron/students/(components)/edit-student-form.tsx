@@ -59,6 +59,16 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
             setIsLoading(false);
             return;
         }
+
+        if (!student?.id) {
+            toast({ 
+                variant: 'destructive', 
+                title: 'Error', 
+                description: 'Student ID is missing.' 
+            });
+            setIsLoading(false);
+            return;
+        }
         
         const studentRef = doc(firestore, 'students', student.id);
 
