@@ -43,64 +43,6 @@ export default function SentListsPage() {
     }
   };
 
-  const renderList = (list: any) => {
-    return (
-      <AccordionItem value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
-        <AccordionTrigger
-          className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
-          onClick={() => !list.isRead && handleMarkAsRead(list.id)}
-        >
-          <div className="flex justify-between items-center w-full">
-            <div className="flex items-center gap-3 text-left">
-              {updatingLists[list.id] ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : list.isRead ? (
-                <MailOpen className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <Mail className="h-5 w-5 text-primary" />
-              )}
-              <div className="flex flex-col">
-                <span className={`font-semibold ${!list.isRead && 'text-primary'}`}>{list.title}</span>
-                <span className="text-xs text-muted-foreground">
-                  Sent by {list.sentBy} • {list.sentAt ? formatDistanceToNow(list.sentAt.toDate(), { addSuffix: true }) : ''}
-                </span>
-              </div>
-            </div>
-            <Badge variant={list.listType === 'outstanding_fees' ? 'destructive' : 'secondary'} className="hidden sm:inline-flex">
-              {list.listType === 'outstanding_fees' ? 'Outstanding Fees' : 'Class Roster'}
-            </Badge>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="bg-accent/20">
-          <div className="p-4 space-y-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Class</TableHead>
-                  {list.listType === 'outstanding_fees' && <TableHead className="text-right">Amount Due</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.students.map((student: any, index: number) => (
-                  <TableRow key={`${list.id}-${student.name}-${index}`}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    {list.listType === 'outstanding_fees' && (
-                      <TableCell className="text-right font-mono text-red-600">
-                        RWF {student.outstandingBalance?.toLocaleString()}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    );
-  };
-
   const unreadLists = lists?.filter(list => !list.isRead) || [];
   const readLists = lists?.filter(list => list.isRead) || [];
 
@@ -150,7 +92,61 @@ export default function SentListsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-primary">Unread</h3>
                       <Accordion type="multiple" className="w-full">
-                        {unreadLists.map((list) => renderList(list))}
+                        {unreadLists.map((list) => (
+                          <AccordionItem key={list.id} value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
+                            <AccordionTrigger
+                              className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
+                              onClick={() => !list.isRead && handleMarkAsRead(list.id)}
+                            >
+                              <div className="flex justify-between items-center w-full">
+                                <div className="flex items-center gap-3 text-left">
+                                  {updatingLists[list.id] ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                  ) : list.isRead ? (
+                                    <MailOpen className="h-5 w-5 text-muted-foreground" />
+                                  ) : (
+                                    <Mail className="h-5 w-5 text-primary" />
+                                  )}
+                                  <div className="flex flex-col">
+                                    <span className={`font-semibold ${!list.isRead && 'text-primary'}`}>{list.title}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Sent by {list.sentBy} • {list.sentAt ? formatDistanceToNow(list.sentAt.toDate(), { addSuffix: true }) : ''}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Badge variant={list.listType === 'outstanding_fees' ? 'destructive' : 'secondary'} className="hidden sm:inline-flex">
+                                  {list.listType === 'outstanding_fees' ? 'Outstanding Fees' : 'Class Roster'}
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="bg-accent/20">
+                              <div className="p-4 space-y-4">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Student Name</TableHead>
+                                      <TableHead>Class</TableHead>
+                                      {list.listType === 'outstanding_fees' && <TableHead className="text-right">Amount Due</TableHead>}
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {list.students.map((student: any, index: number) => (
+                                      <TableRow key={`${list.id}-${student.name}-${index}`}>
+                                        <TableCell className="font-medium">{student.name}</TableCell>
+                                        <TableCell>{student.class}</TableCell>
+                                        {list.listType === 'outstanding_fees' && (
+                                          <TableCell className="text-right font-mono text-red-600">
+                                            RWF {student.outstandingBalance?.toLocaleString()}
+                                          </TableCell>
+                                        )}
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
                       </Accordion>
                     </div>
                   )}
@@ -162,7 +158,61 @@ export default function SentListsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Read</h3>
                       <Accordion type="multiple" className="w-full">
-                        {readLists.map((list) => renderList(list))}
+                        {readLists.map((list) => (
+                           <AccordionItem key={list.id} value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
+                           <AccordionTrigger
+                             className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
+                             onClick={() => !list.isRead && handleMarkAsRead(list.id)}
+                           >
+                             <div className="flex justify-between items-center w-full">
+                               <div className="flex items-center gap-3 text-left">
+                                 {updatingLists[list.id] ? (
+                                   <Loader2 className="h-5 w-5 animate-spin" />
+                                 ) : list.isRead ? (
+                                   <MailOpen className="h-5 w-5 text-muted-foreground" />
+                                 ) : (
+                                   <Mail className="h-5 w-5 text-primary" />
+                                 )}
+                                 <div className="flex flex-col">
+                                   <span className={`font-semibold ${!list.isRead && 'text-primary'}`}>{list.title}</span>
+                                   <span className="text-xs text-muted-foreground">
+                                     Sent by {list.sentBy} • {list.sentAt ? formatDistanceToNow(list.sentAt.toDate(), { addSuffix: true }) : ''}
+                                   </span>
+                                 </div>
+                               </div>
+                               <Badge variant={list.listType === 'outstanding_fees' ? 'destructive' : 'secondary'} className="hidden sm:inline-flex">
+                                 {list.listType === 'outstanding_fees' ? 'Outstanding Fees' : 'Class Roster'}
+                               </Badge>
+                             </div>
+                           </AccordionTrigger>
+                           <AccordionContent className="bg-accent/20">
+                             <div className="p-4 space-y-4">
+                               <Table>
+                                 <TableHeader>
+                                   <TableRow>
+                                     <TableHead>Student Name</TableHead>
+                                     <TableHead>Class</TableHead>
+                                     {list.listType === 'outstanding_fees' && <TableHead className="text-right">Amount Due</TableHead>}
+                                   </TableRow>
+                                 </TableHeader>
+                                 <TableBody>
+                                   {list.students.map((student: any, index: number) => (
+                                     <TableRow key={`${list.id}-${student.name}-${index}`}>
+                                       <TableCell className="font-medium">{student.name}</TableCell>
+                                       <TableCell>{student.class}</TableCell>
+                                       {list.listType === 'outstanding_fees' && (
+                                         <TableCell className="text-right font-mono text-red-600">
+                                           RWF {student.outstandingBalance?.toLocaleString()}
+                                         </TableCell>
+                                       )}
+                                     </TableRow>
+                                   ))}
+                                 </TableBody>
+                               </Table>
+                             </div>
+                           </AccordionContent>
+                         </AccordionItem>
+                        ))}
                       </Accordion>
                     </div>
                   )}
