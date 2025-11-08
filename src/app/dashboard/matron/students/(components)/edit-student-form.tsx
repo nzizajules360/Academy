@@ -13,6 +13,8 @@ import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc, DocumentData } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const studentFormSchema = z.object({
   location: z.string().min(2, 'Location is required.'),
@@ -60,24 +62,27 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
         
         const studentRef = doc(firestore, 'students', student.id);
 
-        try {
-            await updateDoc(studentRef, data);
-            toast.success({
-                title: "Student Updated",
-                description: `Information for ${student.name} has been updated.`,
+        updateDoc(studentRef, data)
+            .then(() => {
+                toast.success({
+                    title: "Student Updated",
+                    description: `Information for ${student.name} has been updated.`,
+                });
+                onUpdate();
+            })
+            .catch(serverError => {
+                 const permissionError = new FirestorePermissionError({
+                    path: studentRef.path,
+                    operation: 'update',
+                    requestResourceData: data,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                console.error("Failed to update student:", serverError);
+            })
+            .finally(() => {
+                setIsLoading(false);
+                onOpenChange(false);
             });
-            onUpdate();
-        } catch (e) {
-            console.error("Failed to update student:", e);
-            toast({
-                variant: 'destructive',
-                title: "Update Failed",
-                description: "Could not update student information.",
-            });
-        } finally {
-            setIsLoading(false);
-            onOpenChange(false);
-        }
     }
 
     return (

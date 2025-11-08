@@ -12,6 +12,8 @@ import { Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc, DocumentData } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const dormFormSchema = z.object({
   dormitoryBed: z.coerce.number().min(1, 'Bed number must be 1 or greater.'),
@@ -60,25 +62,29 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
         }
         
         const studentRef = doc(firestore, 'students', student.id);
+        const updateData = { dormitoryBed: data.dormitoryBed };
 
-        try {
-            await updateDoc(studentRef, { dormitoryBed: data.dormitoryBed });
-            toast.success({
-                title: "Bed Assigned",
-                description: `${student.name} has been assigned to bed ${data.dormitoryBed}.`,
-            });
-            onUpdate();
-        } catch (e) {
-            console.error("Failed to assign bed:", e);
-            toast({
-                variant: 'destructive',
-                title: "Assignment Failed",
-                description: "Could not assign dormitory bed.",
-            });
-        } finally {
-            setIsLoading(false);
-            onOpenChange(false);
-        }
+        updateDoc(studentRef, updateData)
+          .then(() => {
+              toast.success({
+                  title: "Bed Assigned",
+                  description: `${student.name} has been assigned to bed ${data.dormitoryBed}.`,
+              });
+              onUpdate();
+          })
+          .catch(serverError => {
+              const permissionError = new FirestorePermissionError({
+                  path: studentRef.path,
+                  operation: 'update',
+                  requestResourceData: updateData,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              console.error("Failed to assign bed:", serverError);
+          })
+          .finally(() => {
+              setIsLoading(false);
+              onOpenChange(false);
+          });
     }
 
     return (
