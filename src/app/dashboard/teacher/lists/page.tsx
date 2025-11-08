@@ -14,84 +14,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 
-const ListAccordion = ({ list, firestore }: { list: any, firestore: Firestore | null }) => {
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  const handleMarkAsRead = async (listId: string) => {
-    if (!firestore || isUpdating) return;
-    
-    setIsUpdating(true);
-    try {
-      const listRef = doc(firestore, 'sentLists', listId);
-      await updateDoc(listRef, { isRead: true });
-    } catch (error) {
-      console.error("Failed to mark as read:", error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-    
-  return (
-     <AccordionItem value={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
-        <AccordionTrigger
-            className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
-            onClick={() => !list.isRead && handleMarkAsRead(list.id)}
-        >
-          <div className="flex justify-between items-center w-full">
-            <div className="flex items-center gap-3 text-left">
-                {isUpdating ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                ) : list.isRead ? (
-                    <MailOpen className="h-5 w-5 text-muted-foreground" />
-                ) : (
-                    <Mail className="h-5 w-5 text-primary" />
-                )}
-                <div className="flex flex-col">
-                    <span className={`font-semibold ${!list.isRead && 'text-primary'}`}>{list.title}</span>
-                    <span className="text-xs text-muted-foreground">
-                        Sent by {list.sentBy} • {list.sentAt ? formatDistanceToNow(list.sentAt.toDate(), { addSuffix: true }) : ''}
-                    </span>
-                </div>
-            </div>
-            <Badge variant={list.listType === 'outstanding_fees' ? 'destructive' : 'secondary'} className="hidden sm:inline-flex">
-              {list.listType === 'outstanding_fees' ? 'Outstanding Fees' : 'Class Roster'}
-            </Badge>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="bg-accent/20">
-          <div className="p-4 space-y-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Class</TableHead>
-                  {list.listType === 'outstanding_fees' && <TableHead className="text-right">Amount Due</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.students.map((student: any, index: number) => (
-                  <TableRow key={`${list.id}-${student.id || student.name}-${index}`}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    {list.listType === 'outstanding_fees' && (
-                      <TableCell className="text-right font-mono text-red-600">
-                        RWF {student.outstandingBalance?.toLocaleString()}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </AccordionContent>
-    </AccordionItem>
-  );
-}
-
-
 export default function SentListsPage() {
   const { user, loading: loadingUser } = useUser();
   const firestore = useFirestore();
+  const [updatingLists, setUpdatingLists] = useState<Record<string, boolean>>({});
 
   const listsQuery = (firestore && user)
     ? query(
@@ -103,10 +29,81 @@ export default function SentListsPage() {
 
   const [lists, loadingLists, error] = useCollectionData(listsQuery, { idField: 'id' });
   
+  const handleMarkAsRead = async (listId: string) => {
+    if (!firestore || updatingLists[listId]) return;
+    
+    setUpdatingLists(prev => ({...prev, [listId]: true }));
+    try {
+      const listRef = doc(firestore, 'sentLists', listId);
+      await updateDoc(listRef, { isRead: true });
+    } catch (error) {
+      console.error("Failed to mark as read:", error);
+    } finally {
+      setUpdatingLists(prev => ({...prev, [listId]: false }));
+    }
+  };
+
   const unreadLists = lists?.filter(list => !list.isRead) || [];
   const readLists = lists?.filter(list => list.isRead) || [];
 
   const isLoading = loadingUser || loadingLists;
+
+  const renderList = (list: any) => (
+    <AccordionItem value={list.id} key={list.id} className="border-b-0 mb-3 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
+      <AccordionTrigger
+        className="p-4 text-lg font-semibold hover:no-underline hover:bg-accent/50"
+        onClick={() => !list.isRead && handleMarkAsRead(list.id)}
+      >
+        <div className="flex justify-between items-center w-full">
+          <div className="flex items-center gap-3 text-left">
+            {updatingLists[list.id] ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : list.isRead ? (
+              <MailOpen className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <Mail className="h-5 w-5 text-primary" />
+            )}
+            <div className="flex flex-col">
+              <span className={`font-semibold ${!list.isRead && 'text-primary'}`}>{list.title}</span>
+              <span className="text-xs text-muted-foreground">
+                Sent by {list.sentBy} • {list.sentAt ? formatDistanceToNow(list.sentAt.toDate(), { addSuffix: true }) : ''}
+              </span>
+            </div>
+          </div>
+          <Badge variant={list.listType === 'outstanding_fees' ? 'destructive' : 'secondary'} className="hidden sm:inline-flex">
+            {list.listType === 'outstanding_fees' ? 'Outstanding Fees' : 'Class Roster'}
+          </Badge>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="bg-accent/20">
+        <div className="p-4 space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student Name</TableHead>
+                <TableHead>Class</TableHead>
+                {list.listType === 'outstanding_fees' && <TableHead className="text-right">Amount Due</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {list.students.map((student: any, index: number) => (
+                <TableRow key={`${list.id}-${student.id || student.name}-${index}`}>
+                  <TableCell className="font-medium">{student.name}</TableCell>
+                  <TableCell>{student.class}</TableCell>
+                  {list.listType === 'outstanding_fees' && (
+                    <TableCell className="text-right font-mono text-red-600">
+                      RWF {student.outstandingBalance?.toLocaleString()}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+
 
   return (
     <motion.div
@@ -158,7 +155,7 @@ export default function SentListsPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.1 }}
                                 >
-                                    <ListAccordion list={list} firestore={firestore} />
+                                    {renderList(list)}
                                 </motion.div>
                             ))}
                         </Accordion>
@@ -179,7 +176,7 @@ export default function SentListsPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.1 }}
                                >
-                                    <ListAccordion list={list} firestore={firestore} />
+                                    {renderList(list)}
                                </motion.div>
                            ))}
                         </Accordion>
