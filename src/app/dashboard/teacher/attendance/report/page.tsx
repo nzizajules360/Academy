@@ -39,6 +39,7 @@ export default function AttendanceReportPage() {
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [searched, setSearched] = useState(false);
 
   // Fetch academic years
   useEffect(() => {
@@ -78,8 +79,9 @@ export default function AttendanceReportPage() {
   }, [user, firestore]);
 
   const handleSearch = async () => {
-    if (!firestore || !selectedTerm || !assignedClass) return;
+    if (!firestore || !selectedTerm || !assignedClass || !selectedYear) return;
     setLoading(true);
+    setSearched(true);
 
     const termId = `${selectedYear}_${selectedTerm}`;
     let attendanceQuery = query(
@@ -169,8 +171,8 @@ export default function AttendanceReportPage() {
                  </div>
               </PopoverContent>
             </Popover>
-            <Button onClick={handleSearch} disabled={!selectedTerm || loading}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4" />}
+            <Button onClick={handleSearch} disabled={!selectedTerm || loading || loadingUser || !assignedClass}>
+                {(loading || loadingUser) ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4" />}
                 Search
             </Button>
           </div>
@@ -183,9 +185,9 @@ export default function AttendanceReportPage() {
         </CardContent>
       </Card>
       
-      {loading && <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>}
+      {loading && searched && <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>}
 
-      {!loading && attendanceData.length === 0 && (
+      {!loading && searched && attendanceData.length === 0 && (
           <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                   No attendance records found for the selected criteria.
