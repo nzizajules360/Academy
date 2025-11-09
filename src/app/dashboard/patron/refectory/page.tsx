@@ -1,460 +1,701 @@
 
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, doc, writeBatch, DocumentData, updateDoc, query, where } from 'firebase/firestore';
-import { useCollectionData } from 'react-firebase-hooks/firestore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SeatingChart, RefectoryTable, EnrolledStudent } from '@/types/refectory';
 import { generateSeatingChart } from '@/lib/seating-chart-generator';
-import { Loader2, AlertTriangle, User, Users, FileDown, PlusCircle, UserCheck } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Users, Download, Undo, Loader2, Table as TableIcon, User, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useUser } from '@/firebase';
-import type { UserRole } from '@/types';
-import { Separator } from '@/components/ui/separator';
-import Papa from 'papaparse';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { useActiveTerm } from '@/hooks/use-active-term';
-import { EnrolledStudent } from '@/types/refectory';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as XLSX from 'xlsx';
+import Link from 'next/link';
+import { useTermManager } from '@/hooks/use-term-manager';
+import { useFirestore } from '@/firebase';
+import { writeBatch, doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { DocumentData } from 'firebase/firestore';
 
-interface Student extends DocumentData {
-  id: string;
-  name: string;
-  gender: 'male' | 'female';
-  class: string;
-  refectoryTableMorning?: number;
-  refectoryTableEvening?: number;
-}
+// Enhanced Student Avatar with animations
+const StudentAvatar = ({ student, index }: { student: EnrolledStudent; index: number }) => (
+  <motion.div
+    initial={{ opacity: 0, x: -10 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay: index * 0.05 }}
+    className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors group"
+  >
+    <div className={`h-3 w-3 rounded-full flex-shrink-0 ${
+      student.gender === 'male' 
+        ? 'bg-blue-500 shadow-lg shadow-blue-500/25' 
+        : 'bg-pink-500 shadow-lg shadow-pink-500/25'
+    }`} />
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+        {student.fullName}
+      </p>
+      <p className="text-xs text-muted-foreground truncate">{student.class}</p>
+    </div>
+  </motion.div>
+);
 
-const TableCapacity = {
-  boys: 3,
-  girls: 7,
+// Enhanced Table Card with glassmorphism and animations
+const TableCard = ({ table, index }: { table: RefectoryTable; index: number }) => {
+  const boyCapacity = 3;
+  const girlCapacity = 7;
+  const boysNeeded = boyCapacity - table.boys.length;
+  const girlsNeeded = girlCapacity - table.girls.length;
+  const boysPercentage = (table.boys.length / boyCapacity) * 100;
+  const girlsPercentage = (table.girls.length / girlCapacity) * 100;
+  const totalStudents = table.boys.length + table.girls.length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className="h-full"
+    >
+      <Card className="flex flex-col h-full bg-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
+        {/* Header with gradient */}
+        <CardHeader className="p-6 pb-4 bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <TableIcon className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold">Table {table.tableNumber}</CardTitle>
+                <CardDescription className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="font-semibold">
+                    Serie {table.serie}
+                  </Badge>
+                  <span className="text-xs">• {totalStudents} students</span>
+                </CardDescription>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-6 pt-4 flex-grow">
+          <div className="space-y-4">
+            {/* Boys Progress */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500" />
+                  <p className="text-sm font-semibold text-blue-600">Boys</p>
+                </div>
+                <p className="text-sm font-medium">{table.boys.length}/{boyCapacity}</p>
+              </div>
+              <Progress 
+                value={boysPercentage} 
+                className="h-3 bg-blue-100 [&>div]:bg-blue-500 [&>div]:shadow-lg [&>div]:shadow-blue-500/25"
+              />
+              <AnimatePresence>
+                {boysNeeded > 0 && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-blue-600 font-medium"
+                  >
+                    {boysNeeded} more needed
+                  </motion.p>
+                )}
+                {boysNeeded === 0 && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-green-600 font-medium"
+                  >
+                    ✓ Full capacity
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Girls Progress */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-pink-500" />
+                  <p className="text-sm font-semibold text-pink-600">Girls</p>
+                </div>
+                <p className="text-sm font-medium">{table.girls.length}/{girlCapacity}</p>
+              </div>
+              <Progress 
+                value={girlsPercentage} 
+                className="h-3 bg-pink-100 [&>div]:bg-pink-500 [&>div]:shadow-lg [&>div]:shadow-pink-500/25"
+              />
+              <AnimatePresence>
+                {girlsNeeded > 0 && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-pink-600 font-medium"
+                  >
+                    {girlsNeeded} more needed
+                  </motion.p>
+                )}
+                {girlsNeeded === 0 && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-green-600 font-medium"
+                  >
+                    ✓ Full capacity
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </CardContent>
+
+        {/* Student List */}
+        {(table.boys.length > 0 || table.girls.length > 0) && (
+          <CardFooter className="p-0">
+            <ScrollArea className="h-40 w-full">
+              <div className="p-4 space-y-1">
+                <AnimatePresence>
+                  {table.boys.map((student, i) => (
+                    <StudentAvatar key={`boy-${student.id}-${i}`} student={student} index={i} />
+                  ))}
+                  {table.girls.map((student, i) => (
+                    <StudentAvatar 
+                      key={`girl-${student.id}-${i}`} 
+                      student={student} 
+                      index={table.boys.length + i} 
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </ScrollArea>
+          </CardFooter>
+        )}
+      </Card>
+    </motion.div>
+  );
 };
 
-const SeriesConfig = {
-    morning: { first: 28, second: 11 },
-    evening: { first: 28, second: 8 },
-};
-
-const TableTotals = {
-    morning: SeriesConfig.morning.first + SeriesConfig.morning.second,
-    evening: SeriesConfig.evening.first + SeriesConfig.evening.second,
-}
-
-const TableSeriesView = ({ students, meal }: { students: Student[], meal: 'morning' | 'evening' }) => {
-    const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
-    const series = SeriesConfig[meal];
-
-    const getTableData = (tableNumber: number) => {
-      const studentsAtTable = students.filter(s => s[tableField] === tableNumber);
-      const boys = studentsAtTable.filter(s => s.gender === 'male');
-      const girls = studentsAtTable.filter(s => s.gender === 'female');
-      return {
-        number: tableNumber,
-        students: studentsAtTable,
-        boys,
-        girls,
-        boyCount: boys.length,
-        girlCount: girls.length,
-      };
-    }
-    
-    const firstSeriesTables = Array.from({ length: series.first }, (_, i) => getTableData(i + 1));
-    const secondSeriesTables = Array.from({ length: series.second }, (_, i) => getTableData(series.first + i + 1));
-
-    const renderTableCard = (table: ReturnType<typeof getTableData>, serie: string) => {
-        const boyProgress = (table.boyCount / TableCapacity.boys) * 100;
-        const girlProgress = (table.girlCount / TableCapacity.girls) * 100;
-
-        return (
-            <Card key={`grid-${serie}-${table.number}`}>
-                <CardHeader className="p-4 flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">Table {table.number}</CardTitle>
-                    <Badge variant="outline">Serie {serie}</Badge>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-sm space-y-4">
-                    <div>
-                        <div className="flex justify-between mb-1">
-                            <span>Boys</span>
-                            <span>{table.boyCount}/{TableCapacity.boys}</span>
-                        </div>
-                        <Progress value={boyProgress} />
-                        <div className="mt-2 space-y-1">
-                          {table.boys.map(s => (
-                              <div key={`${s.id}-${Math.random()}`} className="flex items-center gap-2 text-muted-foreground">
-                                <UserCheck className="h-3 w-3 text-green-500" />
-                                <span>{s.name} ({s.class})</span>
-                              </div>
-                          ))}
-                        </div>
-                    </div>
-                     <div>
-                        <div className="flex justify-between mb-1">
-                            <span>Girls</span>
-                            <span>{table.girlCount}/{TableCapacity.girls}</span>
-                        </div>
-                        <Progress value={girlProgress} />
-                         <div className="mt-2 space-y-1">
-                          {table.girls.map(s => (
-                              <div key={`${s.id}-${Math.random()}`} className="flex items-center gap-2 text-muted-foreground">
-                                <UserCheck className="h-3 w-3 text-pink-500" />
-                                <span>{s.name} ({s.class})</span>
-                              </div>
-                          ))}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    return (
-        <div className="space-y-8">
-            <div>
-                <h3 className="text-xl font-semibold mb-4">Serie 1 Tables ({series.first} Tables)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {firstSeriesTables.map(table => renderTableCard(table, '1'))}
-                </div>
-            </div>
-             <div>
-                <h3 className="text-xl font-semibold mb-4">Serie 2 Tables ({series.second} Tables)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {secondSeriesTables.map(table => renderTableCard(table, '2'))}
-                </div>
-            </div>
+// Stats Card Component
+const StatsCard = ({ title, value, icon: Icon, description, color }: any) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.3 }}
+  >
+    <Card className="bg-gradient-to-br from-background to-accent/5 border-border/50 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold mt-2">{value}</p>
+            <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          </div>
+          <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
+            <Icon className="h-6 w-6" />
+          </div>
         </div>
-    );
-}
+      </CardContent>
+    </Card>
+  </motion.div>
+);
 
-const StudentView = ({ students, meal, onAssign }: { students: Student[], meal: 'morning' | 'evening', onAssign: (student: Student, meal: 'morning' | 'evening') => void}) => {
-    const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
-    const sortedStudents = [...students].sort((a,b) => a.name.localeCompare(b.name));
-    return (
-         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Student Name</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Gender</TableHead>
-              <TableHead>Assigned Table</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedStudents.map(student => (
-              <TableRow key={student.id}>
-                <TableCell>{student.name}</TableCell>
-                <TableCell>{student.class}</TableCell>
-                <TableCell>{student.gender}</TableCell>
-                <TableCell>
-                    {student[tableField] ? student[tableField] : <Badge variant="outline">Unassigned</Badge>}
-                </TableCell>
-                 <TableCell className="text-right">
-                    {!student[tableField] && (
-                        <Button size="sm" variant="outline" onClick={() => onAssign(student, meal)}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Assign
-                        </Button>
-                    )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-    )
-}
-
-interface AssignDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  student: Student | null;
-  meal: 'morning' | 'evening';
-  allStudents: Student[];
-  onAssignSuccess: () => void;
-}
-
-const AssignTableDialog = ({ isOpen, onOpenChange, student, meal, allStudents, onAssignSuccess }: AssignDialogProps) => {
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [selectedTable, setSelectedTable] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    
-    useEffect(() => {
-        if (!isOpen) {
-            setSelectedTable('');
-        }
-    }, [isOpen]);
-
-    if (!student) return null;
-
-    const tableField = meal === 'morning' ? 'refectoryTableMorning' : 'refectoryTableEvening';
-    const totalTables = TableTotals[meal];
-    
-    const availableTables = Array.from({ length: totalTables }, (_, i) => i + 1).filter(tableNum => {
-        const studentsAtTable = allStudents.filter(s => s[tableField] === tableNum);
-        const capacity = student.gender === 'male' ? TableCapacity.boys : TableCapacity.girls;
-        const currentCount = studentsAtTable.filter(s => s.gender === student.gender).length;
-        return currentCount < capacity;
-    });
-
-    const handleSave = async () => {
-        if (!firestore || !student || !student.id || !selectedTable) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Student data is incomplete.' });
-            return;
-        }
-        setIsSaving(true);
-        try {
-            const studentRef = doc(firestore, 'students', student.id);
-            await updateDoc(studentRef, {
-                [tableField]: Number(selectedTable)
-            });
-            toast.success({ title: 'Success!', description: `${student.name} has been assigned to table ${selectedTable}.`});
-            onAssignSuccess();
-            onOpenChange(false);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not assign table.' });
-        } finally {
-            setIsSaving(false);
-        }
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Assign Table for {student.name}</DialogTitle>
-                    <DialogDescription>
-                        Assigning for {meal === 'morning' ? 'Morning & Lunch' : 'Evening'} meal.
-                        Only tables with available spots for a {student.gender} are shown.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                     <Select onValueChange={setSelectedTable} value={selectedTable}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a table" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableTables.map(tableNum => (
-                                <SelectItem key={tableNum} value={String(tableNum)}>
-                                    Table {tableNum}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
-                    <Button onClick={handleSave} disabled={isSaving || !selectedTable}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Save Assignment
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-export default function RefectoryPage() {
+export default function SeatingChartPage() {
+  const { enrolledStudents, loading, activeTerm } = useTermManager();
+  const [seatingChart, setSeatingChart] = useState<SeatingChart | null>(null);
+  const [previousSeatingChart, setPreviousSeatingChart] = useState<SeatingChart | null>(null);
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isAssigning, setIsAssigning] = useState(false);
-  const { user } = useUser();
-  const role = user?.role as UserRole | undefined;
-  const [viewType, setViewType] = useState<'table' | 'student'>('table');
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [selectedMeal, setSelectedMeal] = useState<'morning' | 'evening'>('morning');
-  const { activeTermId, loading: loadingTerm } = useActiveTerm();
-  
-  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
-  const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' } as any);
 
-  const handleAssignTables = async () => {
-    setIsAssigning(true);
-    if (!firestore || !students) {
+  const handleGenerateChart = useCallback(() => {
+    if (enrolledStudents && enrolledStudents.length > 0) {
+      setPreviousSeatingChart(seatingChart);
+      const newChart = generateSeatingChart(enrolledStudents, seatingChart || undefined);
+      setSeatingChart(newChart);
+      
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Firestore or student data not available.',
+        title: "Chart Generated",
+        description: "New seating arrangement has been created successfully.",
       });
-      setIsAssigning(false);
+    }
+  }, [enrolledStudents, seatingChart, toast]);
+
+  const handleUndo = () => {
+    if (previousSeatingChart) {
+      setSeatingChart(previousSeatingChart);
+      setPreviousSeatingChart(null);
+      toast({
+        title: "Changes Reverted",
+        description: "Previous seating arrangement restored.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (enrolledStudents && enrolledStudents.length > 0 && !seatingChart) {
+      handleGenerateChart();
+    }
+  }, [enrolledStudents, seatingChart, handleGenerateChart]);
+
+  const handleSaveAssignments = async () => {
+    if (!firestore || !seatingChart || !enrolledStudents) {
+      toast({ variant: 'destructive', title: 'Error', description: 'System not ready.' });
       return;
     }
-
+    setIsAssigning(true);
     try {
-      const enrolledStudents: EnrolledStudent[] = students.map(s => ({
-          id: s.id,
-          fullName: s.name,
-          gender: s.gender,
-          class: s.class,
-      }));
-
-      const { morning, evening } = generateSeatingChart(enrolledStudents);
-
       const batch = writeBatch(firestore);
-      
       const studentAssignments = new Map<string, { morning?: number; evening?: number }>();
 
-      const processShift = (tables: any[], shift: 'morning' | 'evening') => {
+      const processTables = (tables: RefectoryTable[], shift: 'morning' | 'evening') => {
         tables.forEach(table => {
-          [...table.boys, ...table.girls].forEach((student: EnrolledStudent) => {
+          [...table.boys, ...table.girls].forEach(student => {
             if (student.id) {
               if (!studentAssignments.has(student.id)) {
                 studentAssignments.set(student.id, {});
               }
               const assignment = studentAssignments.get(student.id)!;
-              if (shift === 'morning') assignment.morning = table.tableNumber;
-              if (shift === 'evening') assignment.evening = table.tableNumber;
+              if (shift === 'morning') {
+                assignment.morning = table.tableNumber;
+              } else {
+                assignment.evening = table.tableNumber;
+              }
             }
           });
         });
       };
-    
-      processShift(morning, 'morning');
-      processShift(evening, 'evening');
 
+      processTables(seatingChart.morning, 'morning');
+      processTables(seatingChart.evening, 'evening');
+      
       studentAssignments.forEach((assignments, studentId) => {
         const studentRef = doc(firestore, 'students', studentId);
-        batch.update(studentRef, { 
-            refectoryTableMorning: assignments.morning ?? null,
-            refectoryTableEvening: assignments.evening ?? null
-        });
+        const updateData: { refectoryTableMorning?: number | null, refectoryTableEvening?: number | null } = {};
+        if (assignments.morning) updateData.refectoryTableMorning = assignments.morning;
+        if (assignments.evening) updateData.refectoryTableEvening = assignments.evening;
+        batch.update(studentRef, updateData);
       });
-
 
       await batch.commit();
-
-      toast.success({
-        title: 'Assignments Complete',
-        description: 'All students have been assigned to refectory tables.',
-      });
-    } catch (e) {
-      console.error(e);
       toast({
-        variant: 'destructive',
-        title: 'Assignment Failed',
-        description: 'An error occurred while assigning tables. Please try again.',
+        title: "Success!",
+        description: "Seating assignments have been saved to the database.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Error', 
+        description: 'Failed to save assignments. Please try again.' 
       });
     } finally {
       setIsAssigning(false);
     }
   };
-  
-  const handleExport = () => {
-    if (!students) return;
 
-    const dataToExport = students.sort((a,b) => a.name.localeCompare(b.name)).map(s => ({
-        "Student Name": s.name,
-        "Class": s.class,
-        "Gender": s.gender,
-        "Morning & Lunch Table": s.refectoryTableMorning || 'Unassigned',
-        "Evening Table": s.refectoryTableEvening || 'Unassigned',
-    }));
+  const handleExcelExport = (shift: 'morning' | 'evening', serie?: 1 | 2) => {
+    if (!seatingChart) return;
+    
+    const shiftTables = shift === 'morning' ? seatingChart.morning : seatingChart.evening;
+    const tablesToExport = serie ? shiftTables.filter(t => t.serie === serie) : shiftTables;
+    
+    const wb = XLSX.utils.book_new();
 
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `refectory_assignments_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+    const processShiftData = (tables: RefectoryTable[]) => {
+      const data: (string | number)[][] = [];
+      const merges: XLSX.Range[] = [];
+      let rowIndex = 0;
 
-  const handleOpenAssignDialog = (student: Student, meal: 'morning' | 'evening') => {
-    setSelectedStudent(student);
-    setSelectedMeal(meal);
-    setIsAssignDialogOpen(true);
-  }
+      tables.forEach(table => {
+        data.push([`Table Number: ${table.tableNumber}`]);
+        merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: 2 } });
+        rowIndex++;
 
-  const unassignedStudents = students?.filter(s => !s.refectoryTableMorning || !s.refectoryTableEvening).length || 0;
+        data.push(['Gender', 'Student Name', 'Class']);
+        rowIndex++;
+
+        const allStudentsInTable = [
+          ...table.girls.map(s => ({ ...s, genderLabel: 'Girl' })),
+          ...table.boys.map(s => ({ ...s, genderLabel: 'Boy' }))
+        ];
+
+        allStudentsInTable.forEach(student => {
+          data.push([student.genderLabel, student.fullName, (student as EnrolledStudent).class]);
+          rowIndex++;
+        });
+
+        data.push([]);
+        rowIndex++;
+      });
+
+      return { data, merges };
+    };
+
+    const { data, merges } = processShiftData(tablesToExport);
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!merges'] = merges;
+    
+    const sheetName = `${shift === 'morning' ? 'Morning' : 'Evening'}${serie ? ` - Serie ${serie}` : ''}`;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    
+    const fileName = `seating_${shift}${serie ? `_serie_${serie}` : ''}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+
+    toast({
+      title: "Export Complete",
+      description: `Excel file has been downloaded successfully.`,
+    });
+  };
+
+  const renderShift = (tables: RefectoryTable[], shiftName: 'morning' | 'evening') => {
+    if (!tables || tables.length === 0) {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-xl"
+        >
+          <Users className="mx-auto h-16 w-16 mb-4 opacity-50" />
+          <p className="text-lg font-medium">No seating chart available</p>
+          <p className="mt-2">Generate a chart to see the table assignments</p>
+        </motion.div>
+      );
+    }
+
+    const serie1Tables = tables.filter(t => t.serie === 1);
+    const serie2Tables = tables.filter(t => t.serie === 2);
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 p-4 bg-accent/10 rounded-lg">
+            <div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Serie 1 Tables
+              </h3>
+              <p className="text-muted-foreground mt-1">{serie1Tables.length} tables assigned</p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={() => handleExcelExport(shiftName, 1)} 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2 sm:mt-0"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Serie 1
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Download Excel file for Serie 1</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {serie1Tables.map((table, index) => (
+              <TableCard key={table.tableNumber} table={table} index={index} />
+            ))}
+          </motion.div>
+        </div>
+
+        <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 p-4 bg-accent/10 rounded-lg">
+            <div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Serie 2 Tables
+              </h3>
+              <p className="text-muted-foreground mt-1">{serie2Tables.length} tables assigned</p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={() => handleExcelExport(shiftName, 2)} 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2 sm:mt-0"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export Serie 2
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Download Excel file for Serie 2</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {serie2Tables.map((table, index) => (
+              <TableCard key={table.tableNumber} table={table} index={index} />
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <Loader2 className="h-8 w-8 text-primary" />
+          </motion.div>
+        </div>
+      );
+    }
+
+    if (!enrolledStudents || enrolledStudents.length === 0) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-xl"
+        >
+          <Users className="mx-auto h-16 w-16 mb-4 opacity-50" />
+          <p className="text-lg font-semibold">No students enrolled for the selected term</p>
+          <p className="mt-2 text-sm">Select another term or enroll students to generate a seating chart</p>
+          <Link href="/dashboard/secretary/students/add">
+            <Button className="mt-6" size="lg">
+              Enroll Students
+            </Button>
+          </Link>
+        </motion.div>
+      );
+    }
+
+    if (!seatingChart) {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center text-muted-foreground py-16"
+        >
+          <TableIcon className="mx-auto h-16 w-16 mb-4 opacity-50" />
+          <p className="text-lg font-medium">Ready to generate seating chart</p>
+          <p className="mt-2">Click the button below to create table assignments</p>
+        </motion.div>
+      );
+    }
+
+    return (
+      <Tabs defaultValue="morning" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 p-1 bg-accent/20 rounded-lg">
+          <TabsTrigger 
+            value="morning" 
+            className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all"
+          >
+            🌅 Morning & Lunch 
+            <Badge variant="secondary" className="ml-1">
+              {seatingChart.morning.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="evening" 
+            className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-lg transition-all"
+          >
+            🌙 Evening
+            <Badge variant="secondary" className="ml-1">
+              {seatingChart.evening.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="morning" className="mt-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="morning"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderShift(seatingChart.morning, 'morning')}
+            </motion.div>
+          </AnimatePresence>
+        </TabsContent>
+        
+        <TabsContent value="evening" className="mt-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="evening"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderShift(seatingChart.evening, 'evening')}
+            </motion.div>
+          </AnimatePresence>
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  // Calculate statistics
+  const totalStudents = enrolledStudents?.length || 0;
+  const totalTables = seatingChart ? seatingChart.morning.length + seatingChart.evening.length : 0;
+  const assignedStudents = seatingChart ? 
+    seatingChart.morning.reduce((acc, table) => acc + table.boys.length + table.girls.length, 0) +
+    seatingChart.evening.reduce((acc, table) => acc + table.boys.length + table.girls.length, 0) : 0;
 
   return (
-    <>
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <CardTitle>Refectory Seating</CardTitle>
-            <CardDescription>Manage and view student seating arrangements for meals.</CardDescription>
-             {unassignedStudents > 0 && !loading && (
-                <div className="mt-4 flex items-center gap-2 text-sm text-destructive font-medium">
-                    <AlertTriangle className="h-4 w-4" />
-                    There are {unassignedStudents} students without a complete table assignment.
-                </div>
+    <TooltipProvider>
+      <div className="space-y-8">
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6"
+        >
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Refectory Seating
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl">
+              Automatically assign seats to students with intelligent table distribution and real-time updates.
+            </p>
+            {activeTerm && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Active Term: {(activeTerm as DocumentData).name}</span>
+              </div>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            {(role === 'admin' || role === 'secretary') && (
-              <Button onClick={handleAssignTables} disabled={isAssigning || loading} className="w-full sm:w-auto">
-                {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Assign All Students
-              </Button>
-            )}
-             <Button onClick={handleExport} variant="outline" disabled={!students || students.length === 0} className="w-full sm:w-auto">
-                <FileDown className="mr-2 h-4 w-4" />
-                Export CSV
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {(loading || loadingTerm) && <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}
-        {error && <p className="text-destructive">Error loading students: {error.message}</p>}
-        {students && (
-          <Tabs defaultValue="morning">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="morning">Morning & Lunch ({TableTotals.morning} tables)</TabsTrigger>
-              <TabsTrigger value="evening">Evening ({TableTotals.evening} tables)</TabsTrigger>
-            </TabsList>
-            <div className="mt-4">
-                <div className="flex justify-between items-center mb-4">
-                     <Tabs value={viewType} onValueChange={(v) => setViewType(v as 'table' | 'student')} className="mt-4">
-                        <TabsList>
-                            <TabsTrigger value="table"><Users className="mr-2"/>View by Table</TabsTrigger>
-                            <TabsTrigger value="student"><User className="mr-2"/>View by Student</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </div>
-                <Separator />
-                <div className="mt-4">
-                    <TabsContent value="morning">
-                        {viewType === 'student' ? (
-                            <StudentView students={students as Student[]} meal="morning" onAssign={handleOpenAssignDialog} />
-                        ) : (
-                            <TableSeriesView students={students as Student[]} meal="morning" />
-                        )}
-                    </TabsContent>
-                    <TabsContent value="evening">
-                        {viewType === 'student' ? (
-                            <StudentView students={students as Student[]} meal="evening" onAssign={handleOpenAssignDialog} />
-                        ) : (
-                            <TableSeriesView students={students as Student[]} meal="evening" />
-                        )}
-                    </TabsContent>
-                </div>
-            </div>
-          </Tabs>
-        )}
-      </CardContent>
-    </Card>
+          
+          <div className="flex flex-wrap gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleUndo} 
+                  variant="outline" 
+                  disabled={!previousSeatingChart}
+                  className="gap-2"
+                >
+                  <Undo className="h-4 w-4" />
+                  Undo
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Revert to previous arrangement</p>
+              </TooltipContent>
+            </Tooltip>
 
-    <AssignTableDialog
-      isOpen={isAssignDialogOpen}
-      onOpenChange={setIsAssignDialogOpen}
-      student={selectedStudent}
-      meal={selectedMeal}
-      allStudents={students as Student[] || []}
-      onAssignSuccess={() => { /* Data will refetch automatically through react-firebase-hooks */ }}
-    />
-    </>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleGenerateChart} 
+                  disabled={loading || !enrolledStudents || enrolledStudents.length === 0}
+                  className="gap-2 bg-primary hover:bg-primary/90"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Generate Chart
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Create new seating arrangement</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleSaveAssignments} 
+                  disabled={isAssigning || !seatingChart}
+                  className="gap-2 bg-green-600 hover:bg-green-700"
+                >
+                  {isAssigning ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Save Assignments
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Save assignments to database</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </motion.div>
+
+        {/* Statistics Cards */}
+        {enrolledStudents && enrolledStudents.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            <StatsCard
+              title="Total Students"
+              value={totalStudents}
+              icon={Users}
+              description="Enrolled in current term"
+              color="text-blue-500"
+            />
+            <StatsCard
+              title="Total Tables"
+              value={totalTables}
+              icon={TableIcon}
+              description="Across both shifts"
+              color="text-green-500"
+            />
+            <StatsCard
+              title="Assigned Seats"
+              value={assignedStudents}
+              icon={User}
+              description="Students with table assignments"
+              color="text-purple-500"
+            />
+          </motion.div>
+        )}
+
+        {/* Main Content Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-2xl font-bold flex items-center gap-3">
+                <TableIcon className="h-6 w-6 text-primary" />
+                Seat Assignments
+              </CardTitle>
+              <CardDescription className="text-base">
+                Tables are automatically filled with optimal distribution: up to 3 boys and 7 girls per table.
+                Students are intelligently grouped by class and series for better organization.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderContent()}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </TooltipProvider>
   );
 }
