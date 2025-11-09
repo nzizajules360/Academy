@@ -275,7 +275,7 @@ export default function RefectoryPage() {
   const { activeTermId, loading: loadingTerm } = useActiveTerm();
 
   const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
-  const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' });
+  const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' } as any);
 
   const handleAssignTables = async () => {
     setIsAssigning(true);

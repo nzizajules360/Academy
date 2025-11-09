@@ -148,7 +148,7 @@ export default function StudentsPage() {
         where('gender', '==', 'male')
       ) 
     : null;
-  const [studentsSnapshot, loading, error] = useCollection(studentsQuery, { idField: 'id' });
+  const [studentsSnapshot, loading, error] = useCollection(studentsQuery, { idField: 'id' } as any);
 
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isDormFormOpen, setIsDormFormOpen] = useState(false);

@@ -37,7 +37,7 @@ export default function SentListsPage() {
       )
     : null;
 
-  const [lists, loadingLists, error] = useCollectionData(listsQuery, { idField: 'id' });
+  const [lists, loadingLists, error] = useCollectionData(listsQuery, { idField: 'id' } as any);
 
   const handleMarkAsRead = async (listId: string) => {
     if (!firestore || updatingLists[listId]) return;

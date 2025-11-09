@@ -75,7 +75,7 @@ export default function AttendancePage() {
         where('class', '==', assignedClass)
       )
     : null;
-  const [students, loadingStudents, errorStudents] = useCollectionData(studentsQuery, { idField: 'id' });
+  const [students, loadingStudents, errorStudents] = useCollectionData(studentsQuery, { idField: 'id' } as any);
 
   // 3. Fetch today's attendance and merge with student list
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function AttendancePage() {
       };
 
       if (!firestore || !activeTermId) {
-        setStudentsWithAttendance(students.map(s => ({ ...s, attendance: 'unset' })));
+        setStudentsWithAttendance(students.map(s => ({ ...(s as any), id: (s as any).id, attendance: 'unset' })) as StudentWithAttendance[]);
         return;
       }
 
@@ -110,9 +110,10 @@ export default function AttendancePage() {
       });
       
       setStudentsWithAttendance(students.map(s => ({
-        ...s,
-        attendance: existingAttendance.get(s.id) || 'unset'
-      })));
+        ...(s as any),
+        id: (s as any).id,
+        attendance: existingAttendance.get((s as any).id) || 'unset'
+      })) as StudentWithAttendance[]);
     };
     
     mergeData();

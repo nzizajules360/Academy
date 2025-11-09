@@ -14,7 +14,7 @@ export const useTermManager = () => {
         ? query(collection(firestore, 'students'), where('termId', '==', activeTermId))
         : null;
 
-    const [students, loadingStudents, error] = useCollectionData(studentsQuery, { idField: 'id' });
+    const [students, loadingStudents, error] = useCollectionData(studentsQuery, { idField: 'id' } as any);
 
     const enrolledStudents: EnrolledStudent[] | undefined = students?.map(s => ({
         id: s.id,
