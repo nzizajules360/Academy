@@ -9,6 +9,8 @@ import { auth } from "@/firebase/auth"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore"
+import type { Developer } from "@/types/developer"
 
 export default function DeveloperLogin() {
   const [email, setEmail] = useState("")
@@ -32,6 +34,32 @@ export default function DeveloperLogin() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
 
+      // Check developer status in Firestore
+      const db = getFirestore()
+      const developerDoc = await getDoc(doc(db, 'developers', user.uid))
+      
+      if (!developerDoc.exists()) {
+        await auth.signOut()
+        throw new Error("Developer account not found.")
+      }
+
+      const developerData = developerDoc.data() as Developer
+      
+      if (developerData.status === 'rejected') {
+        await auth.signOut()
+        throw new Error("Your developer account has been rejected.")
+      }
+
+      if (developerData.status === 'pending') {
+        await auth.signOut()
+        throw new Error("Your developer account is pending approval.")
+      }
+
+      // Update last login time
+      await updateDoc(doc(db, 'developers', user.uid), {
+        lastLogin: new Date().toISOString()
+      })
+
       // Force refresh the token to get latest claims
       await user.getIdToken(true)
       
@@ -39,7 +67,6 @@ export default function DeveloperLogin() {
       const idTokenResult = await user.getIdTokenResult(true)
       
       if (!idTokenResult.claims.developer) {
-        // Try to set developer claims if they don't exist
         try {
           const response = await fetch('/api/developer/set-claims', {
             method: 'POST',

@@ -10,6 +10,8 @@ import { createUserWithEmailAndPassword } from "firebase/auth"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { getFirestore, doc, setDoc } from "firebase/firestore"
+import type { Developer } from "@/types/developer"
 import { FirebaseError } from "firebase/app"
 
 export default function DeveloperRegister() {
@@ -39,9 +41,31 @@ export default function DeveloperRegister() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
 
-      // Here you would typically make a call to your backend/Firebase Functions
-      // to set the custom claims for the developer role
-      // This requires server-side implementation
+      // Create developer document in Firestore
+      const db = getFirestore()
+      const developerData: Developer = {
+        uid: user.uid,
+        email: user.email!,
+        role: 'developer',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      }
+
+      // Store in developers collection
+      await setDoc(doc(db, 'developers', user.uid), developerData)
+
+      // Set custom claims via API
+      const claimsResponse = await fetch('/api/developer/set-claims', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: user.uid }),
+      })
+
+      if (!claimsResponse.ok) {
+        throw new Error('Failed to set developer permissions')
+      }
 
       toast({
         title: "Success",
