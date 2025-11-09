@@ -5,7 +5,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { useUser } from '@/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import type { UserRole } from '@/types';
 
 export default function DashboardLayout({
@@ -39,15 +39,26 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-muted/40">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-background to-background/95">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-primary/5 blur-[50px] -z-10" />
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-muted/40">
+      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-b from-background to-background/95">
+        <div className="text-center space-y-4">
+          <div className="relative inline-block">
+            <div className="absolute inset-0 rounded-full bg-destructive/10 blur-[30px] -z-10" />
+            <AlertTriangle className="h-12 w-12 text-destructive" />
+          </div>
+          <h1 className="text-xl font-semibold text-destructive">Authentication Error</h1>
+          <p className="text-muted-foreground">Please try refreshing the page or logging in again.</p>
+        </div>
             <p className="text-destructive">Error loading user data. Please try again.</p>
         </div>
     );
