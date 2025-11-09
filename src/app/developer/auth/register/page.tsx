@@ -49,6 +49,18 @@ export default function DeveloperRegister() {
         role: 'developer',
         status: 'pending',
         createdAt: new Date().toISOString(),
+        permissions: {
+          canManageUsers: false,
+          canManageSettings: false,
+          canViewLogs: true,
+          canDeploySystem: false
+        },
+        settings: {
+          notificationsEnabled: true,
+          theme: 'system',
+          timezone: 'UTC'
+        },
+        profile: {}
       }
 
       // Store in developers collection
