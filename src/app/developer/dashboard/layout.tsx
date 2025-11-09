@@ -1,8 +1,8 @@
 'use client'
 
 import { UserNav } from "@/components/dashboard/user-nav"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
+import { DashboardHeader } from "@/components/dashboard/header"
+import { Sidebar } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { auth } from "@/firebase/auth"
@@ -41,11 +41,15 @@ export default function DeveloperDashboardLayout({
 
   return (
     <div className="min-h-screen">
-      <Header className="border-b-2">
-        <UserNav />
-      </Header>
+      <DashboardHeader />
       <div className="flex">
-        <Sidebar className="w-64 border-r-2" />
+        <Sidebar 
+          className="w-64 border-r-2" 
+          menu={[
+            { href: '/dashboard/developer', icon: 'home', label: 'Dashboard' },
+            { href: '/dashboard/developer/settings', icon: 'settings', label: 'Settings' }
+          ]}
+        />
         <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
