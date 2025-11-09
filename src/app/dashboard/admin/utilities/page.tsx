@@ -109,9 +109,8 @@ export default function UtilitiesPage() {
                 </TableHeader>
                 <TableBody>
                     {relevantStudents?.map(student => (
-                    <Collapsible asChild key={student.id} className="border-b-0">
-                       <>
-                            <tr className="border-t">
+                    <Collapsible key={student.id}>
+                            <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
                                 <TableCell className="text-right p-6">
@@ -127,10 +126,10 @@ export default function UtilitiesPage() {
                                         </Button>
                                     </CollapsibleTrigger>
                                 </TableCell>
-                            </tr>
-                            <CollapsibleContent asChild>
-                                <tr className="bg-muted/30 hover:bg-muted/30">
-                                    <td colSpan={3} className="p-0">
+                            </TableRow>
+                            <CollapsibleContent>
+                                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                                    <TableCell colSpan={3} className="p-0">
                                         <div className="p-6">
                                             <h4 className="font-semibold mb-4 text-base">Required Materials for {student.name}</h4>
                                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
@@ -152,10 +151,9 @@ export default function UtilitiesPage() {
                                             ))}
                                             </div>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             </CollapsibleContent>
-                        </>
                     </Collapsible>
                     ))}
                 </TableBody>
