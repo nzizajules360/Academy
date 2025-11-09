@@ -40,13 +40,15 @@ export async function requestNotificationPermissionAndGetToken({
     await navigator.serviceWorker.ready;
   } catch (e) {
     throw new Error('Failed to register service worker');
+  }
 
+  // Get FCM token using the registered service worker
   const messaging = getMessaging(firebaseApp);
   try {
     const token = await getToken(messaging, { vapidKey: vapidKey ?? undefined, serviceWorkerRegistration: registration });
     return token || null;
-  } catch (e) {
-    console.error('Error getting FCM token', e);
+  } catch (err) {
+    console.error('Error getting FCM token', err);
     return null;
   }
 }
