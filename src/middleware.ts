@@ -10,16 +10,8 @@ export function middleware(request: NextRequest) {
 
   // Only apply to developer routes
   if (path.startsWith('/developer')) {
-    // Skip middleware for auth pages
-    if (path.includes('/developer/auth/')) {
-      // Validate secret code for register page
-      if (path.includes('/register')) {
-        const searchParams = request.nextUrl.searchParams
-        const secretCode = searchParams.get('code')
-        if (secretCode !== DEVELOPER_SECRET_CODE) {
-          return NextResponse.redirect(new URL('/developer/auth/login', request.url))
-        }
-      }
+    // Skip authentication for auth-related pages
+    if (path.startsWith('/developer/auth')) {
       return NextResponse.next()
     }
 

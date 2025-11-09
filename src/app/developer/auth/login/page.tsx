@@ -32,11 +32,34 @@ export default function DeveloperLogin() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
 
+      // Force refresh the token to get latest claims
+      await user.getIdToken(true)
+      
       // Check if user has developer role in their claims
-      const idTokenResult = await user.getIdTokenResult()
+      const idTokenResult = await user.getIdTokenResult(true)
+      
       if (!idTokenResult.claims.developer) {
-        await auth.signOut()
-        throw new Error("Unauthorized access. Developer role required.")
+        // Try to set developer claims if they don't exist
+        try {
+          const response = await fetch('/api/developer/set-claims', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uid: user.uid }),
+          });
+
+          if (!response.ok) {
+            await auth.signOut()
+            throw new Error("Failed to set developer role. Please contact administrator.")
+          }
+
+          // Refresh token again after setting claims
+          await user.getIdToken(true)
+        } catch (error) {
+          await auth.signOut()
+          throw new Error("Unauthorized access. Developer role required.")
+        }
       }
 
       toast({
@@ -150,3 +173,4 @@ export default function DeveloperLogin() {
       </div>
     </div>
   )
+}

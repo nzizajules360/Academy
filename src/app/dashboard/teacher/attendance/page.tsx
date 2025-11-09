@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -15,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type AttendanceStatus = 'present' | 'absent' | 'unset';
 type StudentWithAttendance = DocumentData & { id: string; attendance: AttendanceStatus };
@@ -154,7 +154,7 @@ export default function AttendancePage() {
         }
         
         await batch.commit();
-        toast.success({ title: 'Success', description: 'Attendance has been saved for today.' });
+        toast({ title: 'Success', description: 'Attendance has been saved for today.' });
     } catch (error) {
         console.error("Error saving attendance: ", error);
         toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save attendance records.' });
@@ -232,20 +232,19 @@ export default function AttendancePage() {
                 </TableHeader>
                 <TableBody>
                     {studentsWithAttendance.map((student, index) => (
-                    <motion.tr
-                        key={student.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="border-t"
-                    >
+                    <TableRow key={student.id}>
                         <TableCell className="font-medium pl-6">
-                            <div className="flex items-center gap-3">
+                            <motion.div 
+                                className="flex items-center gap-3"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                            >
                                 <Avatar className="h-8 w-8">
                                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 {student.name}
-                            </div>
+                            </motion.div>
                         </TableCell>
                         <TableCell className="text-right pr-6">
                           <div className="flex justify-end gap-2">
@@ -272,7 +271,7 @@ export default function AttendancePage() {
                               </Button>
                           </div>
                         </TableCell>
-                    </motion.tr>
+                    </TableRow>
                     ))}
                 </TableBody>
             </Table>

@@ -9,6 +9,7 @@ import { auth } from "@/firebase/auth"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { FirebaseError } from "firebase/app"
 
 export default function DeveloperRegister() {

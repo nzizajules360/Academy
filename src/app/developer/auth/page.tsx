@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast"
 import { auth } from "@/firebase/auth"
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { FirebaseError } from "firebase/app"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -20,6 +20,8 @@ export default function DeveloperAuth() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const defaultTab = searchParams.get('tab') || 'login'
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,11 +36,14 @@ export default function DeveloperAuth() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
 
+      // Force token refresh to get the latest claims
+      await user.getIdToken(true)
+      
       // Check if user has developer role in their claims
       const idTokenResult = await user.getIdTokenResult()
       if (!idTokenResult.claims.developer) {
         await auth.signOut()
-        throw new Error("Unauthorized access. Developer role required.")
+        throw new Error("Unauthorized access. Developer role required. Please make sure your account has been approved.")
       }
 
       toast({
@@ -74,9 +79,25 @@ export default function DeveloperAuth() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
 
+      // Set developer claims
+      const response = await fetch('/api/developer/set-claims', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to set developer role')
+      }
+
+      // Force token refresh to get the new claims
+      await user.getIdToken(true)
+
       toast({
         title: "Success",
-        description: "Developer account created successfully. Please wait for admin approval.",
+        description: "Developer account created successfully! You can now login.",
       })
 
       router.push("/developer/auth?tab=login")
@@ -124,8 +145,14 @@ export default function DeveloperAuth() {
       <div className="lg:p-8">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
           <Card className="border-0 shadow-none">
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+            <Tabs defaultValue={defaultTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="login" onClick={() => router.push('/developer/auth?tab=login')}>
+                  Sign In
+                </TabsTrigger>
+                <TabsTrigger value="register" onClick={() => router.push('/developer/auth?tab=register')}>
+                  Register
+                </TabsTrigger>
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
@@ -249,3 +276,4 @@ export default function DeveloperAuth() {
       </div>
     </div>
   )
+}

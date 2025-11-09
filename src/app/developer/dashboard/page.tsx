@@ -118,4 +118,5 @@ export default function DeveloperDashboard() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
+}
