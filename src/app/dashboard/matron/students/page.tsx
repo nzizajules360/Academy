@@ -92,8 +92,8 @@ const StudentListByClass = ({ students, onEdit, onAssignBed }: StudentListByClas
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {studentsByClass[className].map((student, idx) => (
-                  <TableRow key={student.id ?? `${className}-${idx}-${student.name ?? idx}`} className="hover:bg-card/50">
+                {studentsByClass[className].map((student) => (
+                  <TableRow key={student.id} className="hover:bg-card/50">
                     <TableCell className="font-medium pl-6">
                         <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -147,24 +147,13 @@ export default function StudentsPage() {
         where('gender', '==', 'female')
       ) 
     : null;
-<<<<<<< HEAD
-  const [studentsSnapshot, loading, error] = useCollection(studentsQuery, { idField: 'id' } as any);
-=======
   const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' });
->>>>>>> 0329df6 (fix this error)
 
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isDormFormOpen, setIsDormFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
-<<<<<<< HEAD
-  const students = studentsSnapshot?.docs.map(d => {
-    const data = d.data() as StudentData;
-    return { id: d.id, ...data };
-  }) || [];
-=======
-  const studentData = students as StudentData[] || [];
->>>>>>> 0329df6 (fix this error)
+  const studentData = (students as StudentData[]) || [];
 
   const handleEdit = (student: StudentData) => {
     setSelectedStudent(student);
