@@ -14,7 +14,116 @@ import { ShieldCheck, Bell, Power, SlidersHorizontal, AlertTriangle, UserX, Load
 import { useFirestore } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { useDocumentData } from "react-firebase-hooks/firestore"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 
+function SystemNotificationForm() {
+    const [title, setTitle] = useState("")
+    const [message, setMessage] = useState("")
+    const [type, setType] = useState("info")
+    const [loading, setLoading] = useState(false)
+    const { toast } = useToast()
+    const [isOpen, setIsOpen] = useState(false)
+
+    const handleSendNotification = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+
+        try {
+        const response = await fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, message, type, broadcast: true }),
+        })
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to send notification')
+        }
+
+        toast({
+            title: "Success",
+            description: "System notification sent successfully",
+        })
+
+        setTitle("")
+        setMessage("")
+        setType("info")
+        setIsOpen(false)
+        } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message || "Failed to send notification",
+        })
+        } finally {
+        setLoading(false)
+        }
+    }
+
+    return (
+        <>
+            <Button onClick={() => setIsOpen(true)} className="w-full">
+                <Bell className="mr-2"/>
+                Send System Notification
+            </Button>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Broadcast System Notification</DialogTitle>
+                        <DialogDescription>
+                            This message will be sent to all users of the application.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSendNotification} className="space-y-4 py-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="title">Notification Title</Label>
+                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. System Maintenance" />
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                            <Label htmlFor="type">Notification Type</Label>
+                            <Select value={type} onValueChange={setType}>
+                                <SelectTrigger id="type">
+                                <SelectValue placeholder="Select notification type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                <SelectItem value="info">Information</SelectItem>
+                                <SelectItem value="warning">Warning</SelectItem>
+                                <SelectItem value="error">Error</SelectItem>
+                                <SelectItem value="success">Success</SelectItem>
+                                <SelectItem value="maintenance">Maintenance</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="message">Message Content</Label>
+                            <Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} required placeholder="Enter your message" className="min-h-[120px]" />
+                        </div>
+
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary" disabled={loading}>Cancel</Button>
+                            </DialogClose>
+                            <Button type="submit" disabled={loading}>
+                                {loading ? <Loader2 className="animate-spin mr-2"/> : <Bell />}
+                                Send Notification
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </>
+    )
+}
 
 function SystemControlsCard() {
     const firestore = useFirestore()
@@ -119,6 +228,17 @@ export default function DeveloperDashboard() {
                     </CardHeader>
                     <CardContent>
                         <SystemControlsCard />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Bell/> System Notifications</CardTitle>
+                        <CardDescription>
+                            Send a broadcast notification to all users.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <SystemNotificationForm />
                     </CardContent>
                 </Card>
             </div>

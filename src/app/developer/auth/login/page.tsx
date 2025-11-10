@@ -300,12 +300,12 @@ export default function DeveloperLogin() {
                 {/* Register Link */}
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-center text-sm text-slate-400">
-                    Need developer access?{" "}
+                    Need developer permissions?{" "}
                     <a
-                      href="/developer/auth/register"
+                      href="/developer/auth/grant-role"
                       className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-4 transition-colors"
                     >
-                      Request an account
+                      Grant Role
                     </a>
                   </p>
                 </div>
