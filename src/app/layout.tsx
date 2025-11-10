@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/ui/theme-provider';
+import DeactivatedNotice from '@/components/DeactivatedNotice'
 
 export const metadata: Metadata = {
   title: 'CampusConnect',
@@ -39,6 +40,7 @@ export default function RootLayout({
               <main className="relative">
                 {children}
               </main>
+              <DeactivatedNotice />
             </div>
             <Toaster />
           </FirebaseClientProvider>

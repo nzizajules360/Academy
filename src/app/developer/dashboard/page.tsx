@@ -117,6 +117,81 @@ export default function DeveloperDashboard() {
           </form>
         </CardContent>
       </Card>
+      
+      {/* Deactivate user card */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Deactivate User</CardTitle>
+            <CardDescription>
+              Disable a user's account and leave a message they will see when they attempt to sign in.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DeactivateUserForm />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
+}
+
+function DeactivateUserForm() {
+  const [target, setTarget] = useState('') // uid or email
+  const [msg, setMsg] = useState('')
+  const [contact, setContact] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+
+  const handleDeactivate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!target) {
+      toast({ variant: 'destructive', title: 'Enter UID or email' })
+      return
+    }
+    setLoading(true)
+    try {
+      const payload: any = { message: msg || undefined, contact: contact || undefined }
+      // determine whether target looks like an email
+      if (target.includes('@')) payload.email = target
+      else payload.uid = target
+
+      const res = await fetch('/api/developer/deactivate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) throw new Error('Failed to deactivate user')
+
+      toast({ title: 'User deactivated' })
+      setTarget('')
+      setMsg('')
+      setContact('')
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message || '' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleDeactivate} className="space-y-4">
+      <div>
+        <Label>Target UID or Email</Label>
+        <Input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="UID or email" />
+      </div>
+      <div>
+        <Label>Message (shown to user)</Label>
+        <Textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Optional message" />
+      </div>
+      <div>
+        <Label>Contact (how they can reach developer)</Label>
+        <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="email or phone" />
+      </div>
+      <Button type="submit" disabled={loading} className="w-full">
+        {loading ? 'Deactivating...' : 'Deactivate User'}
+      </Button>
+    </form>
+  )
 }
