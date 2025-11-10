@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -9,7 +10,6 @@ import {
   CardTitle,
   CardDescription
 } from '@/components/ui/card';
-import { checkAndNotifyPaymentDeadline } from '@/firebase/payment-alerts';
 import { useFirestore, useFirebaseApp, useUser } from '@/firebase';
 import { useCollection, useDocumentData } from 'react-firebase-hooks/firestore';
 import { collection, doc, query, where } from 'firebase/firestore';
@@ -22,7 +22,6 @@ const OutstandingFeesAlert = () => {
     const firestore = useFirestore();
     const firebaseApp = useFirebaseApp();
     const { user } = useUser();
-    const [lastNotified, setLastNotified] = useState<number>(0);
 
     const activeTermQuery = (firestore && activeTermId && activeTermId.includes('_')) 
         ? doc(firestore, 'academicYears', activeTermId.split('_')[0], 'terms', activeTermId.split('_')[1]) 
@@ -57,36 +56,12 @@ const OutstandingFeesAlert = () => {
     const studentsWithOutstandingFees = studentsSnapshot?.docs.filter(doc => doc.data().feesPaid < doc.data().totalFees).length || 0;
 
     // Check if we should show any alert
-    if (studentsWithOutstandingFees === 0 || (deadline && !isPast(parseISO(deadline)))) {
+    if (studentsWithOutstandingFees === 0 || !deadline || !isPast(parseISO(deadline))) {
         return null;
     }
     
-    const alertTitle = deadline && isPast(parseISO(deadline)) ? "Overdue Payment Alert" : "Outstanding Fee Alert";
-    const alertDescription = deadline && isPast(parseISO(deadline))
-        ? `The payment deadline of ${new Date(deadline).toLocaleDateString()} has passed.`
-        : "A payment deadline has not been set for the active term.";
-
-    // Send notification if deadline has passed and we haven't notified in the last hour
-    useEffect(() => {
-        const now = Date.now();
-        const ONE_HOUR = 60 * 60 * 1000;
-        
-        if (deadline && 
-            isPast(parseISO(deadline)) && 
-            studentsWithOutstandingFees > 0 && 
-            now - lastNotified > ONE_HOUR &&
-            user) {
-            checkAndNotifyPaymentDeadline({
-                firestore,
-                firebaseApp,
-                userId: user.uid,
-                deadline,
-                studentsWithOutstandingFees
-            });
-            setLastNotified(now);
-        }
-    }, [deadline, studentsWithOutstandingFees, user, lastNotified, firestore, firebaseApp]);
-
+    const alertTitle = "Overdue Payment Alert";
+    const alertDescription = `The payment deadline of ${new Date(deadline).toLocaleDateString()} has passed.`;
 
     return (
         <Card className="bg-destructive/10 border-destructive/20 dark:bg-destructive/20 dark:border-destructive/30 overflow-hidden">
