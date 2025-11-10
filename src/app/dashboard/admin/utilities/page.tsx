@@ -109,7 +109,8 @@ export default function UtilitiesPage() {
                 </TableHeader>
                 <TableBody>
                     {relevantStudents?.map(student => (
-                    <Collapsible key={student.id}>
+                    <Collapsible asChild key={student.id} tag="tr">
+                       <>
                             <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
@@ -127,7 +128,7 @@ export default function UtilitiesPage() {
                                     </CollapsibleTrigger>
                                 </TableCell>
                             </TableRow>
-                            <CollapsibleContent>
+                            <CollapsibleContent asChild>
                                 <TableRow className="bg-muted/30 hover:bg-muted/30">
                                     <TableCell colSpan={3} className="p-0">
                                         <div className="p-6">
@@ -154,6 +155,7 @@ export default function UtilitiesPage() {
                                     </TableCell>
                                 </TableRow>
                             </CollapsibleContent>
+                        </>
                     </Collapsible>
                     ))}
                 </TableBody>
