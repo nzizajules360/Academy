@@ -126,9 +126,10 @@ export function FeesForm() {
                 });
 
             setHasChanges(false);
-            toast.success({
+            toast({
                 title: "✅ Settings Saved Successfully",
                 description: "The school fee structure has been updated and will apply to new enrollments.",
+                variant: 'success'
             });
         } catch (e) {
             console.error("Failed to save settings:", e);

@@ -1,4 +1,3 @@
-
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -134,9 +133,10 @@ export function StudentForm() {
                     throw serverError;
                 });
 
-            toast.success({
+            toast({
                 title: "Student Registered",
                 description: `${data.name} has been successfully added to the system for the active term.`,
+                variant: 'success'
             });
             form.reset();
             router.push('/dashboard/secretary/students');

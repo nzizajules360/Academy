@@ -80,6 +80,7 @@ export function StudentFeesForm({ studentId, studentName, totalFees, currentFees
             toast({
                 title: "Fees Updated",
                 description: `Payment status for ${studentName} has been updated.`,
+                variant: 'success',
             });
             onUpdate();
         } catch (e) {

@@ -67,9 +67,7 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        const db = firestore;
-        
-        if (!db) {
+        if (!firestore) {
             toast({ 
                 variant: 'destructive', 
                 title: 'Error', 
@@ -91,40 +89,32 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
             return;
         }
         
-        try {
-            const studentRef = doc(db, 'students', student.id);
-            const updateData = { dormitoryBed: data.dormitoryBed };
-            await updateDoc(studentRef, updateData);
-            
-            toast({
-                title: "✓ Bed Assigned",
-                description: `${student.name} has been assigned to bed ${data.dormitoryBed}.`,
-                className: "bg-green-50 border-green-200",
+        const studentRef = doc(firestore, 'students', student.id);
+        const updateData = { dormitoryBed: data.dormitoryBed };
+        updateDoc(studentRef, updateData)
+            .then(() => {
+                toast({
+                    title: "✓ Bed Assigned",
+                    description: `${student.name} has been assigned to bed ${data.dormitoryBed}.`,
+                    variant: 'success'
+                });
+                
+                onUpdate();
+                onOpenChange(false);
+                form.reset();
+            })
+            .catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: studentRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                console.error("Failed to assign bed:", serverError);
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
-            
-            onUpdate();
-            onOpenChange(false);
-            form.reset();
-        } catch (serverError) {
-            const studentRef = doc(db, 'students', student.id);
-            const updateData = { dormitoryBed: data.dormitoryBed };
-            const permissionError = new FirestorePermissionError({
-                path: studentRef.path,
-                operation: 'update',
-                requestResourceData: updateData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            
-            console.error("Failed to assign bed:", serverError);
-            
-            toast({
-                variant: 'destructive',
-                title: '✗ Assignment Failed',
-                description: 'Could not assign bed. Please check your permissions and try again.',
-            });
-        } finally {
-            setIsLoading(false);
-        }
     }
 
     const handleCancel = () => {

@@ -1,4 +1,3 @@
-
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -74,9 +73,10 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
         updateDoc(studentRef, data)
             .then(() => {
-                toast.success({
+                toast({
                     title: "Student Updated",
                     description: `Information for ${student.name} has been updated.`,
+                    variant: 'success',
                 });
                 onUpdate();
                 onOpenChange(false);
