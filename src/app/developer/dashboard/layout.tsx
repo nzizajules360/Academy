@@ -2,7 +2,7 @@
 
 import { UserNav } from "@/components/dashboard/user-nav"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { Sidebar } from "@/components/ui/sidebar"
+import { Sidebar, SidebarProvider } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { auth } from "@/firebase/auth"
@@ -40,18 +40,16 @@ export default function DeveloperDashboardLayout({
   }, [router, toast])
 
   return (
-    <div className="min-h-screen">
-      <DashboardHeader />
-      <div className="flex">
-        <Sidebar 
-          className="w-64 border-r-2" 
-          menu={[
-            { href: '/dashboard/developer', icon: 'home', label: 'Dashboard' },
-            { href: '/dashboard/developer/settings', icon: 'settings', label: 'Settings' }
-          ]}
-        />
-        <main className="flex-1 p-6">{children}</main>
+    <SidebarProvider>
+      <div className="min-h-screen flex">
+        <Sidebar className="w-64 border-r">
+          {/* Add your sidebar content here based on your Sidebar component's API */}
+        </Sidebar>
+        <div className="flex-1 flex flex-col">
+          <DashboardHeader />
+          <main className="flex-1 p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   )
 }
