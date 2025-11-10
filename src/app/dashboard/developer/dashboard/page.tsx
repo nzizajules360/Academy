@@ -15,146 +15,6 @@ import { useFirestore } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { useDocumentData } from "react-firebase-hooks/firestore"
 
-function DeactivateUserForm() {
-  const [target, setTarget] = useState('') // uid or email
-  const [msg, setMsg] = useState('')
-  const [contact, setContact] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
-
-  const handleDeactivate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!target) {
-      toast({ variant: 'destructive', title: 'Enter UID or email' })
-      return
-    }
-    setLoading(true)
-    try {
-      const payload: any = { message: msg || undefined, contact: contact || undefined }
-      if (target.includes('@')) payload.email = target
-      else payload.uid = target
-
-      const res = await fetch('/api/developer/deactivate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to deactivate user')
-      }
-
-      toast({ title: 'User deactivated successfully' })
-      setTarget('')
-      setMsg('')
-      setContact('')
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message || '' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <form onSubmit={handleDeactivate} className="space-y-4">
-      <div>
-        <Label htmlFor="deactivate-target">Target UID or Email</Label>
-        <Input id="deactivate-target" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="UID or email address" />
-      </div>
-      <div>
-        <Label htmlFor="deactivate-msg">Message (shown to user)</Label>
-        <Textarea id="deactivate-msg" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Optional: Your account has been temporarily disabled..." />
-      </div>
-      <div>
-        <Label htmlFor="deactivate-contact">Contact (how they can reach you)</Label>
-        <Input id="deactivate-contact" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Optional: developer@example.com" />
-      </div>
-      <Button type="submit" variant="destructive" className="w-full" disabled={loading}>
-        {loading ? <Loader2 className="animate-spin mr-2"/> : <UserX />}
-        Deactivate User
-      </Button>
-    </form>
-  )
-}
-
-function SystemNotificationForm() {
-    const [title, setTitle] = useState("")
-    const [message, setMessage] = useState("")
-    const [type, setType] = useState("info")
-    const [loading, setLoading] = useState(false)
-    const { toast } = useToast()
-
-    const handleSendNotification = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
-
-        try {
-        const response = await fetch('/api/notifications/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, message, type, broadcast: true }),
-        })
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to send notification')
-        }
-
-        toast({
-            title: "Success",
-            description: "System notification sent successfully",
-        })
-
-        setTitle("")
-        setMessage("")
-        setType("info")
-        } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: error.message || "Failed to send notification",
-        })
-        } finally {
-        setLoading(false)
-        }
-    }
-
-    return (
-        <form onSubmit={handleSendNotification} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="title">Notification Title</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. System Maintenance" />
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label htmlFor="type">Notification Type</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger id="type">
-                  <SelectValue placeholder="Select notification type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">Information</SelectItem>
-                  <SelectItem value="warning">Warning</SelectItem>
-                  <SelectItem value="error">Error</SelectItem>
-                  <SelectItem value="success">Success</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="message">Message Content</Label>
-              <Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} required placeholder="Enter your message" className="min-h-[120px]" />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2"/> : <Bell />}
-              Send System Notification
-            </Button>
-        </form>
-    )
-}
 
 function SystemControlsCard() {
     const firestore = useFirestore()
@@ -222,7 +82,7 @@ export default function DeveloperDashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-3 space-y-8">
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Power className="text-green-500"/>System Status</CardTitle>
@@ -259,33 +119,6 @@ export default function DeveloperDashboard() {
                     </CardHeader>
                     <CardContent>
                         <SystemControlsCard />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Danger Zone</CardTitle>
-                         <CardDescription>
-                            High-impact actions that affect user accounts directly. Proceed with caution.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <DeactivateUserForm />
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Bell/> System Notifications</CardTitle>
-                        <CardDescription>
-                            Send a broadcast notification to all users.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <SystemNotificationForm />
                     </CardContent>
                 </Card>
             </div>
