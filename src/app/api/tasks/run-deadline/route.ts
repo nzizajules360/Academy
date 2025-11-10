@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server'
 import { initAdmin } from '@/firebase/admin'
 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
       downloadUrl = url
     } catch (e) {
       // fallback: store csv in Firestore report doc
-      const repRef = await firestore.collection('reports').add({ termId, csv, createdAt: new Date().toISOString() })
+      const repRef = await firestore.collection('reports').add({ termId, csv, createdAt: admin.firestore.FieldValue.serverTimestamp() })
       downloadUrl = `/api/tasks/report/${repRef.id}`
     }
 
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       type: 'payment-deadline',
       downloadUrl,
       autoDownload: true,
-      createdAt: new Date().toISOString(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       termId,
     }
 
@@ -73,8 +74,7 @@ export async function POST(request: Request) {
 
     // helper to notify a single user (store doc + send FCM if tokens exist)
     async function notifyUser(uid: string, extra: any = {}) {
-      const notifRef = firestore.collection('users').doc(uid).collection('notifications').doc(String(Date.now()))
-      await notifRef.set({ ...payload, ...extra, read: false })
+      await firestore.collection('users').doc(uid).collection('notifications').add({ ...payload, ...extra, read: false })
       // send FCM to tokens
       const tokensSnap = await firestore.collection('users').doc(uid).collection('fcmTokens').get()
       const tokens = tokensSnap.docs.map(d => d.id)
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
 
     // notify HR users with repeatUntilRead flag
     for (const h of hrUsers.docs) {
-      await notifyUser(h.id, { repeatUntilRead: true, lastRemindedAt: new Date().toISOString() })
+      await notifyUser(h.id, { repeatUntilRead: true, lastRemindedAt: admin.firestore.FieldValue.serverTimestamp() })
     }
 
     return NextResponse.json({ success: true, count: overdue.length, downloadUrl })

@@ -1,8 +1,9 @@
+
 "use client"
 
 import { useEffect } from 'react'
 import { useUser, useFirestore } from '@/firebase'
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
+import { collection, onSnapshot, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
 
 export default function NotificationsListener() {
@@ -12,12 +13,32 @@ export default function NotificationsListener() {
 
   useEffect(() => {
     if (!user || !firestore) return
-    const q = query(collection(firestore, `users/${user.uid}/notifications`), orderBy('createdAt', 'desc'))
+    
+    // Listen for notifications created after the component mounts
+    const q = query(
+      collection(firestore, `users/${user.uid}/notifications`), 
+      orderBy('createdAt', 'desc')
+    );
+
     const unsub = onSnapshot(q, snapshot => {
       snapshot.docChanges().forEach(async change => {
         if (change.type === 'added') {
+          // Ignore initial documents that are already in the cache
+          if (change.doc.metadata.fromCache && change.doc.metadata.hasPendingWrites === false) {
+            return;
+          }
           const data = change.doc.data() as any
-          toast({ title: data.title || 'Notification', description: data.body || '' })
+          const isNew = data.createdAt && (data.createdAt.toMillis() > (Date.now() - 5000)); // 5s tolerance
+          if (!isNew && !change.doc.metadata.hasPendingWrites) {
+              return;
+          }
+
+          toast({ 
+            title: data.title || 'Notification', 
+            description: data.body || '',
+            variant: data.type === 'error' || data.type === 'payment-deadline' ? 'destructive' : 'default'
+          })
+
           if (data.autoDownload && data.downloadUrl) {
             try {
               const res = await fetch(data.downloadUrl)

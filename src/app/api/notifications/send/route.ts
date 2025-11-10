@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server"
 import { initAdmin } from '@/firebase/admin'
 
@@ -5,19 +6,19 @@ export async function POST(request: Request) {
   try {
     const payload = await request.json()
     const { title, message, type, broadcast } = payload || {}
+    const admin = await import('firebase-admin')
+    const { firestore } = initAdmin()
 
     if (!title || !message || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // Store central broadcast record
-    const { firestore } = initAdmin()
-    const record = { title, message, type, createdAt: new Date().toISOString(), broadcast: !!broadcast }
+    const record = { title, message, type, createdAt: admin.firestore.FieldValue.serverTimestamp(), broadcast: !!broadcast }
     await firestore.collection('notifications').add(record)
 
     if (broadcast) {
       // Send to all users' FCM tokens
-      const admin = await import('firebase-admin')
       const messaging = admin.messaging()
       const usersSnap = await firestore.collection('users').get()
       const allTokens: string[] = []
@@ -25,12 +26,12 @@ export async function POST(request: Request) {
         const tokensSnap = await firestore.collection('users').doc(u.id).collection('fcmTokens').get()
         for (const t of tokensSnap.docs) allTokens.push(t.id)
         // store a per-user notification doc for persistence
-        await firestore.collection('users').doc(u.id).collection('notifications').doc(String(Date.now())).set({
+        await firestore.collection('users').doc(u.id).collection('notifications').add({
           title,
           body: message,
           type,
           read: false,
-          createdAt: new Date().toISOString(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
         })
       }
 
