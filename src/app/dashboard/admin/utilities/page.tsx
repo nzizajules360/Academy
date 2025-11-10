@@ -110,7 +110,7 @@ export default function UtilitiesPage() {
                 <TableBody>
                     {relevantStudents?.map(student => (
                     <Collapsible asChild key={student.id} tag="tr">
-                       <>
+                       <React.Fragment>
                             <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
@@ -155,7 +155,7 @@ export default function UtilitiesPage() {
                                     </TableCell>
                                 </TableRow>
                             </CollapsibleContent>
-                        </>
+                        </React.Fragment>
                     </Collapsible>
                     ))}
                 </TableBody>
@@ -166,3 +166,4 @@ export default function UtilitiesPage() {
     </motion.div>
   );
 }
+
