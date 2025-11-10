@@ -3,8 +3,9 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/ui/theme-provider';
-import DeactivatedNotice from '@/components/DeactivatedNotice'
-import NotificationsListener from '@/components/NotificationsListener'
+import DeactivatedNotice from '@/components/DeactivatedNotice';
+import NotificationsListener from '@/components/NotificationsListener';
+import MaintenanceNotice from '@/components/MaintenanceNotice';
 
 export const metadata: Metadata = {
   title: 'CampusConnect',
@@ -43,6 +44,7 @@ export default function RootLayout({
               </main>
               <DeactivatedNotice />
               <NotificationsListener />
+              <MaintenanceNotice />
             </div>
             <Toaster />
           </FirebaseClientProvider>

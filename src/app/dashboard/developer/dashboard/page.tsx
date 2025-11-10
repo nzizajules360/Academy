@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { ShieldCheck, Bell, Power, SlidersHorizontal, AlertTriangle, UserX, Loader2 } from "lucide-react"
+import { ShieldCheck, Bell, Power, SlidersHorizontal, AlertTriangle, UserX, Loader2, Server } from "lucide-react"
 import { useFirestore } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { useDocumentData } from "react-firebase-hooks/firestore"
@@ -128,7 +128,7 @@ function SystemNotificationForm() {
 function SystemControlsCard() {
     const firestore = useFirestore()
     const { toast } = useToast()
-    const settingsRef = firestore ? doc(firestore, 'settings', 'developer') : null;
+    const settingsRef = firestore ? doc(firestore, 'settings', 'system') : null;
     const [settings, loading, error] = useDocumentData(settingsRef);
 
     const handleSettingChange = async (key: string, value: boolean) => {
@@ -176,6 +176,34 @@ function SystemControlsCard() {
     )
 }
 
+function SystemStatusCard() {
+    const firestore = useFirestore();
+    const settingsRef = firestore ? doc(firestore, 'settings', 'system') : null;
+    const [settings, loading] = useDocumentData(settingsRef);
+    const inMaintenance = settings?.maintenanceMode === true;
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Power className={inMaintenance ? "text-orange-500" : "text-green-500"}/>System Status</CardTitle>
+                <CardDescription>
+                    At-a-glance overview of key system metrics.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-2 gap-4 text-center">
+                <div className={`p-4 rounded-lg ${inMaintenance ? 'bg-orange-100/50' : 'bg-green-100/50'}`}>
+                    <p className={`text-sm font-medium ${inMaintenance ? 'text-orange-800' : 'text-green-800'}`}>System</p>
+                    <p className={`text-2xl font-bold ${inMaintenance ? 'text-orange-600' : 'text-green-600'}`}>{inMaintenance ? 'Maintenance' : 'Online'}</p>
+                </div>
+                 <div className="p-4 bg-green-100/50 rounded-lg">
+                    <p className="text-sm font-medium text-green-800">Database</p>
+                    <p className="text-2xl font-bold text-green-600">Online</p>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function DeveloperDashboard() {
   return (
     <div className="space-y-8">
@@ -191,33 +219,8 @@ export default function DeveloperDashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column */}
-            <div className="lg:col-span-3 space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Power className="text-green-500"/>System Status</CardTitle>
-                        <CardDescription>
-                            At-a-glance overview of key system metrics.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div className="p-4 bg-green-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-green-800">API</p>
-                            <p className="text-2xl font-bold text-green-600">Online</p>
-                        </div>
-                         <div className="p-4 bg-green-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-green-800">Database</p>
-                            <p className="text-2xl font-bold text-green-600">Online</p>
-                        </div>
-                         <div className="p-4 bg-blue-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-blue-800">Users</p>
-                            <p className="text-2xl font-bold text-blue-600">1,204</p>
-                        </div>
-                         <div className="p-4 bg-orange-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-orange-800">Logins (24h)</p>
-                            <p className="text-2xl font-bold text-orange-600">342</p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="lg:col-span-2 space-y-8">
+                <SystemStatusCard />
 
                  <Card>
                     <CardHeader>
@@ -230,7 +233,11 @@ export default function DeveloperDashboard() {
                         <SystemControlsCard />
                     </CardContent>
                 </Card>
-                 <Card>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-8">
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Bell/> System Notifications</CardTitle>
                         <CardDescription>
