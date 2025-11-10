@@ -26,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Pencil, Users, BedDouble } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { EditStudentForm } from './(components)/edit-student-form';
@@ -148,16 +148,24 @@ export default function StudentsPage() {
         where('gender', '==', 'male')
       ) 
     : null;
+<<<<<<< HEAD
   const [studentsSnapshot, loading, error] = useCollection(studentsQuery, { idField: 'id' } as any);
+=======
+  const [students, loading, error] = useCollectionData(studentsQuery, { idField: 'id' });
+>>>>>>> 0329df6 (fix this error)
 
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isDormFormOpen, setIsDormFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
 
+<<<<<<< HEAD
   const students = studentsSnapshot?.docs.map(d => {
     const data = d.data() as StudentData;
     return { id: d.id, ...data };
   }) || [];
+=======
+  const studentData = students as StudentData[] || [];
+>>>>>>> 0329df6 (fix this error)
 
   const handleEdit = (student: StudentData) => {
     setSelectedStudent(student);
@@ -199,8 +207,8 @@ export default function StudentsPage() {
         {error && <p className="text-destructive p-4">Error loading students: {error.message}</p>}
         {!(loading || loadingTerm) && !error && (
           <AnimatePresence>
-            {students.length > 0 ? (
-                <StudentListByClass students={students} onEdit={handleEdit} onAssignBed={handleAssignBed} />
+            {studentData.length > 0 ? (
+                <StudentListByClass students={studentData} onEdit={handleEdit} onAssignBed={handleAssignBed} />
             ) : (
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -219,7 +227,7 @@ export default function StudentsPage() {
       </CardContent>
       <CardFooter className="bg-gradient-to-r from-primary/5 to-primary/10 border-t">
         <div className="text-xs text-muted-foreground">
-            { !loading && `Showing ${students.length} students.`}
+            { !loading && `Showing ${studentData.length} students.`}
         </div>
       </CardFooter>
     </Card>
@@ -239,7 +247,7 @@ export default function StudentsPage() {
             isOpen={isDormFormOpen}
             onOpenChange={setIsDormFormOpen}
             student={selectedStudent}
-            allStudents={students}
+            allStudents={studentData}
             onUpdate={handleUpdate}
         />
     )}
