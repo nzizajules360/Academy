@@ -293,5 +293,3 @@ export default function DeveloperDashboard() {
     </div>
   );
 }
-
-    

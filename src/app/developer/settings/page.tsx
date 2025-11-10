@@ -67,7 +67,7 @@ function UserManagement() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const usersQuery = firestore ? collection(firestore, 'users') : null;
-    const [users, loading, error] = useCollectionData(usersQuery);
+    const [users, loading, error] = useCollectionData(usersQuery, { idField: 'uid' });
     const [updating, setUpdating] = useState<Record<string, boolean>>({});
 
     const handleStatusChange = async (uid: string, disabled: boolean) => {
@@ -80,8 +80,13 @@ function UserManagement() {
             });
 
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Failed to update user status');
+                 const errorText = await res.text();
+                 try {
+                    const errorData = JSON.parse(errorText);
+                    throw new Error(errorData.error || 'Failed to update user status');
+                 } catch (e) {
+                    throw new Error(errorText || 'An unknown error occurred');
+                 }
             }
 
             toast({ title: 'Success', description: `User status updated successfully.` });
