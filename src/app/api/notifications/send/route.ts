@@ -1,37 +1,52 @@
 import { NextResponse } from "next/server"
+import { initAdmin } from '@/firebase/admin'
 
-/**
- * Notifications sender route
- *
- * Notes:
- * - This API previously relied on client-side Firebase `auth.currentUser` in a
- *   server route which is not available during SSR. That caused 401 responses.
- * - Per recent requirements, developer access is open: any authenticated client
- *   or trusted caller can POST notifications. For now this route accepts requests
- *   without server-side token verification. If you want to restrict it later,
- *   pass an idToken from the client and verify with the Admin SDK.
- */
 export async function POST(request: Request) {
   try {
-    const data = await request.json()
-    const { title, message, type, sentBy } = data || {}
+    const payload = await request.json()
+    const { title, message, type, broadcast } = payload || {}
 
-    // Validate the input
     if (!title || !message || !type) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // TODO: Implement real sending logic (FCM, database, websockets, etc.)
-    // For now we just log the notification and return success so the client
-    // doesn't get a 401 when calling this endpoint.
-    console.log("Notification queued:", { title, message, type, sentBy })
+    // Store central broadcast record
+    const { firestore } = initAdmin()
+    const record = { title, message, type, createdAt: new Date().toISOString(), broadcast: !!broadcast }
+    await firestore.collection('notifications').add(record)
+
+    if (broadcast) {
+      // Send to all users' FCM tokens
+      const admin = await import('firebase-admin')
+      const messaging = admin.messaging()
+      const usersSnap = await firestore.collection('users').get()
+      const allTokens: string[] = []
+      for (const u of usersSnap.docs) {
+        const tokensSnap = await firestore.collection('users').doc(u.id).collection('fcmTokens').get()
+        for (const t of tokensSnap.docs) allTokens.push(t.id)
+        // store a per-user notification doc for persistence
+        await firestore.collection('users').doc(u.id).collection('notifications').doc(String(Date.now())).set({
+          title,
+          body: message,
+          type,
+          read: false,
+          createdAt: new Date().toISOString(),
+        })
+      }
+
+      if (allTokens.length > 0) {
+        // chunk tokens into batches of 500 for sendMulticast
+        const batches: string[][] = []
+        for (let i = 0; i < allTokens.length; i += 500) batches.push(allTokens.slice(i, i + 500))
+        for (const batch of batches) {
+          await messaging.sendMulticast({ tokens: batch, notification: { title, body: message } })
+        }
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error("Error sending notification:", error)
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    )
+    console.error('Error sending notification:', error)
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
   }
 }
