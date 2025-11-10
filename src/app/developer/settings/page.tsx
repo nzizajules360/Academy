@@ -1,19 +1,21 @@
-
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, doc, setDoc, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot, getDocs, updateDoc } from 'firebase/firestore';
 import { useCollectionData, useDocumentData } from 'react-firebase-hooks/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, ShieldCheck, Users, ToggleRight, AlertCircle } from 'lucide-react';
+import { Loader2, ShieldCheck, Users, ToggleRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 function SystemControls() {
     const firestore = useFirestore();
@@ -71,27 +73,29 @@ function UserManagement() {
     const [updating, setUpdating] = useState<Record<string, boolean>>({});
 
     const handleStatusChange = async (uid: string, disabled: boolean) => {
+        if (!firestore) return;
         setUpdating(prev => ({ ...prev, [uid]: true }));
         try {
-            const res = await fetch('/api/developer/toggle-user-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, disabled }),
+            const userDocRef = doc(firestore, 'users', uid);
+            const updateData = {
+                disabled,
+                disabledMessage: disabled ? 'Your account has been deactivated by a developer.' : null,
+            };
+            await updateDoc(userDocRef, updateData).catch(serverError => {
+                 const permissionError = new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                throw serverError;
             });
-
-            if (!res.ok) {
-                 const errorText = await res.text();
-                 try {
-                    const errorData = JSON.parse(errorText);
-                    throw new Error(errorData.error || 'Failed to update user status');
-                 } catch (e) {
-                    throw new Error(errorText || 'An unknown error occurred');
-                 }
-            }
 
             toast({ title: 'Success', description: `User status updated successfully.` });
         } catch (err: any) {
-            toast({ variant: 'destructive', title: 'Error', description: err.message });
+            if (!(err instanceof FirestorePermissionError)) {
+                toast({ variant: 'destructive', title: 'Error', description: err.message });
+            }
         } finally {
             setUpdating(prev => ({ ...prev, [uid]: false }));
         }
