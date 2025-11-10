@@ -40,7 +40,6 @@
     "events": "^3.3.0",
     "file-saver": "^2.0.5",
     "firebase": "^11.9.1",
-    "firebase-admin": "^13.6.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.475.0",
     "next": "15.3.3",
