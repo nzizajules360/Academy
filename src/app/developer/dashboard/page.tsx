@@ -1,4 +1,3 @@
-
 'use client'
 
 import { Button } from "@/components/ui/button"
@@ -7,16 +6,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { ShieldCheck, Bell, Power, SlidersHorizontal, AlertTriangle, UserX, Loader2 } from "lucide-react"
+import { ShieldCheck, Bell, Power, SlidersHorizontal, AlertTriangle, UserX, Loader2, Database, Users, Activity, TrendingUp, AlertCircle, Send, ServerCog } from "lucide-react"
 import { useFirestore } from "@/firebase"
-import { doc, setDoc } from "firebase/firestore"
-import { useDocumentData } from "react-firebase-hooks/firestore"
+import { doc, setDoc, updateDoc, collection, query, where, getDocs, getDoc } from "firebase/firestore"
+import { useDocumentData, useCollectionData } from "react-firebase-hooks/firestore"
+import { motion } from "framer-motion"
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { Badge } from "@/components/ui/badge"
 
 function DeactivateUserForm() {
-  const [target, setTarget] = useState('') // uid or email
+  const firestore = useFirestore()
+  const [target, setTarget] = useState('')
   const [msg, setMsg] = useState('')
   const [contact, setContact] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,33 +28,61 @@ function DeactivateUserForm() {
 
   const handleDeactivate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!target) {
+    if (!target || !firestore) {
       toast({ variant: 'destructive', title: 'Enter UID or email' })
       return
     }
     setLoading(true)
     try {
-      const payload: any = { message: msg || undefined, contact: contact || undefined }
-      if (target.includes('@')) payload.email = target
-      else payload.uid = target
-
-      const res = await fetch('/api/developer/deactivate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to deactivate user')
+      let userDocRef;
+      
+      // Check if target is email or UID
+      if (target.includes('@')) {
+        // Search for user by email
+        const usersRef = collection(firestore, 'users')
+        const q = query(usersRef, where('email', '==', target))
+        const querySnapshot = await getDocs(q)
+        
+        if (querySnapshot.empty) {
+          throw new Error('User not found with this email')
+        }
+        
+        userDocRef = querySnapshot.docs[0].ref
+      } else {
+        // Direct UID lookup
+        userDocRef = doc(firestore, 'users', target)
+        const userDoc = await getDoc(userDocRef)
+        
+        if (!userDoc.exists()) {
+          throw new Error('User not found with this UID')
+        }
       }
 
-      toast({ title: 'User deactivated successfully' })
+      const updateData = {
+        disabled: true,
+        disabledMessage: msg || 'Your account has been deactivated by an administrator.',
+        disabledContact: contact || null,
+        disabledAt: new Date().toISOString(),
+      }
+
+      await updateDoc(userDocRef, updateData).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw serverError;
+      });
+
+      toast({ title: 'Success', description: 'User deactivated successfully' })
       setTarget('')
       setMsg('')
       setContact('')
     } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message || '' })
+      if (!(err instanceof FirestorePermissionError)) {
+        toast({ variant: 'destructive', title: 'Error', description: err.message || 'Failed to deactivate user' })
+      }
     } finally {
       setLoading(false)
     }
@@ -58,27 +90,45 @@ function DeactivateUserForm() {
 
   return (
     <form onSubmit={handleDeactivate} className="space-y-4">
-      <div>
-        <Label htmlFor="deactivate-target">Target UID or Email</Label>
-        <Input id="deactivate-target" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="UID or email address" />
+      <div className="space-y-2">
+        <Label htmlFor="deactivate-target" className="text-sm font-medium">Target UID or Email</Label>
+        <Input 
+          id="deactivate-target" 
+          value={target} 
+          onChange={(e) => setTarget(e.target.value)} 
+          placeholder="user@example.com or uid123" 
+          className="border-destructive/50 focus:border-destructive"
+        />
       </div>
-      <div>
-        <Label htmlFor="deactivate-msg">Message (shown to user)</Label>
-        <Textarea id="deactivate-msg" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Optional: Your account has been temporarily disabled..." />
+      <div className="space-y-2">
+        <Label htmlFor="deactivate-msg" className="text-sm font-medium">Message (shown to user)</Label>
+        <Textarea 
+          id="deactivate-msg" 
+          value={msg} 
+          onChange={(e) => setMsg(e.target.value)} 
+          placeholder="Your account has been temporarily disabled due to..." 
+          className="min-h-[100px]"
+        />
       </div>
-      <div>
-        <Label htmlFor="deactivate-contact">Contact (how they can reach you)</Label>
-        <Input id="deactivate-contact" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Optional: developer@example.com" />
+      <div className="space-y-2">
+        <Label htmlFor="deactivate-contact" className="text-sm font-medium">Contact Info</Label>
+        <Input 
+          id="deactivate-contact" 
+          value={contact} 
+          onChange={(e) => setContact(e.target.value)} 
+          placeholder="support@example.com" 
+        />
       </div>
-      <Button type="submit" variant="destructive" className="w-full" disabled={loading}>
-        {loading ? <Loader2 className="animate-spin mr-2"/> : <UserX />}
-        Deactivate User
+      <Button type="submit" variant="destructive" className="w-full gap-2" disabled={loading}>
+        {loading ? <Loader2 className="animate-spin h-4 w-4"/> : <UserX className="h-4 w-4" />}
+        Deactivate User Account
       </Button>
     </form>
   )
 }
 
 function SystemNotificationForm() {
+    const firestore = useFirestore()
     const [title, setTitle] = useState("")
     const [message, setMessage] = useState("")
     const [type, setType] = useState("info")
@@ -87,70 +137,95 @@ function SystemNotificationForm() {
 
     const handleSendNotification = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!firestore) return
         setLoading(true)
 
         try {
-        const response = await fetch('/api/notifications/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, message, type, broadcast: true }),
-        })
+          // Create notification in Firestore
+          const notificationsRef = collection(firestore, 'systemNotifications')
+          const notificationData = {
+            title,
+            message,
+            type,
+            broadcast: true,
+            createdAt: new Date().toISOString(),
+            read: false,
+            active: true,
+          }
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to send notification')
-        }
+          await setDoc(doc(notificationsRef), notificationData)
 
-        toast({
+          toast({
             title: "Success",
             description: "System notification sent successfully",
-        })
+          })
 
-        setTitle("")
-        setMessage("")
-        setType("info")
+          setTitle("")
+          setMessage("")
+          setType("info")
         } catch (error: any) {
-        toast({
+          toast({
             variant: "destructive",
             title: "Error",
             description: error.message || "Failed to send notification",
-        })
+          })
         } finally {
-        setLoading(false)
+          setLoading(false)
         }
     }
 
+    const notificationTypes = [
+      { value: "info", label: "Information", color: "text-blue-500" },
+      { value: "warning", label: "Warning", color: "text-yellow-500" },
+      { value: "error", label: "Error", color: "text-red-500" },
+      { value: "success", label: "Success", color: "text-green-500" },
+      { value: "maintenance", label: "Maintenance", color: "text-purple-500" },
+    ]
+
     return (
         <form onSubmit={handleSendNotification} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="title">Notification Title</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. System Maintenance" />
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-sm font-medium">Notification Title</Label>
+              <Input 
+                id="title" 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                required 
+                placeholder="System Maintenance Scheduled" 
+              />
             </div>
             
-            <div className="space-y-1.5">
-              <Label htmlFor="type">Notification Type</Label>
+            <div className="space-y-2">
+              <Label htmlFor="type" className="text-sm font-medium">Notification Type</Label>
               <Select value={type} onValueChange={setType}>
                 <SelectTrigger id="type">
-                  <SelectValue placeholder="Select notification type" />
+                  <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="info">Information</SelectItem>
-                  <SelectItem value="warning">Warning</SelectItem>
-                  <SelectItem value="error">Error</SelectItem>
-                  <SelectItem value="success">Success</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  {notificationTypes.map((notifType) => (
+                    <SelectItem key={notifType.value} value={notifType.value}>
+                      <span className={notifType.color}>{notifType.label}</span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="message">Message Content</Label>
-              <Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} required placeholder="Enter your message" className="min-h-[120px]" />
+            <div className="space-y-2">
+              <Label htmlFor="message" className="text-sm font-medium">Message Content</Label>
+              <Textarea 
+                id="message" 
+                value={message} 
+                onChange={(e) => setMessage(e.target.value)} 
+                required 
+                placeholder="The system will be undergoing maintenance..." 
+                className="min-h-[120px]" 
+              />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2"/> : <Bell />}
-              Send System Notification
+            <Button type="submit" className="w-full gap-2" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin h-4 w-4"/> : <Send className="h-4 w-4" />}
+              Broadcast Notification
             </Button>
         </form>
     )
@@ -167,8 +242,8 @@ function SystemControlsCard() {
         try {
             await setDoc(settingsRef, { [key]: value }, { merge: true });
             toast({
-                title: "Setting updated",
-                description: `${key} has been ${value ? 'enabled' : 'disabled'}.`
+                title: "Setting Updated",
+                description: `${key.replace(/([A-Z])/g, ' $1')} has been ${value ? 'enabled' : 'disabled'}.`
             })
         } catch (err: any) {
             toast({ variant: "destructive", title: "Update Failed", description: err.message });
@@ -178,83 +253,203 @@ function SystemControlsCard() {
     if (loading) return <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>
     if (error) return <p className="text-destructive">Error loading settings: {error.message}</p>
 
+    const systemControls = [
+      {
+        id: 'maintenanceMode',
+        label: 'Maintenance Mode',
+        description: 'Temporarily disable access for non-admin users',
+        icon: ServerCog,
+        color: 'text-red-500',
+        bgColor: 'bg-red-500/10',
+        destructive: true
+      },
+      {
+        id: 'newFeatureEnabled',
+        label: 'New Feature Flag',
+        description: 'Toggle visibility for experimental features',
+        icon: Activity,
+        color: 'text-blue-500',
+        bgColor: 'bg-blue-500/10',
+        destructive: false
+      }
+    ]
+
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg bg-background/50">
-                <div className="space-y-0.5">
-                    <Label htmlFor="maintenance-mode" className="text-base font-semibold">Maintenance Mode</Label>
-                    <p className="text-sm text-muted-foreground">Temporarily disable access for non-admin users.</p>
-                </div>
-                <Switch
-                    id="maintenance-mode"
-                    checked={settings?.maintenanceMode || false}
-                    onCheckedChange={(value) => handleSettingChange('maintenanceMode', value)}
-                    className="data-[state=checked]:bg-destructive"
-                />
-            </div>
-             <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg bg-background/50">
-                <div className="space-y-0.5">
-                    <Label htmlFor="new-feature-flag" className="text-base font-semibold">New Feature Flag</Label>
-                    <p className="text-sm text-muted-foreground">Toggle visibility for an experimental feature.</p>
-                </div>
-                <Switch
-                    id="new-feature-flag"
-                    checked={settings?.newFeatureEnabled || false}
-                    onCheckedChange={(value) => handleSettingChange('newFeatureEnabled', value)}
-                />
-            </div>
+        <div className="space-y-4">
+            {systemControls.map((control) => {
+              const Icon = control.icon
+              const isEnabled = settings?.[control.id] || false
+              
+              return (
+                <Card key={control.id} className="border-2 hover:border-primary/50 transition-all">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={`${control.bgColor} p-2.5 rounded-lg`}>
+                          <Icon className={`h-5 w-5 ${control.color}`} />
+                        </div>
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={control.id} className="text-base font-semibold cursor-pointer">
+                              {control.label}
+                            </Label>
+                            {isEnabled && (
+                              <Badge variant={control.destructive ? "destructive" : "default"} className="text-xs">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{control.description}</p>
+                        </div>
+                      </div>
+                      <Switch
+                        id={control.id}
+                        checked={isEnabled}
+                        onCheckedChange={(value) => handleSettingChange(control.id, value)}
+                        className={control.destructive ? "data-[state=checked]:bg-destructive" : ""}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
         </div>
     )
 }
 
+function SystemStatusCard() {
+  const firestore = useFirestore()
+  const usersQuery = firestore ? collection(firestore, 'users') : null;
+  const [users] = useCollectionData(usersQuery);
+  const [recentLogins, setRecentLogins] = useState(0)
+
+  useEffect(() => {
+    if (!users) return
+    // Calculate logins in last 24 hours
+    const yesterday = new Date()
+    yesterday.setHours(yesterday.getHours() - 24)
+    
+    const recent = users.filter(user => {
+      if (!user.lastLogin) return false
+      const loginDate = new Date(user.lastLogin)
+      return loginDate > yesterday
+    }).length
+    
+    setRecentLogins(recent)
+  }, [users])
+
+  const stats = [
+    {
+      label: 'API',
+      value: 'Online',
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-100/50',
+      darkBg: 'dark:bg-emerald-900/20',
+      icon: Power
+    },
+    {
+      label: 'Database',
+      value: firestore ? 'Online' : 'Offline',
+      color: firestore ? 'text-emerald-600' : 'text-red-600',
+      bgColor: firestore ? 'bg-emerald-100/50' : 'bg-red-100/50',
+      darkBg: firestore ? 'dark:bg-emerald-900/20' : 'dark:bg-red-900/20',
+      icon: Database
+    },
+    {
+      label: 'Total Users',
+      value: users?.length.toLocaleString() || '0',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100/50',
+      darkBg: 'dark:bg-blue-900/20',
+      icon: Users
+    },
+    {
+      label: 'Active (24h)',
+      value: recentLogins.toLocaleString(),
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100/50',
+      darkBg: 'dark:bg-orange-900/20',
+      icon: TrendingUp
+    }
+  ]
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {stats.map((stat, index) => {
+        const Icon = stat.icon
+        return (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className={`${stat.bgColor} ${stat.darkBg} border-2`}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-background/50 p-2 rounded-lg">
+                    <Icon className={`h-5 w-5 ${stat.color}`} />
+                  </div>
+                  <div>
+                    <p className={`text-xs font-medium ${stat.color}`}>{stat.label}</p>
+                    <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function DeveloperDashboard() {
   return (
-    <div className="space-y-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-8 p-6"
+    >
         <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                <ShieldCheck className="h-8 w-8 text-primary"/>
+            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-xl">
+                  <ShieldCheck className="h-8 w-8 text-primary"/>
+                </div>
                 Developer Control Panel
             </h1>
             <p className="text-muted-foreground text-lg">
-                High-level system administration and management tools.
+                High-level system administration and management tools powered by Firebase.
             </p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column */}
             <div className="lg:col-span-2 space-y-8">
-                <Card>
+                <Card className="border-2">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Power className="text-green-500"/>System Status</CardTitle>
-                        <CardDescription>
-                            At-a-glance overview of key system metrics.
+                        <CardTitle className="flex items-center gap-2 text-2xl">
+                          <Power className="text-emerald-500 h-6 w-6"/>
+                          System Status
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                            Real-time overview of key system metrics and health indicators.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div className="p-4 bg-green-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-green-800">API</p>
-                            <p className="text-2xl font-bold text-green-600">Online</p>
-                        </div>
-                         <div className="p-4 bg-green-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-green-800">Database</p>
-                            <p className="text-2xl font-bold text-green-600">Online</p>
-                        </div>
-                         <div className="p-4 bg-blue-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-blue-800">Users</p>
-                            <p className="text-2xl font-bold text-blue-600">1,204</p>
-                        </div>
-                         <div className="p-4 bg-orange-100/50 rounded-lg">
-                            <p className="text-sm font-medium text-orange-800">Logins (24h)</p>
-                            <p className="text-2xl font-bold text-orange-600">342</p>
-                        </div>
+                    <CardContent>
+                        <SystemStatusCard />
                     </CardContent>
                 </Card>
 
-                 <Card>
+                <Card className="border-2">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><SlidersHorizontal/> System Controls</CardTitle>
-                        <CardDescription>
-                           Enable or disable system-wide features in real-time.
+                        <CardTitle className="flex items-center gap-2 text-2xl">
+                          <SlidersHorizontal className="h-6 w-6"/> 
+                          System Controls
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                           Enable or disable system-wide features in real-time via Firebase.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -262,14 +457,28 @@ export default function DeveloperDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="border-2 border-destructive/50">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Danger Zone</CardTitle>
-                         <CardDescription>
-                            High-impact actions that affect user accounts directly. Proceed with caution.
+                        <CardTitle className="flex items-center gap-2 text-destructive text-2xl">
+                          <AlertTriangle className="h-6 w-6"/>
+                          Danger Zone
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                            High-impact actions that affect user accounts directly. Changes are written to Firebase immediately.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
+                        <div className="bg-destructive/5 p-4 rounded-lg border-2 border-destructive/20 mb-4">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-destructive">Warning: Irreversible Action</p>
+                              <p className="text-xs text-muted-foreground">
+                                Deactivating a user will immediately prevent them from accessing the system. This action updates the user document in Firestore.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                         <DeactivateUserForm />
                     </CardContent>
                 </Card>
@@ -277,21 +486,49 @@ export default function DeveloperDashboard() {
 
             {/* Right Column */}
             <div className="space-y-8">
-                <Card>
+                <Card className="border-2">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Bell/> System Notifications</CardTitle>
-                        <CardDescription>
-                            Send a broadcast notification to all users.
+                        <CardTitle className="flex items-center gap-2 text-2xl">
+                          <Bell className="h-6 w-6"/> 
+                          System Notifications
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                            Broadcast messages to all users via Firebase.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                        <SystemNotificationForm />
                     </CardContent>
                 </Card>
+
+                <Card className="border-2 bg-gradient-to-br from-primary/5 to-primary/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Quick Tips
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2" />
+                      <p className="text-muted-foreground">All changes are saved directly to Firebase Firestore</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2" />
+                      <p className="text-muted-foreground">User deactivation updates the user's document immediately</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2" />
+                      <p className="text-muted-foreground">System notifications are stored in the systemNotifications collection</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2" />
+                      <p className="text-muted-foreground">Feature flags are stored in settings/developer document</p>
+                    </div>
+                  </CardContent>
+                </Card>
             </div>
         </div>
-    </div>
+    </motion.div>
   );
 }
-
-    
