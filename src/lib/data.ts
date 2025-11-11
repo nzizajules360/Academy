@@ -1,17 +1,9 @@
+
 import type { Student, Material } from '@/types';
 
-export const materials: Material[] = [
-  { id: '1', name: 'Mattress', required: true },
-  { id: '2', name: 'Pillow', required: true },
-  { id: '3', name: 'Bed Sheets (2 pairs)', required: true },
-  { id: '4', name: 'Blanket', required: true },
-  { id: '5', name: 'Mosquito Net', required: true },
-  { id: '6', name: 'Bucket and Basin', required: true },
-  { id: '7', name: 'Toiletries', required: true },
-  { id: '8', name: 'School Uniform', required: true },
-  { id: '9', name: 'Sports Wear', required: true },
-  { id: '10', name: 'Textbooks', required: false },
-];
+// This file is now deprecated for materials, as they are managed in Firestore.
+// It can be removed if no longer used for other data.
+export const materials: Material[] = [];
 
 export const students: Student[] = [
   {

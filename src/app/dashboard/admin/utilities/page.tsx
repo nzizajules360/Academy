@@ -18,9 +18,8 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFirestore } from '@/firebase';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import { useCollection, useCollectionData } from 'react-firebase-hooks/firestore';
 import { collection, doc, updateDoc, arrayUnion, arrayRemove, query, where } from 'firebase/firestore';
-import { materials } from '@/lib/data';
 import {
     Collapsible,
     CollapsibleContent,
@@ -38,6 +37,10 @@ export default function UtilitiesPage() {
 
   const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
   const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
+
+  const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+  const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
+
 
   const relevantStudents = studentsSnapshot?.docs.map(doc => ({id: doc.id, ...doc.data()}))
     .filter((student: any) => student.gender === 'male' || student.gender === 'female'); // Assuming all students are relevant for admin
@@ -75,9 +78,9 @@ export default function UtilitiesPage() {
     return student.utilities?.filter((u: any) => u.status === 'present').length || 0;
   }
   
-  const requiredMaterialsCount = materials.filter(m => m.required).length;
+  const requiredMaterialsCount = materials?.filter((m: any) => m.required).length || 0;
 
-  if (loadingStudents || loadingTerm) {
+  if (loadingStudents || loadingTerm || loadingMaterials) {
       return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -134,7 +137,7 @@ export default function UtilitiesPage() {
                                         <div className="p-6">
                                             <h4 className="font-semibold mb-4 text-base">Required Materials for {student.name}</h4>
                                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                                            {materials.filter(m => m.required).map(material => (
+                                            {materials?.filter((m: any) => m.required).map((material: any) => (
                                                 <div key={material.id} className="flex items-center space-x-3">
                                                     <Checkbox
                                                         id={`${student.id}-${material.id}`}
@@ -166,4 +169,3 @@ export default function UtilitiesPage() {
     </motion.div>
   );
 }
-

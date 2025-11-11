@@ -9,10 +9,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { ShieldCheck, Bell, Power, SlidersHorizontal, AlertTriangle, UserX, Loader2, Server } from "lucide-react"
+import { ShieldCheck, Bell, Power, SlidersHorizontal, Loader2, Server } from "lucide-react"
 import { useFirestore } from "@/firebase"
-import { doc, setDoc } from "firebase/firestore"
+import { doc } from "firebase/firestore"
 import { useDocumentData } from "react-firebase-hooks/firestore"
 import {
   Dialog,
@@ -125,80 +124,57 @@ function SystemNotificationForm() {
     )
 }
 
-function SystemControlsCard() {
-    const firestore = useFirestore()
-    const { toast } = useToast()
-    const settingsRef = firestore ? doc(firestore, 'settings', 'system') : null;
-    const [settings, loading, error] = useDocumentData(settingsRef);
-
-    const handleSettingChange = async (key: string, value: boolean) => {
-        if (!settingsRef) return;
-        try {
-            await setDoc(settingsRef, { [key]: value }, { merge: true });
-            toast({
-                title: "Setting updated",
-                description: `${key} has been ${value ? 'enabled' : 'disabled'}.`
-            })
-        } catch (err: any) {
-            toast({ variant: "destructive", title: "Update Failed", description: err.message });
-        }
-    }
-    
-    if (loading) return <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>
-    if (error) return <p className="text-destructive">Error loading settings: {error.message}</p>
-
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg bg-background/50">
-                <div className="space-y-0.5">
-                    <Label htmlFor="maintenance-mode" className="text-base font-semibold">Maintenance Mode</Label>
-                    <p className="text-sm text-muted-foreground">Temporarily disable access for non-admin users.</p>
-                </div>
-                <Switch
-                    id="maintenance-mode"
-                    checked={settings?.maintenanceMode || false}
-                    onCheckedChange={(value) => handleSettingChange('maintenanceMode', value)}
-                    className="data-[state=checked]:bg-destructive"
-                />
-            </div>
-             <div className="flex items-center justify-between space-x-2 p-4 border rounded-lg bg-background/50">
-                <div className="space-y-0.5">
-                    <Label htmlFor="new-feature-flag" className="text-base font-semibold">New Feature Flag</Label>
-                    <p className="text-sm text-muted-foreground">Toggle visibility for an experimental feature.</p>
-                </div>
-                <Switch
-                    id="new-feature-flag"
-                    checked={settings?.newFeatureEnabled || false}
-                    onCheckedChange={(value) => handleSettingChange('newFeatureEnabled', value)}
-                />
-            </div>
-        </div>
-    )
-}
-
 function SystemStatusCard() {
     const firestore = useFirestore();
     const settingsRef = firestore ? doc(firestore, 'settings', 'system') : null;
     const [settings, loading] = useDocumentData(settingsRef);
     const inMaintenance = settings?.maintenanceMode === true;
     
+    const statusModules = [
+        { key: 'userRegistration', label: 'Registration' },
+        { key: 'financialModules', label: 'Financials' },
+        { key: 'attendanceSystem', label: 'Attendance' },
+        { key: 'refectoryManagement', label: 'Refectory' },
+    ];
+
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Power/>System Status</CardTitle>
+                    <CardDescription>
+                        At-a-glance overview of key system metrics.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center items-center h-24">
+                    <Loader2 className="animate-spin h-8 w-8 text-primary"/>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Power className={inMaintenance ? "text-orange-500" : "text-green-500"}/>System Status</CardTitle>
                 <CardDescription>
-                    At-a-glance overview of key system metrics.
+                    At-a-glance overview of key system modules.
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-2 gap-4 text-center">
                 <div className={`p-4 rounded-lg ${inMaintenance ? 'bg-orange-100/50' : 'bg-green-100/50'}`}>
-                    <p className={`text-sm font-medium ${inMaintenance ? 'text-orange-800' : 'text-green-800'}`}>System</p>
+                    <p className={`text-sm font-medium ${inMaintenance ? 'text-orange-800' : 'text-green-800'}`}>Overall</p>
                     <p className={`text-2xl font-bold ${inMaintenance ? 'text-orange-600' : 'text-green-600'}`}>{inMaintenance ? 'Maintenance' : 'Online'}</p>
                 </div>
-                 <div className="p-4 bg-green-100/50 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">Database</p>
-                    <p className="text-2xl font-bold text-green-600">Online</p>
-                </div>
+                {statusModules.map(module => {
+                    const isEnabled = settings?.[module.key] ?? true;
+                    return (
+                         <div key={module.key} className={`p-4 rounded-lg ${isEnabled ? 'bg-green-100/50' : 'bg-red-100/50'}`}>
+                            <p className={`text-sm font-medium ${isEnabled ? 'text-green-800' : 'text-red-800'}`}>{module.label}</p>
+                            <p className={`text-2xl font-bold ${isEnabled ? 'text-green-600' : 'text-red-600'}`}>{isEnabled ? 'Online' : 'Offline'}</p>
+                        </div>
+                    )
+                })}
             </CardContent>
         </Card>
     );
@@ -221,18 +197,6 @@ export default function DeveloperDashboard() {
             {/* Left Column */}
             <div className="lg:col-span-2 space-y-8">
                 <SystemStatusCard />
-
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><SlidersHorizontal/> System Controls</CardTitle>
-                        <CardDescription>
-                           Enable or disable system-wide features in real-time.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <SystemControlsCard />
-                    </CardContent>
-                </Card>
             </div>
 
             {/* Right Column */}
@@ -246,6 +210,19 @@ export default function DeveloperDashboard() {
                     </CardHeader>
                     <CardContent>
                        <SystemNotificationForm />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><SlidersHorizontal/> System Controls</CardTitle>
+                        <CardDescription>
+                           Enable or disable system-wide features in real-time. Go to settings for more.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Button asChild className="w-full">
+                           <a href="/developer/settings">Go to Settings</a>
+                       </Button>
                     </CardContent>
                 </Card>
             </div>

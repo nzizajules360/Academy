@@ -281,6 +281,25 @@
         "isRead": { "type": "boolean" }
       },
       "required": ["sentToTeacherId", "sentBy", "sentAt", "listType", "title", "termId", "students", "isRead"]
+    },
+    "material": {
+        "title": "Material",
+        "description": "A required or optional item for a student.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "required": { "type": "boolean" }
+        },
+        "required": ["name", "required"]
+    },
+    "dormitorySettings": {
+        "title": "Dormitory Settings",
+        "description": "Configuration for dormitory management.",
+        "type": "object",
+        "properties": {
+            "studentsPerBed": { "type": "number" }
+        },
+        "required": ["studentsPerBed"]
     }
   },
   "auth": {
@@ -346,6 +365,14 @@
         "$ref": "#/entities/sentList"
       },
       "description": "Stores lists sent from secretaries to teachers."
+    },
+    "/materials/{materialId}": {
+      "schema": { "$ref": "#/entities/material" },
+      "description": "Stores the list of school materials."
+    },
+    "/settings/dormitory": {
+        "schema": { "$ref": "#/entities/dormitorySettings" },
+        "description": "Stores dormitory configuration."
     }
   }
 }

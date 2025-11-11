@@ -1,13 +1,11 @@
 
-
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { DollarSign, Users, ClipboardList, AlertCircle, Loader2, FileDown, TrendingUp, Calendar, BookOpen, CreditCard } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { materials } from '@/lib/data';
+import { useCollection, useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { Button } from '@/components/ui/button';
 import Papa from 'papaparse';
@@ -296,8 +294,11 @@ export default function ReportsPage() {
 
     const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
+    
+    const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+    const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
 
-    if (loadingTerm || loadingStudents) {
+    if (loadingTerm || loadingStudents || loadingMaterials) {
         return (
             <div className="flex justify-center items-center h-64">
                 <motion.div
@@ -317,7 +318,7 @@ export default function ReportsPage() {
     const feesPaidPercentage = totalFeesExpected > 0 ? (totalFeesPaid / totalFeesExpected) * 100 : 0;
     const outstandingFees = totalFeesExpected - totalFeesPaid;
 
-    const requiredMaterialsCount = materials.filter(m => m.required).length;
+    const requiredMaterialsCount = materials?.filter((m: any) => m.required).length || 0;
     const utilitiesMissing = students.reduce((totalMissing, student) => {
         const presentCount = student.utilities?.filter((u: any) => u.status === 'present').length || 0;
         return totalMissing + (requiredMaterialsCount - presentCount);

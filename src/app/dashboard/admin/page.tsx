@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -16,11 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, Users, ClipboardList, ArrowRight } from 'lucide-react';
+import { DollarSign, Users, ClipboardList, ArrowRight, Loader2 } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { materials } from '@/lib/data';
+import { useCollection, useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -82,21 +82,25 @@ export default function AdminDashboard() {
     const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
+    const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+    const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
+
+    
+    if (loadingStudents || loadingTerm || loadingMaterials) {
+        return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    }
+
     const students = studentsSnapshot?.docs.map(doc => doc.data()) || [];
     const totalStudents = students.length;
     const totalFeesPaid = students.reduce((acc, s) => acc + (s.feesPaid || 0), 0);
     const totalFeesExpected = students.reduce((acc, s) => acc + (s.totalFees || 0), 0);
     const feesPaidPercentage = totalFeesExpected > 0 ? (totalFeesPaid / totalFeesExpected) * 100 : 0;
     
-    const requiredMaterialsCount = materials.filter(m => m.required).length;
+    const requiredMaterialsCount = materials?.filter((m: any) => m.required).length || 0;
     const utilitiesMissing = students.reduce((totalMissing, student) => {
         const presentCount = student.utilities?.filter((u: any) => u.status === 'present').length || 0;
         return totalMissing + (requiredMaterialsCount - presentCount);
     }, 0);
-    
-    if (loadingStudents || loadingTerm) {
-        return <div>Loading...</div>
-    }
 
     return (
         <div className="space-y-8">
