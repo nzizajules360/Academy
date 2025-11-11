@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin, Phone, User, Heart, X, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc, DocumentData } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const studentFormSchema = z.object({
   location: z.string().min(2, 'Location is required.'),
@@ -38,6 +39,12 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
     const form = useForm<FormValues>({
         resolver: zodResolver(studentFormSchema),
+        defaultValues: {
+            location: '',
+            religion: undefined,
+            parentName: '',
+            parentPhone: ''
+        }
     });
     
     useEffect(() => {
@@ -53,8 +60,14 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        if (!firestore) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Firestore not available.' });
+        const db = firestore; // Capture firestore in a constant
+        
+        if (!db) {
+            toast({ 
+                variant: 'destructive', 
+                title: 'Error', 
+                description: 'Firestore not available.' 
+            });
             setIsLoading(false);
             return;
         }
@@ -68,123 +81,217 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
             setIsLoading(false);
             return;
         }
-        
-        const studentRef = doc(firestore, 'students', student.id);
 
-        updateDoc(studentRef, data)
-            .then(() => {
-                toast({
-                    title: "Student Updated",
-                    description: `Information for ${student.name} has been updated.`,
-                    variant: 'success',
-                });
-                onUpdate();
-                onOpenChange(false);
-            })
-            .catch(serverError => {
-                 const permissionError = new FirestorePermissionError({
-                    path: studentRef.path,
-                    operation: 'update',
-                    requestResourceData: data,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                console.error("Failed to update student:", serverError);
-            })
-            .finally(() => {
-                setIsLoading(false);
+        try {
+            const studentRef = doc(db, 'students', student.id);
+            await updateDoc(studentRef, data);
+            
+            toast({
+                title: "✓ Student Updated",
+                description: `Information for ${student.name} has been updated successfully.`,
+                className: "bg-green-50 border-green-200",
             });
+            
+            onUpdate();
+            onOpenChange(false);
+            form.reset();
+        } catch (serverError) {
+            const studentRef = doc(db, 'students', student.id);
+            const permissionError = new FirestorePermissionError({
+                path: studentRef.path,
+                operation: 'update',
+                requestResourceData: data,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            
+            console.error("Failed to update student:", serverError);
+            
+            toast({
+                variant: 'destructive',
+                title: '✗ Update Failed',
+                description: 'Could not update student information. Please check your permissions and try again.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
+
+    const handleCancel = () => {
+        form.reset();
+        onOpenChange(false);
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px] md:sm:max-w-[600px]">
-                <DialogHeader>
-                    <DialogTitle>Edit Student: {student?.name}</DialogTitle>
-                    <DialogDescription>
-                        Update the student's personal and parental information.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="location"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Home Location</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g., Capital City" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="religion"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Religion</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select a religion" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="Adventist">Adventist</SelectItem>
-                                                <SelectItem value="Abahamya">Abahamya</SelectItem>
-                                                <SelectItem value="Catholic">Catholic</SelectItem>
-                                                <SelectItem value="Ajepra">Ajepra</SelectItem>
-                                                <SelectItem value="Muslim">Muslim</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="parentName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Parent/Guardian Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Jane Doe" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="parentPhone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Parent/Guardian Phone</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="0788123456" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                       </div>
-                        <DialogFooter className="pt-4">
-                            <DialogClose asChild>
-                                <Button type="button" variant="outline" disabled={isLoading}>
-                                    Cancel
-                                </Button>
-                            </DialogClose>
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Changes
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
+            <AnimatePresence>
+                {isOpen && (
+                    <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden border-2 shadow-2xl">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            {/* Header with gradient */}
+                            <DialogHeader className="px-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                                        <User className="h-6 w-6" />
+                                        Edit Student
+                                    </DialogTitle>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleCancel}
+                                        disabled={isLoading}
+                                        className="h-8 w-8 rounded-full hover:bg-white/20 text-white"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <DialogDescription className="text-blue-100">
+                                    Update information for <span className="font-semibold text-white">{student?.name}</span>
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            {/* Form Content */}
+                            <div className="px-6 py-6 bg-gradient-to-b from-gray-50 to-white">
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            {/* Location Field */}
+                                            <FormField
+                                                control={form.control}
+                                                name="location"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-2">
+                                                        <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                                            <MapPin className="h-4 w-4 text-blue-600" />
+                                                            Home Location
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder="e.g., Kigali, Nyarugenge" 
+                                                                {...field}
+                                                                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11"
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage className="text-xs" />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Religion Field */}
+                                            <FormField
+                                                control={form.control}
+                                                name="religion"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-2">
+                                                        <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                                            <Heart className="h-4 w-4 text-blue-600" />
+                                                            Religion
+                                                        </FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11">
+                                                                    <SelectValue placeholder="Select a religion" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="Adventist">Adventist</SelectItem>
+                                                                <SelectItem value="Abahamya">Abahamya</SelectItem>
+                                                                <SelectItem value="Catholic">Catholic</SelectItem>
+                                                                <SelectItem value="Ajepra">Ajepra</SelectItem>
+                                                                <SelectItem value="Muslim">Muslim</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage className="text-xs" />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Parent Name Field */}
+                                            <FormField
+                                                control={form.control}
+                                                name="parentName"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-2">
+                                                        <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                                            <User className="h-4 w-4 text-blue-600" />
+                                                            Parent/Guardian Name
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder="John Doe" 
+                                                                {...field}
+                                                                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11"
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage className="text-xs" />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Parent Phone Field */}
+                                            <FormField
+                                                control={form.control}
+                                                name="parentPhone"
+                                                render={({ field }) => (
+                                                    <FormItem className="space-y-2">
+                                                        <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                                            <Phone className="h-4 w-4 text-blue-600" />
+                                                            Parent/Guardian Phone
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder="0788123456" 
+                                                                {...field}
+                                                                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11 font-mono"
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage className="text-xs" />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <DialogFooter className="pt-6 gap-3 sm:gap-2">
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                onClick={handleCancel}
+                                                disabled={isLoading}
+                                                className="flex-1 sm:flex-none border-2 hover:bg-gray-50"
+                                            >
+                                                <X className="mr-2 h-4 w-4" />
+                                                Cancel
+                                            </Button>
+                                            <Button 
+                                                type="submit" 
+                                                disabled={isLoading}
+                                                className="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                                            >
+                                                {isLoading ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Save className="mr-2 h-4 w-4" />
+                                                        Save Changes
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </Form>
+                            </div>
+                        </motion.div>
+                    </DialogContent>
+                )}
+            </AnimatePresence>
         </Dialog>
     );
 }
