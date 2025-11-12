@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -86,14 +87,16 @@ export function DashboardSidebar() {
   const role = user?.role as UserRole | 'developer' | undefined ?? 'admin';
   const pathname = usePathname();
   const currentNavItems = navItems[role] || [];
+  
   const SidebarIcon = role === 'developer' ? ShieldCheck : BsmLogo;
+  const sidebarTitle = role === 'developer' ? 'Developer' : 'BSM';
   
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2" data-sidebar-menu-button="">
-            <SidebarIcon />
-            <span className="text-lg font-semibold text-sidebar-foreground capitalize">{role === 'developer' ? 'Developer' : 'BSM'}</span>
+            <SidebarIcon className="h-7 w-7 text-sidebar-primary-foreground" />
+            <span className="text-lg font-semibold text-sidebar-foreground capitalize">{sidebarTitle}</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -102,7 +105,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={pathname.startsWith(item.href) && (pathname === item.href || (item.href.length > `/dashboard/${role}`.length && pathname.startsWith(item.href)))}
                 tooltip={item.label}
               >
                 <Link href={item.href}>

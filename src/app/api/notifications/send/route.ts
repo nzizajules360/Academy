@@ -4,10 +4,14 @@ import { initAdmin } from '@/firebase/admin'
 
 export async function POST(request: Request) {
   try {
+    const { admin, firestore, messaging } = initAdmin();
+    
+    if (!admin || !firestore || !messaging) {
+      return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+    }
+
     const payload = await request.json()
     const { title, message, type, broadcast } = payload || {}
-    const admin = await import('firebase-admin')
-    const { firestore } = initAdmin()
 
     if (!title || !message || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -19,7 +23,6 @@ export async function POST(request: Request) {
 
     if (broadcast) {
       // Send to all users' FCM tokens
-      const messaging = admin.messaging()
       const usersSnap = await firestore.collection('users').get()
       const allTokens: string[] = []
       for (const u of usersSnap.docs) {
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
         const batches: string[][] = []
         for (let i = 0; i < allTokens.length; i += 500) batches.push(allTokens.slice(i, i + 500))
         for (const batch of batches) {
-          await messaging.sendMulticast({ tokens: batch, notification: { title, body: message } })
+          await messaging.sendEachForMulticast({ tokens: batch, notification: { title, body: message } })
         }
       }
     }

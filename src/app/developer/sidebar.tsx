@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,8 +18,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 const navItems = [
-  { href: '/dashboard/developer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/developer/settings', icon: Settings, label: 'Settings' },
+  { href: '/developer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/developer/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function DeveloperSidebar() {

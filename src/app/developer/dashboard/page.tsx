@@ -1,4 +1,3 @@
-
 'use client'
 
 import { Button } from "@/components/ui/button"
@@ -223,7 +222,7 @@ export default function DeveloperDashboard() {
                     </CardHeader>
                     <CardContent>
                        <Button asChild className="w-full">
-                           <Link href="/dashboard/developer/settings">Go to Settings</Link>
+                           <Link href="/developer/settings">Go to Settings</Link>
                        </Button>
                     </CardContent>
                 </Card>

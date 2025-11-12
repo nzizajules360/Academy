@@ -1,11 +1,14 @@
+
 import { NextResponse } from 'next/server'
 import { initAdmin } from '@/firebase/admin'
 
 export async function POST() {
   try {
-    const { firestore } = initAdmin()
-    const admin = await import('firebase-admin')
-    const messaging = admin.messaging()
+    const { firestore, messaging } = initAdmin();
+
+    if (!firestore || !messaging) {
+      return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+    }
 
     // find unread HR notifications that have repeatUntilRead true
     const hrUsers = await firestore.collection('users').where('role', '==', 'hr').get()
@@ -17,7 +20,7 @@ export async function POST() {
         const tokensSnap = await firestore.collection('users').doc(u.id).collection('fcmTokens').get()
         const tokens = tokensSnap.docs.map(d => d.id)
         if (tokens.length > 0) {
-          await messaging.sendMulticast({ tokens, notification: { title: data.title || 'Reminder', body: data.body || '' } })
+          await messaging.sendEachForMulticast({ tokens, notification: { title: data.title || 'Reminder', body: data.body || '' } })
         }
         await n.ref.update({ lastRemindedAt: new Date().toISOString() })
       }

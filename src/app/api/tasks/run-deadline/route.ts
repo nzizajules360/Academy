@@ -23,8 +23,11 @@ export async function POST(request: Request) {
     const { termId } = await request.json()
     if (!termId) return NextResponse.json({ error: 'termId required' }, { status: 400 })
 
-    const { firestore, auth } = initAdmin()
-    const admin = await import('firebase-admin')
+    const { admin, firestore, auth, storage, messaging } = initAdmin();
+
+    if (!admin || !firestore || !auth || !storage || !messaging) {
+      return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+    }
 
     // Find students in this term with outstanding fees
     const studentsSnap = await firestore.collection('students').where('termId', '==', termId).get()
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
 
     let downloadUrl: string | null = null
     try {
-      const bucket = admin.storage().bucket()
+      const bucket = storage.bucket()
       const file = bucket.file(filePath)
       await file.save(Buffer.from(csv || ''), { contentType: 'text/csv' })
       const [url] = await file.getSignedUrl({ action: 'read', expires: Date.now() + 1000 * 60 * 60 })
@@ -70,8 +73,6 @@ export async function POST(request: Request) {
       termId,
     }
 
-    const messaging = admin.messaging()
-
     // helper to notify a single user (store doc + send FCM if tokens exist)
     async function notifyUser(uid: string, extra: any = {}) {
       await firestore.collection('users').doc(uid).collection('notifications').add({ ...payload, ...extra, read: false })
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
       const tokensSnap = await firestore.collection('users').doc(uid).collection('fcmTokens').get()
       const tokens = tokensSnap.docs.map(d => d.id)
       if (tokens.length > 0) {
-        await messaging.sendMulticast({
+        await messaging.sendEachForMulticast({
           tokens,
           notification: { title: payload.title, body: payload.body },
           data: { downloadUrl: String(downloadUrl || ''), autoDownload: 'true' }
