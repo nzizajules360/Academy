@@ -13,7 +13,8 @@ import {
   ListChecks,
   Send,
   BedDouble,
-  BookCheck
+  BookCheck,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -28,7 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/firebase';
 import type { UserRole } from '@/types';
 
-const navItems: Record<UserRole, { href: string; icon: React.ElementType; label: string }[]> = {
+const navItems: Record<string, { href: string; icon: React.ElementType; label: string }[]> = {
   admin: [
     { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/admin/students', icon: Users, label: 'Students' },
@@ -68,6 +69,10 @@ const navItems: Record<UserRole, { href: string; icon: React.ElementType; label:
     { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Daily Attendance' },
     { href: '/dashboard/teacher/attendance/report', icon: BookCheck, label: 'Attendance Report' },
     { href: '/dashboard/teacher/lists', icon: Send, label: 'Received Lists' },
+  ],
+  developer: [
+    { href: '/dashboard/developer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/developer/settings', icon: Settings, label: 'Settings' },
   ]
 };
 
@@ -79,16 +84,17 @@ const BsmLogo = () => (
 
 export function DashboardSidebar() {
   const { user } = useUser();
-  const role = user?.role as UserRole | undefined ?? 'admin';
+  const role = user?.role as UserRole | 'developer' | undefined ?? 'admin';
   const pathname = usePathname();
   const currentNavItems = navItems[role] || [];
+  const SidebarIcon = role === 'developer' ? ShieldCheck : BsmLogo;
   
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2" data-sidebar-menu-button="">
-            <BsmLogo />
-            <span className="text-lg font-semibold text-sidebar-foreground">BSM</span>
+            <SidebarIcon />
+            <span className="text-lg font-semibold text-sidebar-foreground capitalize">{role === 'developer' ? 'Developer' : 'BSM'}</span>
         </div>
       </SidebarHeader>
       <SidebarContent>

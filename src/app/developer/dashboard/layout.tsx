@@ -1,91 +1,124 @@
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  BookUser,
+  ClipboardList,
+  LayoutDashboard,
+  Users,
+  Settings,
+  Table,
+  FileText,
+  ListChecks,
+  Send,
+  BedDouble,
+  BookCheck,
+  ShieldCheck,
+} from 'lucide-react';
+import {
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarFooter,
+} from '@/components/ui/sidebar';
+import { Badge } from '@/components/ui/badge';
+import { useUser } from '@/firebase';
+import type { UserRole } from '@/types';
 
-'use client'
+const navItems: Record<string, { href: string; icon: React.ElementType; label: string }[]> = {
+  admin: [
+    { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/admin/students', icon: Users, label: 'Students' },
+    { href: '/dashboard/admin/utilities', icon: ClipboardList, label: 'Utilities' },
+    { href: '/dashboard/admin/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/admin/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/admin/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard/admin/settings', icon: Settings, label: 'Settings' },
+  ],
+  secretary: [
+    { href: '/dashboard/secretary', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/secretary/students', icon: Users, label: 'Manage Students' },
+    { href: '/dashboard/secretary/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/secretary/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard/secretary/settings', icon: Settings, label: 'Settings' },
+  ],
+  patron: [
+    { href: '/dashboard/patron', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/patron/students', icon: Users, label: 'Students' },
+    { href: '/dashboard/patron/dormitory', icon: BedDouble, label: 'Dormitory' },
+    { href: '/dashboard/patron/utilities', icon: ClipboardList, label: 'Utilities' },
+    { href: '/dashboard/patron/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/patron/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/patron/reports', icon: FileText, label: 'Reports' },
+  ],
+  matron: [
+    { href: '/dashboard/matron', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/matron/students', icon: Users, label: 'Students' },
+    { href: '/dashboard/matron/dormitory', icon: BedDouble, label: 'Dormitory' },
+    { href: '/dashboard/matron/utilities', icon: ClipboardList, label: 'Utilities' },
+    { href: '/dashboard/matron/materials', icon: BookUser, label: 'Materials' },
+    { href: '/dashboard/matron/refectory', icon: Table, label: 'Refectory' },
+    { href: '/dashboard/matron/reports', icon: FileText, label: 'Reports' },
+  ],
+  teacher: [
+    { href: '/dashboard/teacher', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Daily Attendance' },
+    { href: '/dashboard/teacher/attendance/report', icon: BookCheck, label: 'Attendance Report' },
+    { href: '/dashboard/teacher/lists', icon: Send, label: 'Received Lists' },
+  ],
+  developer: [
+    { href: '/dashboard/developer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/developer/settings', icon: Settings, label: 'Settings' },
+  ]
+};
 
-import { DashboardHeader } from "@/components/dashboard/header"
-import { Sidebar, SidebarProvider, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarHeader as DevSidebarHeader, SidebarContent } from "@/components/ui/sidebar"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { auth } from "@/firebase/auth"
-import { useToast } from "@/hooks/use-toast"
-import { ShieldCheck, LayoutDashboard, Settings } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+const BsmLogo = () => (
+    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xs">
+      BSM
+    </div>
+  );
 
-const navItems = [
-    { href: "/developer/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/developer/settings", icon: Settings, label: "Settings" }
-]
-
-export default function DeveloperDashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const { toast } = useToast()
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        router.push('/developer/auth/login')
-        return
-      }
-
-      // Verify developer role
-      try {
-        const idTokenResult = await user.getIdTokenResult(true) // Force refresh
-        if (!idTokenResult.claims.developer) {
-          throw new Error("Access Denied: Developer role required.")
-        }
-      } catch (error: any) {
-         await auth.signOut()
-          toast({
-            variant: "destructive",
-            title: "Access Denied",
-            description: error.message || "You need developer permissions to access this area.",
-          })
-          router.push('/developer/auth/login')
-      }
-    })
-
-    return () => unsubscribe()
-  }, [router, toast])
-
+export function DashboardSidebar() {
+  const { user } = useUser();
+  const role = user?.role as UserRole | 'developer' | undefined ?? 'admin';
+  const pathname = usePathname();
+  const currentNavItems = navItems[role] || [];
+  const SidebarIcon = role === 'developer' ? ShieldCheck : BsmLogo;
+  
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-muted/40">
-        <Sidebar collapsible="icon" className="hidden sm:block">
-            <DevSidebarHeader>
-                 <div className="flex items-center gap-2" data-sidebar-menu-button="">
-                    <ShieldCheck className="h-7 w-7 text-sidebar-primary-foreground" />
-                    <span className="text-lg font-semibold text-sidebar-foreground">Developer</span>
-                </div>
-            </DevSidebarHeader>
-            <SidebarContent>
-                <SidebarMenu>
-                    {navItems.map(item => (
-                        <SidebarMenuItem key={item.href}>
-                             <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)} tooltip={item.label}>
-                                <Link href={item.href}>
-                                    <item.icon />
-                                    <span>{item.label}</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenu>
-            </SidebarContent>
-        </Sidebar>
-        <div className="flex-1 flex flex-col">
-          <DashboardHeader />
-          <main className="flex-1 p-4 sm:px-6 sm:py-4">
-             <div className="mx-auto w-full max-w-7xl">
-                {children}
-              </div>
-          </main>
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center gap-2" data-sidebar-menu-button="">
+            <SidebarIcon />
+            <span className="text-lg font-semibold text-sidebar-foreground capitalize">{role === 'developer' ? 'Developer' : 'BSM'}</span>
         </div>
-      </div>
-    </SidebarProvider>
-  )
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarMenu>
+          {currentNavItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                tooltip={item.label}
+              >
+                <Link href={item.href}>
+                  <item.icon />
+                  <span>{item.label}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter>
+        <div className="flex items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+            <Badge variant="secondary" className="bg-white/20 text-white border-none">v1.0</Badge>
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
 }

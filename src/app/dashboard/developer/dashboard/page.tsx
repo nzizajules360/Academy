@@ -1,14 +1,9 @@
-
 'use client'
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ShieldCheck, Bell, Power, SlidersHorizontal, Loader2, Server } from "lucide-react"
 import { useFirestore } from "@/firebase"
 import { doc } from "firebase/firestore"
@@ -22,6 +17,12 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import Link from "next/link"
+
 
 function SystemNotificationForm() {
     const [title, setTitle] = useState("")
@@ -221,7 +222,7 @@ export default function DeveloperDashboard() {
                     </CardHeader>
                     <CardContent>
                        <Button asChild className="w-full">
-                           <a href="/developer/settings">Go to Settings</a>
+                           <Link href="/dashboard/developer/settings">Go to Settings</Link>
                        </Button>
                     </CardContent>
                 </Card>
