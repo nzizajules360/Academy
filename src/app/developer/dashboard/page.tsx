@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,17 @@ import { motion } from "framer-motion"
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+
 
 function DeactivateUserForm() {
   const firestore = useFirestore()
@@ -128,106 +140,104 @@ function DeactivateUserForm() {
 }
 
 function SystemNotificationForm() {
-    const firestore = useFirestore()
     const [title, setTitle] = useState("")
     const [message, setMessage] = useState("")
     const [type, setType] = useState("info")
     const [loading, setLoading] = useState(false)
     const { toast } = useToast()
+    const [isOpen, setIsOpen] = useState(false)
 
     const handleSendNotification = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!firestore) return
         setLoading(true)
 
         try {
-          // Create notification in Firestore
-          const notificationsRef = collection(firestore, 'systemNotifications')
-          const notificationData = {
-            title,
-            message,
-            type,
-            broadcast: true,
-            createdAt: new Date().toISOString(),
-            read: false,
-            active: true,
-          }
+        const response = await fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, message, type, broadcast: true }),
+        })
 
-          await setDoc(doc(notificationsRef), notificationData)
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to send notification')
+        }
 
-          toast({
+        toast({
             title: "Success",
             description: "System notification sent successfully",
-          })
+            variant: type === 'success' ? 'success' : 'default',
+        })
 
-          setTitle("")
-          setMessage("")
-          setType("info")
+        setTitle("")
+        setMessage("")
+        setType("info")
+        setIsOpen(false)
         } catch (error: any) {
-          toast({
+        toast({
             variant: "destructive",
             title: "Error",
             description: error.message || "Failed to send notification",
-          })
+        })
         } finally {
-          setLoading(false)
+        setLoading(false)
         }
     }
 
-    const notificationTypes = [
-      { value: "info", label: "Information", color: "text-blue-500" },
-      { value: "warning", label: "Warning", color: "text-yellow-500" },
-      { value: "error", label: "Error", color: "text-red-500" },
-      { value: "success", label: "Success", color: "text-green-500" },
-      { value: "maintenance", label: "Maintenance", color: "text-purple-500" },
-    ]
-
     return (
-        <form onSubmit={handleSendNotification} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title" className="text-sm font-medium">Notification Title</Label>
-              <Input 
-                id="title" 
-                value={title} 
-                onChange={(e) => setTitle(e.target.value)} 
-                required 
-                placeholder="System Maintenance Scheduled" 
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="type" className="text-sm font-medium">Notification Type</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger id="type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {notificationTypes.map((notifType) => (
-                    <SelectItem key={notifType.value} value={notifType.value}>
-                      <span className={notifType.color}>{notifType.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button className="w-full">
+                    <Bell className="mr-2"/>
+                    Broadcast Message
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Broadcast System Notification</DialogTitle>
+                    <DialogDescription>
+                        This message will be sent to all users of the application.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSendNotification} className="space-y-4 py-4">
+                    <div className="space-y-1.5">
+                        <Label htmlFor="title">Notification Title</Label>
+                        <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. System Maintenance" />
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                        <Label htmlFor="type">Notification Type</Label>
+                        <Select value={type} onValueChange={setType}>
+                            <SelectTrigger id="type">
+                            <SelectValue placeholder="Select notification type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="info">Information</SelectItem>
+                            <SelectItem value="warning">Warning</SelectItem>
+                            <SelectItem value="error">Error</SelectItem>
+                            <SelectItem value="success">Success</SelectItem>
+                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="message" className="text-sm font-medium">Message Content</Label>
-              <Textarea 
-                id="message" 
-                value={message} 
-                onChange={(e) => setMessage(e.target.value)} 
-                required 
-                placeholder="The system will be undergoing maintenance..." 
-                className="min-h-[120px]" 
-              />
-            </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="message">Message Content</Label>
+                        <Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} required placeholder="Enter your message" className="min-h-[120px]" />
+                    </div>
 
-            <Button type="submit" className="w-full gap-2" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin h-4 w-4"/> : <Send className="h-4 w-4" />}
-              Broadcast Notification
-            </Button>
-        </form>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="secondary" disabled={loading}>Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={loading}>
+                            {loading ? <Loader2 className="animate-spin mr-2"/> : <Send />}
+                            Send Notification
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -410,7 +420,7 @@ export default function DeveloperDashboard() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="space-y-8 p-6"
+      className="space-y-8"
     >
         <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
