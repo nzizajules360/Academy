@@ -42,7 +42,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!userLoading && user) {
-      router.push('/dashboard');
+      const role = (user as any).role || 'admin';
+      router.push(`/dashboard/${role}`);
     }
   }, [user, userLoading, router]);
 
@@ -70,7 +71,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      router.push('/dashboard');
+      // The useEffect will handle redirection
     } catch (error: any) {
       console.error(error);
       const errorCode = error.code;
@@ -96,8 +97,8 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      router.push('/dashboard');
-    } catch (error: any) {
+      // The useEffect will handle redirection
+    } catch (error: any) => {
       console.error(error);
       toast({
         variant: 'destructive',
@@ -294,5 +295,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
