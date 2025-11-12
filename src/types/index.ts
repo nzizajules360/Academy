@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'secretary' | 'patron' | 'matron' | 'teacher';
+export type UserRole = 'admin' | 'secretary' | 'patron' | 'matron' | 'teacher' | 'developer';
 
 export type MaterialStatus = {
   materialId: string;

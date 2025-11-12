@@ -26,7 +26,7 @@
         "role": {
           "type": "string",
           "description": "The user's role.",
-          "enum": ["admin", "secretary", "patron", "matron", "teacher"]
+          "enum": ["admin", "secretary", "patron", "matron", "teacher", "developer"]
         }
       },
       "required": ["uid", "email", "role"]
@@ -300,6 +300,33 @@
             "studentsPerBed": { "type": "number" }
         },
         "required": ["studentsPerBed"]
+    },
+    "systemSettings": {
+        "title": "System Settings",
+        "description": "Global developer-controlled settings for the application.",
+        "type": "object",
+        "properties": {
+            "maintenanceMode": {
+                "type": "boolean",
+                "description": "If true, the application is in maintenance mode for non-admins."
+            },
+            "userRegistration": {
+                "type": "boolean",
+                "description": "If true, new users can register."
+            },
+            "financialModules": {
+                "type": "boolean",
+                "description": "If true, financial features are enabled."
+            },
+            "attendanceSystem": {
+                "type": "boolean",
+                "description": "If true, attendance tracking is enabled."
+            },
+            "refectoryManagement": {
+                "type": "boolean",
+                "description": "If true, refectory management is enabled."
+            }
+        }
     }
   },
   "auth": {
@@ -323,6 +350,12 @@
             "$ref": "#/entities/feeSettings"
         },
         "description": "Stores the application-wide fee settings."
+    },
+    "/settings/system": {
+        "schema": {
+            "$ref": "#/entities/systemSettings"
+        },
+        "description": "Stores global developer settings."
     },
     "/academicYears/{yearId}": {
         "schema": {
