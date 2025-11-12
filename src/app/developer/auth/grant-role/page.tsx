@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -13,8 +14,8 @@ import { collection, query, where, getDocs, updateDoc, doc } from "firebase/fire
 import { motion, AnimatePresence } from "framer-motion"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-// Secret code - in production, this should be in environment variables
-const ADMIN_SECRET_CODE = process.env.NEXT_PUBLIC_ADMIN_SECRET_CODE || "ADMIN_SECRET_2024"
+// Secret code from environment variable
+const ADMIN_SECRET_CODE = process.env.NEXT_PUBLIC_ADMIN_SECRET_CODE;
 
 export default function GrantRolePage() {
   const firestore = useFirestore()
