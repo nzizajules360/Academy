@@ -98,7 +98,7 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, provider);
       // The useEffect will handle redirection
-    } catch (error: any) => {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: 'destructive',
