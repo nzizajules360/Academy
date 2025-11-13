@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy, limit, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, writeBatch, getDocs, Timestamp } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '../ui/badge';
@@ -90,7 +90,7 @@ const NotificationBell = () => {
                             <p className="font-semibold">{n.title}</p>
                             <p className="text-sm text-muted-foreground">{n.body}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {n.createdAt ? formatDistanceToNow(n.createdAt.toDate(), { addSuffix: true }) : ''}
+                                {n.createdAt && n.createdAt.toDate ? formatDistanceToNow(n.createdAt.toDate(), { addSuffix: true }) : ''}
                             </p>
                          </div>
                     </DropdownMenuItem>
