@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Users, DollarSign, ListTodo, ShieldCheck, ArrowRight, Sparkles, Check, Star, TrendingUp, BookOpen, Calendar, Award } from 'lucide-react';
+import { GraduationCap, Users, DollarSign, ListTodo, ShieldCheck, ArrowRight, Sparkles, Check, Star, TrendingUp, Award } from 'lucide-react';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -98,7 +100,7 @@ export default function Home() {
     }, 5000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [heroSlides.length]);
 
   const currentHero = heroSlides[currentSlide];
 
@@ -128,8 +130,8 @@ export default function Home() {
       </header>
 
       <main className="flex-1">
-        {/* Dynamic Hero Section */}
-        <section className="relative w-full min-h-[90vh] flex items-center overflow-hidden">
+        {/* Dynamic Hero Section - Full Screen */}
+        <section className="relative w-full h-screen flex items-center overflow-hidden">
           {/* Animated Background */}
           <div className={`absolute inset-0 bg-gradient-to-br ${currentHero.bgGradient} transition-all duration-1000`} />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
@@ -204,6 +206,7 @@ export default function Home() {
                       className={`h-2 rounded-full transition-all duration-300 ${
                         currentSlide === index ? 'w-12 bg-gradient-to-r from-blue-600 to-violet-600' : 'w-2 bg-slate-300 hover:bg-slate-400'
                       }`}
+                      aria-label={`Go to slide ${index + 1}`}
                     />
                   ))}
                 </div>
@@ -319,7 +322,7 @@ export default function Home() {
                       <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-slate-700 font-medium mb-6 leading-relaxed">"{testimonial.text}"</p>
+                  <p className="text-slate-700 font-medium mb-6 leading-relaxed">&ldquo;{testimonial.text}&rdquo;</p>
                   <div className="flex items-center gap-4">
                     <img 
                       src={testimonial.image} 
