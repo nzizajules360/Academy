@@ -26,13 +26,14 @@ import {
 } from "@/components/ui/accordion"
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, AlertTriangle, Pencil, Send } from 'lucide-react';
+import { PlusCircle, Loader2, AlertTriangle, Pencil, Send, MessageSquareText } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { StudentFeesForm } from '../(components)/student-fees-form';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { SendListDialog } from '../(components)/send-list-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface StudentData extends DocumentData {
   id: string;
@@ -49,9 +50,11 @@ interface StudentData extends DocumentData {
 interface StudentListByClassProps {
   students: StudentData[];
   onEditFees: (student: StudentData) => void;
+  onSendSms: (studentId: string) => void;
+  sendingSmsId: string | null;
 }
 
-const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) => {
+const StudentListByClass = ({ students, onEditFees, onSendSms, sendingSmsId }: StudentListByClassProps) => {
   const studentsByClass = students.reduce((acc, student) => {
     const { class: studentClass } = student;
     if (!acc[studentClass]) {
@@ -75,7 +78,6 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Parent Name</TableHead>
                   <TableHead className="hidden md:table-cell">Parent Phone</TableHead>
-                  <TableHead className="hidden lg:table-cell">Religion</TableHead>
                   <TableHead>Fee Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -91,7 +93,6 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">{student.parentName}</TableCell>
                     <TableCell className="hidden md:table-cell">{student.parentPhone}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{student.religion}</TableCell>
                     <TableCell>
                       <Badge variant={hasOutstanding ? 'destructive' : 'secondary'} className="whitespace-nowrap">
                         {hasOutstanding && <AlertTriangle className="mr-1 h-3 w-3" />}
@@ -99,9 +100,13 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                       <Button variant="ghost" size="icon" onClick={() => onEditFees(student)}>
+                       <Button variant="ghost" size="icon" onClick={() => onEditFees(student)} title="Edit Fees">
                             <Pencil className="h-4 w-4" />
                             <span className="sr-only">Edit Fees</span>
+                       </Button>
+                       <Button variant="ghost" size="icon" onClick={() => onSendSms(student.id)} title="Send SMS Update" disabled={sendingSmsId === student.id}>
+                            {sendingSmsId === student.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquareText className="h-4 w-4" />}
+                            <span className="sr-only">Send SMS</span>
                        </Button>
                     </TableCell>
                   </TableRow>
@@ -119,6 +124,7 @@ const StudentListByClass = ({ students, onEditFees }: StudentListByClassProps) =
 export default function StudentsPage() {
   const firestore = useFirestore();
   const { activeTermId, loading: loadingTerm } = useActiveTerm();
+  const { toast } = useToast();
 
   const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
   const [studentsSnapshot, loading, error] = useCollection(studentsQuery);
@@ -126,6 +132,7 @@ export default function StudentsPage() {
   const [isFeesFormOpen, setIsFeesFormOpen] = useState(false);
   const [isSendListOpen, setIsSendListOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
+  const [sendingSmsId, setSendingSmsId] = useState<string | null>(null);
 
   const students = studentsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentData)) || [];
 
@@ -137,7 +144,35 @@ export default function StudentsPage() {
   const handleUpdate = () => {
     setSelectedStudent(null);
     setIsFeesFormOpen(false);
-  }
+  };
+
+  const handleSendSms = async (studentId: string) => {
+    setSendingSmsId(studentId);
+    try {
+        const response = await fetch('/api/sms/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentId }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to send SMS.');
+        }
+        toast({
+            title: "SMS Prepared",
+            description: "The parent notification has been prepared and logged to the console.",
+            variant: "success",
+        });
+    } catch (err: any) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: err.message,
+        });
+    } finally {
+        setSendingSmsId(null);
+    }
+  };
 
   return (
     <>
@@ -171,7 +206,7 @@ export default function StudentsPage() {
         {error && <p className="text-destructive p-4">Error loading students: {error.message}</p>}
         {!loading && !error && (
           students.length > 0 ? (
-            <StudentListByClass students={students} onEditFees={handleEditFees} />
+            <StudentListByClass students={students} onEditFees={handleEditFees} onSendSms={handleSendSms} sendingSmsId={sendingSmsId} />
           ) : (
             <div className="text-center text-muted-foreground py-8">
               {activeTermId ? "No students found for the active term. Use the 'Add Student' button to enroll the first student." : "No active term set. Please set an active term in the settings."}
