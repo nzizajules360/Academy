@@ -31,15 +31,14 @@ export default function MatronDashboard() {
     const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', 'female')) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
-    const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+    const materialsQuery = firestore ? query(collection(firestore, 'materials'), where('required', '==', true)) : null;
     const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
 
-    const requiredMaterials = materials?.filter((m: any) => m.required) || [];
-
     const getMissingItems = (student: any) => {
-        if (!student.utilities) return requiredMaterials;
-        const presentMaterialIds = new Set(student.utilities?.filter((u: any) => u.status === 'present').map((u: any) => u.materialId) || []);
-        return requiredMaterials.filter((m: any) => !presentMaterialIds.has(m.id));
+        if (!materials || !student) return [];
+        if (!student.utilities) return materials;
+        const presentMaterialIds = new Set(student.utilities.filter((u: any) => u.status === 'present').map((u: any) => u.materialId));
+        return materials.filter((m: any) => !presentMaterialIds.has(m.id));
     }
 
     const studentsToMonitor = studentsSnapshot?.docs.map(doc => {

@@ -48,22 +48,16 @@ export default function UtilitiesPage() {
     if (!firestore) return;
     const studentRef = doc(firestore, 'students', studentId);
     
-    // The new status to be set
     const newStatus = checked ? 'present' : 'missing';
-    const newUtility = { materialId, status: newStatus };
-
-    // The opposite status object to remove, ensuring we clean up any old record
-    const oppositeStatus = !checked ? 'present' : 'missing';
-    const oldUtilityToRemove = { materialId, status: oppositeStatus };
+    const utilityObject = { materialId, status: newStatus };
+    const oppositeUtilityObject = { materialId, status: checked ? 'missing' : 'present' };
 
     try {
-        // Atomically remove the old status object and add the new one.
-        // This works even if the `utilities` field doesn't exist or if the old object isn't in the array.
         await updateDoc(studentRef, {
-            utilities: arrayRemove(oldUtilityToRemove)
+            utilities: arrayRemove(oppositeUtilityObject)
         });
         await updateDoc(studentRef, {
-            utilities: arrayUnion(newUtility)
+            utilities: arrayUnion(utilityObject)
         });
 
     } catch (error) {
@@ -113,10 +107,10 @@ export default function UtilitiesPage() {
                         <TableHead className="text-right p-6 font-semibold">Status</TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody>
+                
                     {relevantStudents?.map(student => (
                       <Collapsible key={student.id} asChild>
-                         <React.Fragment>
+                         <TableBody>
                             <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
@@ -161,10 +155,10 @@ export default function UtilitiesPage() {
                                     </TableCell>
                                 </TableRow>
                             </CollapsibleContent>
-                        </React.Fragment>
+                        </TableBody>
                       </Collapsible>
                     ))}
-                </TableBody>
+                
             </Table>
         </div>
       </CardContent>
