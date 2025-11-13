@@ -1,38 +1,212 @@
-
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, ClipboardList, Loader2, BookOpen, FileDown, BedDouble } from 'lucide-react';
+import { Users, ClipboardList, Loader2, BookOpen, FileDown, BedDouble, TrendingUp, AlertCircle, CheckCircle2, Download } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { materials } from '@/lib/data';
 import { useActiveTerm } from '@/hooks/use-active-term';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import Papa from 'papaparse';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
-const StatCard = ({ title, value, icon: Icon, description, color }: { title: string, value: string | number, icon: React.ElementType, description?: string, color: 'blue' | 'orange' }) => {
+const StatCard = ({ 
+    title, 
+    value, 
+    icon: Icon, 
+    description, 
+    color,
+    trend,
+    index 
+}: { 
+    title: string;
+    value: string | number;
+    icon: React.ElementType;
+    description?: string;
+    color: 'blue' | 'orange' | 'green' | 'purple';
+    trend?: { value: number; label: string };
+    index: number;
+}) => {
     const colorClasses = {
-        blue: 'text-blue-500 bg-blue-500/10',
-        orange: 'text-orange-500 bg-orange-500/10',
+        blue: 'text-blue-500 bg-gradient-to-br from-blue-500/20 to-blue-600/5 border-blue-500/20',
+        orange: 'text-orange-500 bg-gradient-to-br from-orange-500/20 to-orange-600/5 border-orange-500/20',
+        green: 'text-green-500 bg-gradient-to-br from-green-500/20 to-green-600/5 border-green-500/20',
+        purple: 'text-purple-500 bg-gradient-to-br from-purple-500/20 to-purple-600/5 border-purple-500/20',
     };
+
     return (
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-                <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-                    <Icon className="h-5 w-5" />
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+        >
+            <Card className="relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-2xl transition-all duration-300 group">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                    <motion.div 
+                        className={`p-3 rounded-xl ${colorClasses[color]} border backdrop-blur-sm`}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                        <Icon className="h-5 w-5" />
+                    </motion.div>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                    <motion.div 
+                        className="text-4xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                    >
+                        {value}
+                    </motion.div>
+                    {description && (
+                        <p className="text-xs text-muted-foreground mt-1">{description}</p>
+                    )}
+                    {trend && (
+                        <div className="flex items-center gap-1 mt-2">
+                            <TrendingUp className="h-3 w-3 text-green-500" />
+                            <span className="text-xs text-green-500 font-medium">
+                                {trend.value > 0 ? '+' : ''}{trend.value}%
+                            </span>
+                            <span className="text-xs text-muted-foreground">{trend.label}</span>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </motion.div>
+    );
+};
+
+const ExportCard = ({
+    icon: Icon,
+    title,
+    description,
+    buttonText,
+    onExport,
+    children,
+    color
+}: {
+    icon: React.ElementType;
+    title: string;
+    description: string;
+    buttonText: string;
+    onExport: () => void;
+    children?: React.ReactNode;
+    color: 'blue' | 'purple';
+}) => {
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        setIsExporting(true);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        onExport();
+        setIsExporting(false);
+    };
+
+    const colorClasses = {
+        blue: 'from-blue-500/10 to-cyan-500/10 border-blue-500/20',
+        purple: 'from-purple-500/10 to-pink-500/10 border-purple-500/20',
+    };
+
+    return (
+        <motion.div
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className={`relative p-6 border rounded-xl bg-gradient-to-br ${colorClasses[color]} backdrop-blur-sm overflow-hidden group`}
+        >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-start gap-4 flex-1">
+                    <div className="p-3 rounded-xl bg-background/50 backdrop-blur-sm border border-border/50">
+                        <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-1 flex-1">
+                        <h4 className="font-semibold text-lg">{title}</h4>
+                        <p className="text-sm text-muted-foreground">{description}</p>
+                        {children}
+                    </div>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <div className="text-3xl font-bold">{value}</div>
-                {description && <p className="text-xs text-muted-foreground">{description}</p>}
-            </CardContent>
-        </Card>
-    )
-}
+                <Button 
+                    onClick={handleExport} 
+                    disabled={isExporting}
+                    className="w-full md:w-auto shadow-lg hover:shadow-xl transition-all duration-300 group/btn"
+                    size="lg"
+                >
+                    <AnimatePresence mode="wait">
+                        {isExporting ? (
+                            <motion.div
+                                key="loading"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center gap-2"
+                            >
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Exporting...
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="ready"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center gap-2"
+                            >
+                                <Download className="h-4 w-4 group-hover/btn:animate-bounce" />
+                                {buttonText}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </Button>
+            </div>
+        </motion.div>
+    );
+};
+
+const InsightCard = ({ 
+    icon: Icon, 
+    title, 
+    value, 
+    status,
+    color 
+}: { 
+    icon: React.ElementType;
+    title: string;
+    value: string | number;
+    status: 'good' | 'warning' | 'info';
+    color: string;
+}) => {
+    const statusConfig = {
+        good: { icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-500/10' },
+        warning: { icon: AlertCircle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+        info: { icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    };
+
+    const StatusIcon = statusConfig[status].icon;
+
+    return (
+        <motion.div
+            whileHover={{ x: 5 }}
+            className="flex items-center gap-4 p-4 rounded-lg bg-card/30 border border-border/50 backdrop-blur-sm"
+        >
+            <div className={`p-3 rounded-lg ${statusConfig[status].bg}`}>
+                <Icon className={`h-5 w-5 ${statusConfig[status].color}`} />
+            </div>
+            <div className="flex-1">
+                <p className="text-sm text-muted-foreground">{title}</p>
+                <p className="text-lg font-semibold">{value}</p>
+            </div>
+            <StatusIcon className={`h-5 w-5 ${statusConfig[status].color}`} />
+        </motion.div>
+    );
+};
 
 export default function ReportsPage() {
     const firestore = useFirestore();
@@ -43,11 +217,20 @@ export default function ReportsPage() {
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
     if (loadingTerm || loadingStudents) {
-        return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+        return (
+            <div className="flex flex-col justify-center items-center h-64 gap-4">
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                    <Loader2 className="h-12 w-12 text-primary" />
+                </motion.div>
+                <p className="text-muted-foreground">Loading dashboard data...</p>
+            </div>
+        );
     }
     
     const students = studentsSnapshot?.docs.map(doc => doc.data()) || [];
-
     const totalStudents = students.length;
     const religions = [...new Set(students.map(s => s.religion).filter(Boolean))];
 
@@ -57,6 +240,9 @@ export default function ReportsPage() {
         return totalMissing + (requiredMaterialsCount - presentCount);
     }, 0);
 
+    const studentsWithBeds = students.filter(s => s.dormitoryBed).length;
+    const completionRate = totalStudents > 0 ? Math.round((studentsWithBeds / totalStudents) * 100) : 0;
+
     const handleDormitoryExport = () => {
         const dataToExport = students
             .filter(s => s.dormitoryBed)
@@ -65,7 +251,7 @@ export default function ReportsPage() {
                 "Class": s.class,
                 "Bed Number": s.dormitoryBed,
             }))
-            .sort((a,b) => a["Bed Number"] - b["Bed Number"]);
+            .sort((a, b) => a["Bed Number"] - b["Bed Number"]);
 
         if (dataToExport.length === 0) {
             alert("No students with dormitory assignments to export.");
@@ -108,97 +294,190 @@ export default function ReportsPage() {
         document.body.removeChild(link);
     };
 
-
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-8"
-        >
-            <div className="space-y-2">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                    Patron's Reports
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl">
-                    An overview of metrics for male students under your care for the active term.
+        <div className="min-h-screen pb-12">
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="space-y-3 mb-8"
+            >
+                <div className="flex items-center gap-3">
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                        className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20"
+                    >
+                        <Users className="h-8 w-8 text-primary" />
+                    </motion.div>
+                    <div>
+                        <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                            Patron's Reports
+                        </h1>
+                        <Badge variant="secondary" className="mt-2">
+                            Active Term Dashboard
+                        </Badge>
+                    </div>
+                </div>
+                <p className="text-lg text-muted-foreground max-w-3xl">
+                    Comprehensive analytics and insights for male students under your supervision.
                 </p>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard 
-                    title="Students Monitored" 
-                    value={totalStudents} 
-                    icon={Users} 
-                    description="Total number of male students."
-                    color="blue"
-                />
-                <StatCard 
-                    title="Total Missing Items" 
-                    value={utilitiesMissing} 
-                    icon={ClipboardList} 
-                    description="Across all male students."
-                    color="orange"
-                />
-                 <StatCard 
-                    title="Required Materials" 
-                    value={requiredMaterialsCount} 
-                    icon={BookOpen} 
-                    description="Essential items per student"
-                    color="orange"
-                />
-            </div>
-             <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold flex items-center gap-3">
-                        <FileDown className="h-6 w-6 text-primary" />
-                        Export Center
-                    </CardTitle>
-                    <CardDescription className="text-base">
-                        Download student data in CSV format for analysis and record-keeping.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="p-4 border rounded-lg flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <BedDouble className="h-6 w-6 text-muted-foreground" />
-                            <div>
-                                <h4 className="font-semibold">Dormitory Assignments</h4>
-                                <p className="text-sm text-muted-foreground">Export a list of students and their assigned bed numbers.</p>
-                            </div>
-                        </div>
-                        <Button onClick={handleDormitoryExport} variant="outline" className="w-full md:w-auto">
-                            <FileDown className="mr-2 h-4 w-4" />
-                            Export Dormitory CSV
-                        </Button>
-                    </div>
+            <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard 
+                        title="Total Students" 
+                        value={totalStudents} 
+                        icon={Users} 
+                        description="Male students monitored"
+                        color="blue"
+                        index={0}
+                    />
+                    <StatCard 
+                        title="Missing Items" 
+                        value={utilitiesMissing} 
+                        icon={ClipboardList} 
+                        description="Across all students"
+                        color="orange"
+                        index={1}
+                    />
+                    <StatCard 
+                        title="Required Materials" 
+                        value={requiredMaterialsCount} 
+                        icon={BookOpen} 
+                        description="Per student checklist"
+                        color="green"
+                        index={2}
+                    />
+                    <StatCard 
+                        title="Bed Assignments" 
+                        value={`${completionRate}%`}
+                        icon={BedDouble} 
+                        description={`${studentsWithBeds} of ${totalStudents} assigned`}
+                        color="purple"
+                        index={3}
+                    />
+                </div>
 
-                     <div className="p-4 border rounded-lg flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <Users className="h-6 w-6 text-muted-foreground" />
-                            <div>
-                                <h4 className="font-semibold">Student List</h4>
-                                <p className="text-sm text-muted-foreground">Export a list of male students, optionally filtered by religion.</p>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                >
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+                        <CardHeader className="relative z-10">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                    <TrendingUp className="h-5 w-5 text-primary" />
+                                </div>
+                                <CardTitle className="text-2xl font-bold">Quick Insights</CardTitle>
                             </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                            <Select value={religionFilter} onValueChange={setReligionFilter}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by religion" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Religions</SelectItem>
-                                    {religions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Button onClick={handleStudentExport} className="w-full sm:w-auto">
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Export Student CSV
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </motion.div>
+                            <CardDescription className="text-base">
+                                Key metrics and statistics at a glance
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InsightCard
+                                icon={Users}
+                                title="Religious Diversity"
+                                value={`${religions.length} ${religions.length === 1 ? 'religion' : 'religions'}`}
+                                status="info"
+                                color="blue"
+                            />
+                            <InsightCard
+                                icon={BedDouble}
+                                title="Dormitory Status"
+                                value={`${studentsWithBeds} assigned`}
+                                status={completionRate === 100 ? "good" : "warning"}
+                                color="purple"
+                            />
+                            <InsightCard
+                                icon={ClipboardList}
+                                title="Avg. Missing Items"
+                                value={totalStudents > 0 ? (utilitiesMissing / totalStudents).toFixed(1) : '0'}
+                                status={utilitiesMissing === 0 ? "good" : "warning"}
+                                color="orange"
+                            />
+                            <InsightCard
+                                icon={BookOpen}
+                                title="Completion Rate"
+                                value={`${totalStudents > 0 ? Math.round(((totalStudents * requiredMaterialsCount - utilitiesMissing) / (totalStudents * requiredMaterialsCount)) * 100) : 0}%`}
+                                status="info"
+                                color="green"
+                            />
+                        </CardContent>
+                    </Card>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5" />
+                        <CardHeader className="relative z-10">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+                                    <FileDown className="h-6 w-6 text-blue-500" />
+                                </div>
+                                <CardTitle className="text-3xl font-bold">Export Center</CardTitle>
+                            </div>
+                            <CardDescription className="text-base">
+                                Download comprehensive reports and data exports for analysis and record-keeping
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 relative z-10">
+                            <ExportCard
+                                icon={BedDouble}
+                                title="Dormitory Assignments Report"
+                                description="Complete list of students with their assigned bed numbers, sorted for easy reference"
+                                buttonText="Export Dormitory CSV"
+                                onExport={handleDormitoryExport}
+                                color="blue"
+                            >
+                                <div className="mt-2 flex items-center gap-2">
+                                    <Badge variant="secondary">{studentsWithBeds} students</Badge>
+                                    <span className="text-xs text-muted-foreground">with assignments</span>
+                                </div>
+                            </ExportCard>
+
+                            <ExportCard
+                                icon={Users}
+                                title="Student Directory"
+                                description="Comprehensive student list with filtering options by religious affiliation"
+                                buttonText="Export Student CSV"
+                                onExport={handleStudentExport}
+                                color="purple"
+                            >
+                                <div className="mt-3 flex items-center gap-2">
+                                    <Select value={religionFilter} onValueChange={setReligionFilter}>
+                                        <SelectTrigger className="w-[200px] bg-background/50 backdrop-blur-sm">
+                                            <SelectValue placeholder="Filter by religion" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Religions ({totalStudents})</SelectItem>
+                                            {religions.map(r => (
+                                                <SelectItem key={r} value={r}>
+                                                    {r} ({students.filter(s => s.religion === r).length})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {religionFilter !== 'all' && (
+                                        <Badge variant="outline">
+                                            {students.filter(s => s.religion === religionFilter).length} students
+                                        </Badge>
+                                    )}
+                                </div>
+                            </ExportCard>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            </div>
+        </div>
     );
 }
