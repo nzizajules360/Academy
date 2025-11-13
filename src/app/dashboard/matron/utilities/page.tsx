@@ -43,90 +43,38 @@ export default function UtilitiesPage() {
 
   const relevantStudents = studentsSnapshot?.docs.map(doc => ({id: doc.id, ...doc.data()}));
 
-  const handleUtilityChange = async (studentId: string, materialId: string, isChecked: boolean) => {
-    if (!firestore) return;
-    const studentRef = doc(firestore, 'students', studentId);
-    
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    const utilityPresent = { materialId, status: 'present' };
-    const utilityMissing = { materialId, status: 'missing' };
+    const handleUtilityChange = async (studentId: string, materialId: string, isChecked: boolean) => {
+        if (!firestore) return;
+        const studentRef = doc(firestore, 'students', studentId);
+        const utility = { materialId, status: isChecked ? 'present' : 'missing' };
 
-    try {
-        if (isChecked) {
-            // Remove both possible states first, then add present
-            await updateDoc(studentRef, {
-                utilities: arrayRemove(utilityMissing, utilityPresent)
-            });
-            await updateDoc(studentRef, {
-                utilities: arrayUnion(utilityPresent)
-            });
-        } else {
-            // Remove the present state only
-            await updateDoc(studentRef, {
-                utilities: arrayRemove(utilityPresent)
-            });
+        try {
+            // Best-effort: read latest utilities from in-memory snapshot
+            const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
+            const existingUtilities = studentSnap?.data()?.utilities || [];
+
+            const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
+
+            // Remove any existing record for this material to avoid duplicates
+            if (existingUtility) {
+                await updateDoc(studentRef, { utilities: arrayRemove(existingUtility) });
+            }
+
+            // If checked, add the present record
+            if (isChecked) {
+                await updateDoc(studentRef, { utilities: arrayUnion(utility) });
+            }
+        } catch (error) {
+            console.error('Error updating utility: ', error);
         }
-=======
-    try {
-        // Get the latest student doc from snapshot
-        const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
-        if (!studentSnap) return;
-        const studentData = studentSnap.data();
-        const existingUtilities = studentData?.utilities || [];
-        
-        // Find if there's any record for this materialId
-        const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
-
-=======
-    try {
-        // Get the latest student doc from snapshot
-        const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
-        if (!studentSnap) return;
-        const studentData = studentSnap.data();
-        const existingUtilities = studentData?.utilities || [];
-        
-        // Find if there's any record for this materialId
-        const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
-
->>>>>>> Stashed changes
-        // If a record for this material exists, remove it first
-        if (existingUtility) {
-             await updateDoc(studentRef, {
-                utilities: arrayRemove(existingUtility)
-            });
-        }
-       
-        // Add the new or updated record
-        await updateDoc(studentRef, {
-            utilities: arrayUnion(utility)
-        });
-
->>>>>>> Stashed changes
-    } catch (error) {
-        console.error("Error updating utility: ", error);
-    }
-  };
+    };
   
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  const getStatus = (student: any, materialId: string) => {
-    if (!student || !student.utilities) return false;
-    const utility = student.utilities.find((u: any) => u.materialId === materialId);
-    return utility ? utility.status === 'present' : false;
-=======
-=======
->>>>>>> Stashed changes
-  const getStatus = (studentId: string, materialId: string) => {
-    const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
-    if (!studentDoc) return false;
-    const utilities = studentDoc.data()?.utilities || [];
-    return utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-  };
+    const getStatus = (studentId: string, materialId: string) => {
+        const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
+        if (!studentDoc) return false;
+        const utilities = studentDoc.data()?.utilities || [];
+        return utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
+    };
 
   const getPresentCount = (studentId: string) => {
     const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
@@ -176,7 +124,7 @@ export default function UtilitiesPage() {
                     ) : (
                     relevantStudents?.map(student => (
                       <React.Fragment key={student.id}>
-                        <Collapsible asChild tag="tbody">
+                        <Collapsible asChild>
                             <>
                             <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>
