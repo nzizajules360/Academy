@@ -15,6 +15,7 @@ import { useRole } from '@/hooks/use-role';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useUser } from '@/firebase';
 import { getAuth, signOut } from 'firebase/auth';
+import { History } from 'lucide-react';
 
 export function UserNav() {
   const { role } = useRole();
@@ -51,6 +52,13 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+            <Link href="/dashboard/activity">
+                <History className="mr-2 h-4 w-4" />
+                Recent Activity
+            </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleLogout}>
           Logout

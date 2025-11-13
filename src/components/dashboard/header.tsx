@@ -1,4 +1,3 @@
-
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserNav } from '@/components/dashboard/user-nav';
@@ -13,6 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuFooter,
 } from '@/components/ui/dropdown-menu';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy, limit, writeBatch, getDocs, Timestamp } from 'firebase/firestore';
@@ -20,6 +20,7 @@ import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 
 const NotificationBell = () => {
@@ -30,35 +31,18 @@ const NotificationBell = () => {
         ? query(
             collection(firestore, `users/${user.uid}/notifications`),
             orderBy('createdAt', 'desc'),
-            limit(10)
+            limit(5)
         ) : null;
     
     const [notifications, loading] = useCollectionData(notificationsQuery, { idField: 'id' });
 
-    const unreadNotifications = notifications?.filter(n => !n.read);
-
-    const handleOpenChange = async (isOpen: boolean) => {
-        if (isOpen && unreadNotifications && unreadNotifications.length > 0 && firestore && user) {
-            const batch = writeBatch(firestore);
-            const unreadIds = unreadNotifications.map(n => n.id);
-            
-            const notificationsRef = collection(firestore, `users/${user.uid}/notifications`);
-            const q = query(notificationsRef, where('__name__', 'in', unreadIds));
-            const snapshot = await getDocs(q);
-            snapshot.forEach(doc => {
-                batch.update(doc.ref, { read: true });
-            });
-
-            try {
-                await batch.commit();
-            } catch (error) {
-                console.error("Error marking notifications as read:", error);
-            }
-        }
-    };
+    const unreadNotificationsQuery = (user && firestore) 
+        ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false))
+        : null;
+    const [unreadNotifications] = useCollectionData(unreadNotificationsQuery);
     
     return (
-        <DropdownMenu onOpenChange={handleOpenChange}>
+        <DropdownMenu>
             <DropdownMenuTrigger asChild>
                  <Button variant="ghost" size="icon" className="relative h-9 w-9 hover:bg-primary/5">
                     <Bell className="h-5 w-5" />
@@ -79,7 +63,7 @@ const NotificationBell = () => {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuLabel>Recent Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {loading && <DropdownMenuItem>Loading...</DropdownMenuItem>}
                 {!loading && notifications?.length === 0 && <DropdownMenuItem>No new notifications</DropdownMenuItem>}
@@ -88,13 +72,19 @@ const NotificationBell = () => {
                          {!n.read && <div className="h-2 w-2 rounded-full bg-primary mt-1.5" />}
                          <div className={n.read ? 'pl-5' : ''}>
                             <p className="font-semibold">{n.title}</p>
-                            <p className="text-sm text-muted-foreground">{n.body}</p>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{n.body}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {n.createdAt && n.createdAt.toDate ? formatDistanceToNow(n.createdAt.toDate(), { addSuffix: true }) : ''}
+                                {n.createdAt && (n.createdAt as Timestamp).toDate ? formatDistanceToNow((n.createdAt as Timestamp).toDate(), { addSuffix: true }) : ''}
                             </p>
                          </div>
                     </DropdownMenuItem>
                 ))}
+                 <DropdownMenuSeparator />
+                 <DropdownMenuFooter>
+                    <Button variant="ghost" className="w-full" asChild>
+                        <Link href="/dashboard/activity">View all activity</Link>
+                    </Button>
+                 </DropdownMenuFooter>
             </DropdownMenuContent>
         </DropdownMenu>
     );
