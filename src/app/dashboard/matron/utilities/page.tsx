@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import {
@@ -53,14 +52,16 @@ export default function UtilitiesPage() {
 
     try {
         if (isChecked) {
+            // Remove both possible states first, then add present
             await updateDoc(studentRef, {
-                utilities: arrayRemove(utilityMissing)
+                utilities: arrayRemove(utilityMissing, utilityPresent)
             });
             await updateDoc(studentRef, {
                 utilities: arrayUnion(utilityPresent)
             });
         } else {
-             await updateDoc(studentRef, {
+            // Remove the present state only
+            await updateDoc(studentRef, {
                 utilities: arrayRemove(utilityPresent)
             });
         }
