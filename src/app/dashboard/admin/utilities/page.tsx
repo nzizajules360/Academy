@@ -38,31 +38,32 @@ export default function UtilitiesPage() {
   const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId)) : null;
   const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
-  const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+  const materialsQuery = firestore ? query(collection(firestore, 'materials'), where('required', '==', true)) : null;
   const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
 
-
   const relevantStudents = studentsSnapshot?.docs.map(doc => ({id: doc.id, ...doc.data()}))
-    .filter((student: any) => student.gender === 'male' || student.gender === 'female'); // Assuming all students are relevant for admin
+    .filter((student: any) => student.gender === 'male' || student.gender === 'female'); 
 
   const handleUtilityChange = async (studentId: string, materialId: string, checked: boolean) => {
     if (!firestore) return;
     const studentRef = doc(firestore, 'students', studentId);
-    const utility = { materialId, status: checked ? 'present' : 'missing' };
     
-    try {
-        const studentDoc = relevantStudents?.find(s => s.id === studentId);
-        if (!studentDoc) return;
-        const existingUtility = studentDoc.utilities?.find((u: any) => u.materialId === materialId);
+    // The new status to be set
+    const newStatus = checked ? 'present' : 'missing';
+    const newUtility = { materialId, status: newStatus };
 
-        if (existingUtility) {
-             await updateDoc(studentRef, {
-                utilities: arrayRemove(existingUtility)
-            });
-        }
-       
+    // The opposite status object to remove, ensuring we clean up any old record
+    const oppositeStatus = !checked ? 'present' : 'missing';
+    const oldUtilityToRemove = { materialId, status: oppositeStatus };
+
+    try {
+        // Atomically remove the old status object and add the new one.
+        // This works even if the `utilities` field doesn't exist or if the old object isn't in the array.
         await updateDoc(studentRef, {
-            utilities: arrayUnion(utility)
+            utilities: arrayRemove(oldUtilityToRemove)
+        });
+        await updateDoc(studentRef, {
+            utilities: arrayUnion(newUtility)
         });
 
     } catch (error) {
@@ -80,7 +81,7 @@ export default function UtilitiesPage() {
     return student.utilities.filter((u: any) => u.status === 'present').length || 0;
   }
   
-  const requiredMaterialsCount = materials?.filter((m: any) => m.required).length || 0;
+  const requiredMaterialsCount = materials?.length || 0;
 
   if (loadingStudents || loadingTerm || loadingMaterials) {
       return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -139,7 +140,7 @@ export default function UtilitiesPage() {
                                         <div className="p-6">
                                             <h4 className="font-semibold mb-4 text-base">Required Materials for {student.name}</h4>
                                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                                            {materials?.filter((m: any) => m.required).map((material: any) => (
+                                            {materials?.map((material: any) => (
                                                 <div key={material.id} className="flex items-center space-x-3">
                                                     <Checkbox
                                                         id={`${student.id}-${material.id}`}
