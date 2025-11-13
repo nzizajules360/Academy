@@ -104,9 +104,9 @@ const StudentListByClass = ({ students, onEditFees, onSendSms, sendingSmsId }: S
                             <Pencil className="h-4 w-4" />
                             <span className="sr-only">Edit Fees</span>
                        </Button>
-                       <Button variant="ghost" size="icon" onClick={() => onSendSms(student.id)} title="Send SMS Update" disabled={sendingSmsId === student.id}>
+                       <Button variant="ghost" size="icon" onClick={() => onSendSms(student.id)} title="Send Red Notice" disabled={sendingSmsId === student.id}>
                             {sendingSmsId === student.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquareText className="h-4 w-4" />}
-                            <span className="sr-only">Send SMS</span>
+                            <span className="sr-only">Send Red Notice</span>
                        </Button>
                     </TableCell>
                   </TableRow>
@@ -159,7 +159,7 @@ export default function StudentsPage() {
             throw new Error(result.error || 'Failed to send SMS.');
         }
         toast({
-            title: "SMS Prepared",
+            title: "Red Notice Prepared",
             description: "The parent notification has been prepared and logged to the console.",
             variant: "success",
         });

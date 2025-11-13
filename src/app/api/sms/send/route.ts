@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const requiredMaterials = materialsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     const presentMaterialIds = new Set((student.utilities || []).filter((u: any) => u.status === 'present').map((u: any) => u.materialId));
-    const missingMaterials = requiredMaterials.filter(m => !presentMaterialIds.has(m.id)).map(m => m.name);
+    const missingMaterials = requiredMaterials.filter(m => !presentMaterialIds.has(m.id)).map((m: any) => m.name);
 
     // 4. Construct the SMS message
     let messageBody = `Dear Parent of ${student.name},\nThis is an update from College Baptista de Gitwe.\n`;
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     }
     
     if (!hasIssues) {
-        messageBody += `\nYour child's records show no outstanding fees or missing items. Thank you!`;
+        messageBody += `\nYour child's records show no outstanding fees or missing required items. Thank you for your support!`;
     } else {
         messageBody += `\nPlease address these issues at your earliest convenience.`
     }
@@ -78,15 +78,15 @@ export async function POST(request: Request) {
     */
 
     // For now, we will just log it to the console
-    console.log("--- SMS PREPARED ---");
+    console.log("--- SMS 'RED NOTICE' PREPARED ---");
     console.log("To:", parentPhone);
     console.log("Body:", messageBody);
-    console.log("--------------------");
+    console.log("---------------------------------");
 
     return NextResponse.json({ success: true, message: 'SMS prepared and logged.', details: messageBody });
 
   } catch (error: any) {
-    console.error('Error sending SMS:', error);
+    console.error('Error preparing SMS:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
