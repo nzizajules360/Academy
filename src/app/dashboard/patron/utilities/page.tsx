@@ -47,6 +47,7 @@ export default function UtilitiesPage() {
     if (!firestore) return;
     const studentRef = doc(firestore, 'students', studentId);
     
+<<<<<<< Updated upstream
     const utilityPresent = { materialId, status: 'present' };
     const utilityMissing = { materialId, status: 'missing' };
 
@@ -65,20 +66,54 @@ export default function UtilitiesPage() {
                 utilities: arrayRemove(utilityPresent)
             });
         }
+=======
+    try {
+        // Get the latest student doc from snapshot
+        const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
+        if (!studentSnap) return;
+        const studentData = studentSnap.data();
+        const existingUtilities = studentData?.utilities || [];
+        
+        // Find if there's any record for this materialId
+        const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
+
+        // If a record for this material exists, remove it first
+        if (existingUtility) {
+             await updateDoc(studentRef, {
+                utilities: arrayRemove(existingUtility)
+            });
+        }
+       
+        // Add the new or updated record
+        await updateDoc(studentRef, {
+            utilities: arrayUnion(utility)
+        });
+
+>>>>>>> Stashed changes
     } catch (error) {
         console.error("Error updating utility: ", error);
     }
   };
 
+<<<<<<< Updated upstream
   const getStatus = (student: any, materialId: string) => {
     if (!student || !student.utilities) return false;
     const utility = student.utilities.find((u: any) => u.materialId === materialId);
     return utility ? utility.status === 'present' : false;
+=======
+  const getStatus = (studentId: string, materialId: string) => {
+    const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
+    if (!studentDoc) return false;
+    const utilities = studentDoc.data()?.utilities || [];
+    return utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
+>>>>>>> Stashed changes
   };
 
-  const getPresentCount = (student: any) => {
-    if (!student || !student.utilities) return 0;
-    return student.utilities.filter((u: any) => u.status === 'present').length || 0;
+  const getPresentCount = (studentId: string) => {
+    const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
+    if (!studentDoc) return 0;
+    const utilities = studentDoc.data()?.utilities || [];
+    return utilities.filter((u: any) => u.status === 'present').length || 0;
   }
   
   const requiredMaterialsCount = materials?.length || 0;
@@ -131,8 +166,8 @@ export default function UtilitiesPage() {
                                     <CollapsibleTrigger asChild>
                                         <Button variant="ghost" size="sm">
                                             <span className="mr-2">
-                                                <Badge variant={getPresentCount(student) < requiredMaterialsCount ? "destructive" : "secondary"}>
-                                                    {getPresentCount(student)}/{requiredMaterialsCount} Present
+                                                <Badge variant={getPresentCount(student.id) < requiredMaterialsCount ? "destructive" : "secondary"}>
+                                                    {getPresentCount(student.id)}/{requiredMaterialsCount} Present
                                                 </Badge>
                                             </span>
                                             <ChevronDown className="h-4 w-4" />
@@ -151,7 +186,7 @@ export default function UtilitiesPage() {
                                                 <div key={material.id} className="flex items-center space-x-3">
                                                     <Checkbox
                                                         id={`${student.id}-${material.id}`}
-                                                        checked={getStatus(student, material.id)}
+                                                        checked={getStatus(student.id, material.id)}
                                                         onCheckedChange={(checked) => handleUtilityChange(student.id, material.id, !!checked)}
                                                         className="h-5 w-5"
                                                     />
