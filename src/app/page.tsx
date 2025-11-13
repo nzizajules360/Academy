@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { GraduationCap, Users, DollarSign, ListTodo, ShieldCheck, ArrowRight, Sparkles, Check, Star, TrendingUp, Award } from 'lucide-react';
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const router = useRouter();
 
   const heroSlides = [
     {
@@ -104,6 +106,14 @@ export default function Home() {
 
   const currentHero = heroSlides[currentSlide];
 
+  const handleLogin = () => {
+    router.push('/login');
+  };
+
+  const handleRegister = () => {
+    router.push('/register');
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Premium Header */}
@@ -120,10 +130,16 @@ export default function Home() {
           </span>
         </div>
         <nav className="ml-auto flex gap-4">
-          <button className="px-5 py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200">
+          <button 
+            onClick={handleLogin}
+            className="px-5 py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200"
+          >
             Login
           </button>
-          <button className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105">
+          <button 
+            onClick={handleRegister}
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105"
+          >
             Get Started
           </button>
         </nav>
@@ -166,7 +182,10 @@ export default function Home() {
 
                 {/* CTA Buttons */}
                 <div className="flex flex-wrap gap-4 pt-4">
-                  <button className="group px-8 py-4 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                  <button 
+                    onClick={handleRegister}
+                    className="group px-8 py-4 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                  >
                     Start Free Trial
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
@@ -354,7 +373,10 @@ export default function Home() {
             </p>
             
             <div className="flex flex-wrap justify-center gap-4">
-              <button className="group px-10 py-5 text-lg font-bold text-blue-600 bg-white hover:bg-slate-50 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+              <button 
+                onClick={handleRegister}
+                className="group px-10 py-5 text-lg font-bold text-blue-600 bg-white hover:bg-slate-50 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+              >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
