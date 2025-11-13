@@ -46,36 +46,31 @@ export default function UtilitiesPage() {
   const handleUtilityChange = async (studentId: string, materialId: string, isChecked: boolean) => {
     if (!firestore) return;
     const studentRef = doc(firestore, 'students', studentId);
-    const utility = { materialId, status: checked ? 'present' : 'missing' };
-    
+    const utility = { materialId, status: isChecked ? 'present' : 'missing' };
+
     try {
-        const studentDoc = relevantStudents?.find(s => s.id === studentId);
-        if (!studentDoc) return;
-        
-        // Find if there's any record for this materialId
-        const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
+      const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
+      const existingUtilities = studentSnap?.data()?.utilities || [];
 
-        // If a record for this material exists, remove it first
-        if (existingUtility) {
-             await updateDoc(studentRef, {
-                utilities: arrayRemove(existingUtility)
-            });
-        }
-       
-        // Add the new or updated record
-        await updateDoc(studentRef, {
-            utilities: arrayUnion(utility)
-        });
+      const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
 
->>>>>>> Stashed changes
+      if (existingUtility) {
+        await updateDoc(studentRef, { utilities: arrayRemove(existingUtility) });
+      }
+
+      if (isChecked) {
+        await updateDoc(studentRef, { utilities: arrayUnion(utility) });
+      }
     } catch (error) {
-        console.error("Error updating utility: ", error);
+      console.error('Error updating utility: ', error);
     }
   };
 
-  const getStatus = (student: any, materialId: string) => {
-    if (!student || !student.utilities) return false;
-    return student.utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
+  const getStatus = (studentId: string, materialId: string) => {
+    const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
+    if (!studentDoc) return false;
+    const utilities = studentDoc.data()?.utilities || [];
+    return utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
   };
 
   const getPresentCount = (studentId: string) => {
@@ -126,7 +121,7 @@ export default function UtilitiesPage() {
                     ) : (
                     relevantStudents?.map(student => (
                       <React.Fragment key={student.id}>
-                        <Collapsible asChild tag="tbody">
+                        <Collapsible asChild>
                             <>
                             <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>

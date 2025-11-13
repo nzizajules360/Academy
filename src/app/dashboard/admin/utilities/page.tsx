@@ -121,7 +121,7 @@ export default function UtilitiesPage() {
                     ) : (
                     relevantStudents?.map(student => (
                       <React.Fragment key={student.id}>
-                        <Collapsible asChild tag="tbody">
+                        <Collapsible asChild>
                             <>
                             <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>
