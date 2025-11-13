@@ -28,8 +28,9 @@ export default function NotificationsListener() {
             return;
           }
           const data = change.doc.data() as any
+          
           // Check if createdAt is a valid Timestamp object before calling toMillis()
-          const isNew = data.createdAt && typeof data.createdAt.toMillis === 'function' 
+          const isNew = data.createdAt instanceof Timestamp 
             ? (data.createdAt.toMillis() > (Date.now() - 5000)) // 5s tolerance
             : false;
           
@@ -67,5 +68,5 @@ export default function NotificationsListener() {
     return () => unsub()
   }, [user, firestore, toast])
 
-  return null
+  return null;
 }

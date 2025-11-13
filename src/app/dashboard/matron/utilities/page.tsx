@@ -45,22 +45,34 @@ export default function UtilitiesPage() {
   const relevantStudents = studentsSnapshot?.docs
     .map(doc => ({id: doc.id, ...doc.data()}));
 
-  const handleUtilityChange = async (studentId: string, materialId: string, checked: boolean) => {
-    if (!firestore) return;
+  const handleUtilityChange = async (studentId: string, materialId: string, isChecked: boolean) => {
+    if (!firestore || !materialId) {
+      console.error("Firestore not available or materialId is missing.");
+      return;
+    }
     const studentRef = doc(firestore, 'students', studentId);
-    
-    const newStatus = checked ? 'present' : 'missing';
-    const utilityObject = { materialId, status: newStatus };
-    const oppositeUtilityObject = { materialId, status: checked ? 'missing' : 'present' };
+
+    const utilityToAdd = { materialId, status: 'present' };
+    const utilityToRemove = { materialId, status: 'missing' };
 
     try {
+      if (isChecked) {
+        // Add 'present' and remove 'missing'
         await updateDoc(studentRef, {
-            utilities: arrayRemove(oppositeUtilityObject)
+            utilities: arrayUnion(utilityToAdd)
         });
         await updateDoc(studentRef, {
-            utilities: arrayUnion(utilityObject)
+            utilities: arrayRemove(utilityToRemove)
         });
-
+      } else {
+        // Add 'missing' and remove 'present'
+        await updateDoc(studentRef, {
+            utilities: arrayUnion(utilityToRemove)
+        });
+         await updateDoc(studentRef, {
+            utilities: arrayRemove(utilityToAdd)
+        });
+      }
     } catch (error) {
         console.error("Error updating utility: ", error);
     }
@@ -68,7 +80,8 @@ export default function UtilitiesPage() {
   
   const getStatus = (student: any, materialId: string) => {
     if (!student || !student.utilities) return false;
-    return student.utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
+    const utility = student.utilities.find((u: any) => u.materialId === materialId);
+    return utility ? utility.status === 'present' : false;
   };
 
   const getPresentCount = (student: any) => {
@@ -109,9 +122,11 @@ export default function UtilitiesPage() {
                     </TableRow>
                 </TableHeader>
                 
+                <TableBody>
                     {relevantStudents?.map(student => (
-                      <Collapsible key={student.id} asChild>
-                        <TableBody>
+                      <React.Fragment key={student.id}>
+                        <Collapsible asChild>
+                          <>
                             <TableRow className="border-t">
                                 <TableCell className="font-medium p-6">{student.name}</TableCell>
                                 <TableCell>{student.class}</TableCell>
@@ -156,10 +171,11 @@ export default function UtilitiesPage() {
                                     </TableCell>
                                 </TableRow>
                             </CollapsibleContent>
-                        </TableBody>
-                      </Collapsible>
+                          </>
+                        </Collapsible>
+                      </React.Fragment>
                     ))}
-                
+                </TableBody>
             </Table>
         </div>
       </CardContent>
