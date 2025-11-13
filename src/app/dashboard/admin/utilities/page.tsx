@@ -71,11 +71,13 @@ export default function UtilitiesPage() {
   };
 
   const getStatus = (student: any, materialId: string) => {
-    return student.utilities?.find((u: any) => u.materialId === materialId)?.status === 'present';
+    if (!student || !student.utilities) return false;
+    return student.utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
   };
   
   const getPresentCount = (student: any) => {
-    return student.utilities?.filter((u: any) => u.status === 'present').length || 0;
+    if (!student || !student.utilities) return 0;
+    return student.utilities.filter((u: any) => u.status === 'present').length || 0;
   }
   
   const requiredMaterialsCount = materials?.filter((m: any) => m.required).length || 0;

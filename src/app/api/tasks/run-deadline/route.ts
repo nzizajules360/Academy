@@ -37,26 +37,35 @@ export async function POST(request: Request) {
       const feesPaid = data.feesPaid || 0
       const totalFees = data.totalFees || 0
       if (feesPaid < totalFees) {
-        overdue.push({ uid: data.uid || doc.id, name: data.displayName || data.name || '', email: data.email || '', feesPaid, totalFees })
+        overdue.push({ 
+            uid: doc.id, 
+            name: data.name || 'N/A', 
+            email: data.email || '', 
+            feesPaid, 
+            totalFees,
+            outstanding: totalFees - feesPaid
+        })
       }
     }
 
     // create CSV
-    const csv = makeCsv(overdue)
+    const csv = makeCsv(overdue.length > 0 ? overdue : [{ uid: '', name: '', email: '', feesPaid: 0, totalFees: 0, outstanding: 0}]);
     const timestamp = Date.now()
     const filePath = `reports/debt-${termId}-${timestamp}.csv`
 
-    let downloadUrl: string | null = null
-    try {
-      const bucket = storage.bucket()
-      const file = bucket.file(filePath)
-      await file.save(Buffer.from(csv || ''), { contentType: 'text/csv' })
-      const [url] = await file.getSignedUrl({ action: 'read', expires: Date.now() + 1000 * 60 * 60 })
-      downloadUrl = url
-    } catch (e) {
-      // fallback: store csv in Firestore report doc
-      const repRef = await firestore.collection('reports').add({ termId, csv, createdAt: admin.firestore.FieldValue.serverTimestamp() })
-      downloadUrl = `/api/tasks/report/${repRef.id}`
+    let downloadUrl: string | null = null;
+    if (overdue.length > 0) {
+      try {
+        const bucket = storage.bucket();
+        const file = bucket.file(filePath);
+        await file.save(Buffer.from(csv || ''), { contentType: 'text/csv' });
+        const [url] = await file.getSignedUrl({ action: 'read', expires: Date.now() + 1000 * 60 * 60 });
+        downloadUrl = url;
+      } catch (e) {
+        // fallback: store csv in Firestore report doc
+        const repRef = await firestore.collection('reports').add({ termId, csv, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        downloadUrl = `/api/tasks/report/${repRef.id}`;
+      }
     }
 
     // Notify secretaries

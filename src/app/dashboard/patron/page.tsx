@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -14,12 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, AlertCircle, ClipboardList } from 'lucide-react';
+import { Users, AlertCircle, ClipboardList, Loader2 } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import { useCollection, useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
-import { materials } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
@@ -29,12 +29,16 @@ export default function PatronDashboard() {
 
     const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', 'male')) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
+    
+    const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+    const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
 
-    const requiredMaterials = materials.filter(m => m.required);
+    const requiredMaterials = materials?.filter((m:any) => m.required) || [];
 
     const getMissingItems = (student: any) => {
-        const presentMaterialIds = new Set(student.utilities?.filter((u: any) => u.status === 'present').map((u: any) => u.materialId) || []);
-        return requiredMaterials.filter(m => !presentMaterialIds.has(m.id));
+        if (!student.utilities) return requiredMaterials;
+        const presentMaterialIds = new Set(student.utilities.filter((u: any) => u.status === 'present').map((u: any) => u.materialId));
+        return requiredMaterials.filter((m:any) => !presentMaterialIds.has(m.id));
     }
 
     const studentsToMonitor = studentsSnapshot?.docs.map(doc => {
@@ -46,10 +50,10 @@ export default function PatronDashboard() {
     const studentsWithMissingItems = studentsToMonitor.filter(s => s.missingItems.length > 0);
     const totalMissingCount = studentsWithMissingItems.reduce((acc, student) => acc + student.missingItems.length, 0);
 
-    const isLoading = loadingTerm || loadingStudents;
+    const isLoading = loadingTerm || loadingStudents || loadingMaterials;
 
     if (isLoading) {
-        return <div>Loading...</div>
+        return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
 
   return (
@@ -124,7 +128,7 @@ export default function PatronDashboard() {
                         <TableCell>{student.class}</TableCell>
                         <TableCell>
                             <div className="flex flex-wrap gap-1">
-                                {student.missingItems.map(item => (
+                                {student.missingItems.map((item: any) => (
                                     <Badge key={item.id} variant="destructive">{item.name}</Badge>
                                 ))}
                             </div>

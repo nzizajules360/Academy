@@ -1,10 +1,10 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, ClipboardList, Loader2, BookOpen, FileDown, BedDouble, TrendingUp, AlertCircle, CheckCircle2, Download, Sparkles } from 'lucide-react';
 import { useFirestore } from '@/firebase';
 import { collection, DocumentData, query, where } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { materials } from '@/lib/data';
+import { useCollection, useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -215,8 +215,11 @@ export default function ReportsPage() {
 
     const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', 'female')) : null;
     const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
+    
+    const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+    const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
 
-    if (loadingTerm || loadingStudents) {
+    if (loadingTerm || loadingStudents || loadingMaterials) {
         return (
             <div className="flex flex-col justify-center items-center h-64 gap-4">
                 <motion.div
@@ -234,7 +237,7 @@ export default function ReportsPage() {
     const totalStudents = students.length;
     const religions = [...new Set(students.map(s => s.religion).filter(Boolean))];
 
-    const requiredMaterialsCount = materials.filter(m => m.required).length;
+    const requiredMaterialsCount = materials?.filter((m: any) => m.required).length || 0;
     const utilitiesMissing = students.reduce((totalMissing, student) => {
         const presentCount = student.utilities?.filter((u: any) => u.status === 'present').length || 0;
         return totalMissing + (requiredMaterialsCount - presentCount);

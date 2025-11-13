@@ -2,9 +2,9 @@
 import type { Student, Material } from '@/types';
 
 // This file is now deprecated for materials, as they are managed in Firestore.
-// It can be removed if no longer used for other data.
 export const materials: Material[] = [];
 
+// Student data is kept for now but should also be migrated to Firestore in a real application.
 export const students: Student[] = [
   {
     id: 'S001',

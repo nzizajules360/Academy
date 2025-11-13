@@ -17,7 +17,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { materials } from '@/lib/data';
 import {
     Collapsible,
     CollapsibleContent,
@@ -27,7 +26,7 @@ import { ChevronDown, Loader2, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFirestore } from '@/firebase';
 import { collection, doc, updateDoc, arrayUnion, arrayRemove, query, where } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import { useCollection, useCollectionData } from 'react-firebase-hooks/firestore';
 import { useActiveTerm } from '@/hooks/use-active-term';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +39,9 @@ export default function UtilitiesPage() {
   const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', genderToDisplay)) : null;
   const [studentsSnapshot, loadingStudents] = useCollection(studentsQuery);
 
+  const materialsQuery = firestore ? collection(firestore, 'materials') : null;
+  const [materials, loadingMaterials] = useCollectionData(materialsQuery, { idField: 'id' });
+
   const relevantStudents = studentsSnapshot?.docs
     .map(doc => ({id: doc.id, ...doc.data()}));
 
@@ -51,14 +53,19 @@ export default function UtilitiesPage() {
     try {
         const studentDoc = relevantStudents?.find(s => s.id === studentId);
         if (!studentDoc) return;
+        
+        // Find if there's any record for this materialId, regardless of its status.
         const existingUtility = studentDoc.utilities?.find((u: any) => u.materialId === materialId);
 
+        // If a record for this material exists, remove it first.
+        // This handles changing status from 'present' to 'missing' or vice-versa.
         if (existingUtility) {
              await updateDoc(studentRef, {
                 utilities: arrayRemove(existingUtility)
             });
         }
        
+        // Add the new or updated record.
         await updateDoc(studentRef, {
             utilities: arrayUnion(utility)
         });
@@ -69,16 +76,18 @@ export default function UtilitiesPage() {
   };
 
   const getStatus = (student: any, materialId: string) => {
-    return student.utilities?.find((u: any) => u.materialId === materialId)?.status === 'present';
+    if (!student || !student.utilities) return false;
+    return student.utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
   };
 
   const getPresentCount = (student: any) => {
-    return student.utilities?.filter((u: any) => u.status === 'present').length || 0;
+    if (!student || !student.utilities) return 0;
+    return student.utilities.filter((u: any) => u.status === 'present').length || 0;
   }
   
-  const requiredMaterialsCount = materials.filter(m => m.required).length;
+  const requiredMaterialsCount = materials?.filter((m: any) => m.required).length || 0;
 
-  if (loadingTerm || loadingStudents) {
+  if (loadingTerm || loadingStudents || loadingMaterials) {
       return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -135,7 +144,7 @@ export default function UtilitiesPage() {
                                         <div className="p-6">
                                             <h4 className="font-semibold mb-4 text-base">Required Materials for {student.name}</h4>
                                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                                            {materials.filter(m => m.required).map(material => (
+                                            {materials?.filter((m: any) => m.required).map((material: any) => (
                                                 <div key={material.id} className="flex items-center space-x-3">
                                                     <Checkbox
                                                         id={`${student.id}-${material.id}`}
