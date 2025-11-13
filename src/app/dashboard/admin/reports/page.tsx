@@ -330,7 +330,7 @@ export default function ReportsPage() {
     const girlsPercentage = totalStudents > 0 ? (girls / totalStudents) * 100 : 0;
 
     const studentsWithOutstandingFees = students.filter(s => s.feesPaid < s.totalFees).length;
-
+    
     return (
         <TooltipProvider>
             <div className="space-y-8">
