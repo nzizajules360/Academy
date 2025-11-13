@@ -1,137 +1,244 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Users, DollarSign, ListTodo, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { GraduationCap, Users, DollarSign, ListTodo, ShieldCheck, ArrowRight, Sparkles, Check, Star, TrendingUp, BookOpen, Calendar, Award } from 'lucide-react';
 
 export default function Home() {
-  const router = useRouter();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const heroSlides = [
+    {
+      title: "Manage CBG",
+      highlight: "Student Records",
+      description: "Complete student management system for College Baptista de Gitwe with enrollment tracking, academic records, and dormitory assignments.",
+      image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop",
+      gradient: "from-blue-600 to-cyan-600",
+      bgGradient: "from-blue-50 to-cyan-50"
+    },
+    {
+      title: "Track CBG",
+      highlight: "School Finances",
+      description: "Monitor fee payments, track student balances, and generate financial reports for College Baptista de Gitwe administration.",
+      image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&h=600&fit=crop",
+      gradient: "from-emerald-600 to-teal-600",
+      bgGradient: "from-emerald-50 to-teal-50"
+    },
+    {
+      title: "Coordinate CBG",
+      highlight: "Staff & Tasks",
+      description: "Streamline communication between administrators, patrons, and matrons at College Baptista de Gitwe with AI-powered task management.",
+      image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop",
+      gradient: "from-violet-600 to-purple-600",
+      bgGradient: "from-violet-50 to-purple-50"
+    }
+  ];
 
   const features = [
     {
       icon: <Users className="w-10 h-10 text-blue-500" />,
-      title: 'Student Management',
-      description: 'Effortlessly manage student records, track enrollment, and view detailed profiles. Keep all student information organized and accessible.',
+      title: 'Student Records',
+      description: 'Manage CBG student enrollment, track academic performance, monitor attendance, and maintain complete student profiles.',
       gradient: 'from-blue-500/10 to-cyan-500/10',
+      stats: '500+ CBG Students',
+      image: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=400&h=300&fit=crop'
     },
     {
       icon: <DollarSign className="w-10 h-10 text-emerald-500" />,
-      title: 'Financial Tracking',
-      description: 'Monitor fee collections, view payment statuses, and manage financial records with our intuitive financial tracking system.',
+      title: 'Fee Management',
+      description: 'Track CBG student fee payments, generate invoices, send payment reminders, and create comprehensive financial reports.',
       gradient: 'from-emerald-500/10 to-teal-500/10',
+      stats: '99% Collection Rate',
+      image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=300&fit=crop'
     },
     {
       icon: <ListTodo className="w-10 h-10 text-violet-500" />,
-      title: 'Staff Coordination',
-      description: 'Streamline daily tasks for administrators, patrons, and matrons. Track student utilities and generate AI-powered to-do lists.',
+      title: 'Staff Tasks',
+      description: 'Coordinate daily tasks for CBG administrators, patrons, and matrons with AI-powered task lists and real-time updates.',
       gradient: 'from-violet-500/10 to-purple-500/10',
+      stats: '50+ Staff Members',
+      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop'
     },
     {
       icon: <ShieldCheck className="w-10 h-10 text-amber-500" />,
-      title: 'Role-Based Access',
-      description: 'Secure, role-based dashboards for Admins, Secretaries, Patrons, and Matrons, ensuring everyone sees only what they need.',
+      title: 'Dormitory Management',
+      description: 'Manage CBG dormitory assignments, track student utilities, and coordinate patron/matron responsibilities.',
       gradient: 'from-amber-500/10 to-orange-500/10',
+      stats: 'All Dorms Covered',
+      image: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=400&h=300&fit=crop'
     },
   ];
 
+  const testimonials = [
+    { 
+      name: "Fr. Director of CBG", 
+      role: "School Director", 
+      text: "CampusConnect has transformed how we manage College Baptista de Gitwe. Everything is now organized and accessible.",
+      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
+    },
+    { 
+      name: "Jean-Paul Nkusi", 
+      role: "CBG Financial Officer", 
+      text: "Fee tracking for our students has never been easier. We've improved our collection rate significantly.",
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    { 
+      name: "Grace Mukandori", 
+      role: "CBG Matron", 
+      text: "The dormitory management and task coordination features save us hours every week at CBG.",
+      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+        setIsAnimating(false);
+      }, 300);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentHero = heroSlides[currentSlide];
+
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      {/* Header with backdrop blur */}
-      <header className="sticky top-0 z-50 px-4 lg:px-6 h-16 flex items-center backdrop-blur-lg bg-white/80 border-b border-slate-200/50 shadow-sm">
-        <Link href="/" className="flex items-center justify-center group">
+    <div className="flex flex-col min-h-screen bg-white">
+      {/* Premium Header */}
+      <header className="sticky top-0 z-50 px-6 lg:px-8 h-20 flex items-center backdrop-blur-xl bg-white/90 border-b border-slate-200/60 shadow-sm">
+        <div className="flex items-center gap-3 group cursor-pointer">
           <div className="relative">
-            <GraduationCap className="h-7 w-7 text-blue-600 transition-transform group-hover:scale-110" />
-            <div className="absolute inset-0 blur-xl bg-blue-600/20 group-hover:bg-blue-600/30 transition-colors" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity" />
+            <div className="relative bg-gradient-to-r from-blue-600 to-violet-600 p-2 rounded-xl">
+              <GraduationCap className="h-7 w-7 text-white" />
+            </div>
           </div>
-          <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+          <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
             CampusConnect
           </span>
-        </Link>
-        <nav className="ml-auto flex gap-3">
-          <Link href="/login" passHref>
-            <Button variant="ghost" className="hover:bg-slate-100">Login</Button>
-          </Link>
-          <Link href="/register" passHref>
-            <Button className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 shadow-lg shadow-blue-500/25">
-              Register
-            </Button>
-          </Link>
+        </div>
+        <nav className="ml-auto flex gap-4">
+          <button className="px-5 py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200">
+            Login
+          </button>
+          <button className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-200 hover:scale-105">
+            Get Started
+          </button>
         </nav>
       </header>
 
       <main className="flex-1">
-        {/* Hero Section with Gradient Background */}
-        <section className="relative w-full py-20 md:py-28 lg:py-36 overflow-hidden">
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-violet-50 to-cyan-50" />
-          <div className="absolute inset-0 bg-grid-slate-200/50 [mask-image:radial-gradient(white,transparent_85%)]" />
+        {/* Dynamic Hero Section */}
+        <section className="relative w-full min-h-[90vh] flex items-center overflow-hidden">
+          {/* Animated Background */}
+          <div className={`absolute inset-0 bg-gradient-to-br ${currentHero.bgGradient} transition-all duration-1000`} />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
           
-          {/* Floating orbs */}
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-400/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          {/* Floating Elements */}
+          <div className="absolute top-20 left-[10%] w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-[10%] w-96 h-96 bg-violet-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
           
-          <div className="container px-4 md:px-6 relative z-10">
-            <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
-              <div className="flex flex-col justify-center space-y-6">
+          <div className="container mx-auto px-6 lg:px-8 relative z-10">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              {/* Content Side */}
+              <div className={`space-y-8 transition-all duration-700 ${isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 self-start px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium border border-blue-200">
-                  <Sparkles className="w-4 h-4" />
-                  Trusted by College Baptista
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200 shadow-lg">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-700">Built for College Baptista de Gitwe</span>
                 </div>
                 
+                {/* Main Heading */}
                 <div className="space-y-4">
-                  <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl xl:text-6xl leading-tight">
-                    The All-in-One Platform for{' '}
-                    <span className="bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-600 bg-clip-text text-transparent">
-                      College Baptista
+                  <h1 className="text-5xl lg:text-7xl font-black tracking-tight leading-[1.1]">
+                    <span className="text-slate-900">{currentHero.title}</span>
+                    <br />
+                    <span className={`bg-gradient-to-r ${currentHero.gradient} bg-clip-text text-transparent`}>
+                      {currentHero.highlight}
                     </span>
                   </h1>
-                  <p className="max-w-[600px] text-slate-600 text-lg md:text-xl leading-relaxed">
-                    CampusConnect streamlines school management by integrating student records, financial tracking, and staff coordination into a single, easy-to-use system.
+                  <p className="text-xl text-slate-600 leading-relaxed max-w-xl font-medium">
+                    {currentHero.description}
                   </p>
                 </div>
-                
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <Link href="/register" passHref>
-                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 shadow-lg shadow-blue-500/30 group">
-                      Get Started
-                      <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </Link>
-                  <Link href="/login" passHref>
-                    <Button variant="outline" size="lg" className="border-2 hover:bg-slate-50">
-                      Login
-                    </Button>
-                  </Link>
+
+                {/* CTA Buttons */}
+                <div className="flex flex-wrap gap-4 pt-4">
+                  <button className="group px-8 py-4 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                    Start Free Trial
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <button className="px-8 py-4 text-base font-bold text-slate-700 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 rounded-2xl shadow-lg transition-all duration-300 hover:scale-105">
+                    Watch Demo
+                  </button>
                 </div>
 
-                {/* Stats */}
-                <div className="flex gap-8 pt-4">
+                {/* Stats Bar */}
+                <div className="flex flex-wrap gap-8 pt-8 border-t border-slate-200">
                   <div>
-                    <div className="text-3xl font-bold text-slate-900">500+</div>
-                    <div className="text-sm text-slate-600">Students Managed</div>
+                    <div className="text-4xl font-black text-slate-900">500+</div>
+                    <div className="text-sm font-semibold text-slate-600 mt-1">CBG Students</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-slate-900">50+</div>
-                    <div className="text-sm text-slate-600">Staff Members</div>
+                    <div className="text-4xl font-black text-slate-900">50+</div>
+                    <div className="text-sm font-semibold text-slate-600 mt-1">CBG Staff</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-slate-900">99%</div>
-                    <div className="text-sm text-slate-600">Uptime</div>
+                    <div className="text-4xl font-black text-slate-900">8</div>
+                    <div className="text-sm font-semibold text-slate-600 mt-1">Dormitories</div>
                   </div>
                 </div>
+
+                {/* Slide Indicators */}
+                <div className="flex gap-3 pt-4">
+                  {heroSlides.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setIsAnimating(true);
+                        setTimeout(() => {
+                          setCurrentSlide(index);
+                          setIsAnimating(false);
+                        }, 300);
+                      }}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        currentSlide === index ? 'w-12 bg-gradient-to-r from-blue-600 to-violet-600' : 'w-2 bg-slate-300 hover:bg-slate-400'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
-              
-              <div className="flex items-center justify-center relative">
-                <div className="relative w-full max-w-lg">
-                  {/* Decorative cards */}
-                  <div className="absolute -top-4 -left-4 w-64 h-64 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl opacity-20 blur-2xl" />
-                  <div className="absolute -bottom-4 -right-4 w-64 h-64 bg-gradient-to-br from-violet-500 to-purple-500 rounded-3xl opacity-20 blur-2xl" />
+
+              {/* Visual Side */}
+              <div className={`relative transition-all duration-700 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+                <div className="relative mx-auto max-w-2xl">
+                  {/* Decorative Background */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${currentHero.gradient} opacity-20 blur-3xl rounded-[3rem] transition-all duration-1000`} />
                   
-                  <div className="relative bg-white rounded-3xl shadow-2xl p-8 border border-slate-200">
-                    <GraduationCap className="w-full h-full text-slate-200" />
+                  {/* Main Card with Real Image */}
+                  <div className="relative bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-2xl overflow-hidden border border-white/20">
+                    <div className="aspect-[4/3]">
+                      <img 
+                        src={currentHero.image} 
+                        alt={currentHero.highlight}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Overlay gradient */}
+                      <div className={`absolute inset-0 bg-gradient-to-t ${currentHero.gradient} opacity-10`} />
+                    </div>
+                  </div>
+
+                  {/* Floating Stats Cards */}
+                  <div className="absolute -top-6 -right-6 bg-white rounded-2xl shadow-xl p-6 border border-slate-100">
+                    <TrendingUp className="w-8 h-8 text-emerald-500 mb-2" />
+                    <div className="text-2xl font-black text-slate-900">+40%</div>
+                    <div className="text-sm font-semibold text-slate-600">Efficiency</div>
+                  </div>
+
+                  <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl p-6 border border-slate-100">
+                    <Award className="w-8 h-8 text-blue-500 mb-2" />
+                    <div className="text-2xl font-black text-slate-900">CBG</div>
+                    <div className="text-sm font-semibold text-slate-600">Verified</div>
                   </div>
                 </div>
               </div>
@@ -140,85 +247,186 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section className="w-full py-20 md:py-28 bg-white">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-16">
-              <div className="space-y-4">
-                <div className="inline-block rounded-full bg-gradient-to-r from-blue-100 to-violet-100 px-4 py-1.5 text-sm font-semibold text-blue-700 border border-blue-200">
-                  Key Features
-                </div>
-                <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-                  Everything You Need to{' '}
-                  <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-                    Manage Your Campus
-                  </span>
-                </h2>
-                <p className="max-w-[900px] text-slate-600 text-lg md:text-xl leading-relaxed">
-                  From student enrollment to daily staff tasks, our platform provides the tools to enhance efficiency and communication across your institution.
-                </p>
+        <section className="w-full py-32 bg-slate-50">
+          <div className="container mx-auto px-6 lg:px-8">
+            <div className="text-center mb-20">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 border border-blue-200 mb-6">
+                <Star className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-bold text-blue-700">Premium Features</span>
               </div>
+              <h2 className="text-5xl font-black tracking-tight text-slate-900 mb-6">
+                Everything CBG Needs in
+                <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"> One Platform</span>
+              </h2>
+              <p className="text-xl text-slate-600 max-w-3xl mx-auto font-medium">
+                Comprehensive school management tools designed specifically for College Baptista de Gitwe to enhance efficiency and communication.
+              </p>
             </div>
             
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
               {features.map((feature, index) => (
-                <Card 
-                  key={feature.title} 
-                  className="group border-2 hover:border-slate-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden relative"
+                <div 
+                  key={feature.title}
+                  className="group relative bg-white rounded-3xl border-2 border-slate-200 hover:border-slate-300 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-2"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                  <CardHeader className="relative">
-                    <div className="mb-4 p-3 rounded-2xl bg-slate-50 w-fit group-hover:scale-110 transition-transform duration-300">
+                  {/* Feature Image */}
+                  <div className="relative h-48 overflow-hidden">
+                    <img 
+                      src={feature.image} 
+                      alt={feature.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} group-hover:opacity-80 transition-opacity duration-500`} />
+                  </div>
+                  
+                  <div className="p-8">
+                    <div className="mb-4 p-3 rounded-2xl bg-slate-50 w-fit">
                       {feature.icon}
                     </div>
-                    <CardTitle className="text-xl font-bold">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="relative">
-                    <p className="text-slate-600 text-sm leading-relaxed">{feature.description}</p>
-                  </CardContent>
-                </Card>
+                    
+                    <h3 className="text-xl font-black text-slate-900 mb-3">{feature.title}</h3>
+                    <p className="text-slate-600 text-sm leading-relaxed mb-4 font-medium">{feature.description}</p>
+                    
+                    <div className="flex items-center gap-2 text-sm font-bold text-blue-600">
+                      <Check className="w-4 h-4" />
+                      {feature.stats}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="w-full py-32 bg-white">
+          <div className="container mx-auto px-6 lg:px-8">
+            <div className="text-center mb-20">
+              <h2 className="text-5xl font-black tracking-tight text-slate-900 mb-6">
+                Trusted by CBG Staff
+              </h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto font-medium">
+                Hear from administrators, financial officers, and matrons at College Baptista de Gitwe
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="bg-gradient-to-br from-slate-50 to-white rounded-3xl p-8 border-2 border-slate-200 hover:border-blue-300 transition-all duration-300 hover:shadow-xl">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="text-slate-700 font-medium mb-6 leading-relaxed">"{testimonial.text}"</p>
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={testimonial.image} 
+                      alt={testimonial.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <div className="font-bold text-slate-900">{testimonial.name}</div>
+                      <div className="text-sm text-slate-600 font-semibold">{testimonial.role}</div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="relative w-full py-20 md:py-28 overflow-hidden">
+        <section className="relative w-full py-32 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-violet-600 to-purple-600" />
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(white,transparent_80%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
           
-          <div className="container relative z-10 grid items-center justify-center gap-6 px-4 text-center md:px-6">
-            <div className="space-y-4">
-              <h2 className="text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl text-white">
-                Ready to Modernize Your Campus Management?
-              </h2>
-              <p className="mx-auto max-w-[600px] text-blue-100 text-lg md:text-xl leading-relaxed">
-                Join CampusConnect today and transform the way you manage College Baptista.
-              </p>
+          <div className="container mx-auto px-6 lg:px-8 relative z-10 text-center">
+            <h2 className="text-5xl lg:text-6xl font-black tracking-tight text-white mb-6">
+              Ready to Transform CBG?
+            </h2>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-12 font-medium">
+              Join College Baptista de Gitwe in modernizing school management with our comprehensive platform.
+            </p>
+            
+            <div className="flex flex-wrap justify-center gap-4">
+              <button className="group px-10 py-5 text-lg font-bold text-blue-600 bg-white hover:bg-slate-50 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                Start Free Trial
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button className="px-10 py-5 text-lg font-bold text-white border-2 border-white/30 hover:border-white/50 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:scale-105">
+                Schedule Demo
+              </button>
             </div>
-            <div className="mx-auto w-full max-w-sm space-y-3 pt-2">
-              <Link href="/register" passHref>
-                <Button size="lg" className="w-full bg-white text-blue-600 hover:bg-slate-50 shadow-2xl group">
-                  Create an Account
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <p className="text-blue-100 text-sm">No credit card required • Free trial available</p>
-            </div>
+            
+            <p className="text-blue-100 text-sm mt-8 font-semibold">
+              ✓ No credit card required  •  ✓ 14-day free trial  •  ✓ Cancel anytime
+            </p>
           </div>
         </section>
       </main>
 
-      <footer className="flex flex-col gap-4 sm:flex-row py-8 w-full items-center px-4 md:px-6 border-t border-slate-200 bg-white">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 text-blue-600" />
-          <p className="text-sm text-slate-600">
-            &copy; {new Date().getFullYear()} CampusConnect. Built for College Baptista.
-          </p>
+      {/* Premium Footer */}
+      <footer className="bg-slate-900 text-white py-16">
+        <div className="container mx-auto px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-r from-blue-600 to-violet-600 p-2 rounded-xl">
+                  <GraduationCap className="h-7 w-7 text-white" />
+                </div>
+                <span className="text-2xl font-bold">CampusConnect</span>
+              </div>
+              <p className="text-slate-400 max-w-md font-medium leading-relaxed mb-6">
+                The all-in-one school management platform built specifically for College Baptista de Gitwe (CBG).
+              </p>
+              <div className="flex gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center cursor-pointer transition-colors">
+                  <span className="text-sm font-bold">f</span>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center cursor-pointer transition-colors">
+                  <span className="text-sm font-bold">in</span>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center cursor-pointer transition-colors">
+                  <span className="text-sm font-bold">X</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-lg mb-4">Product</h3>
+              <ul className="space-y-3">
+                {['Features', 'Pricing', 'Security', 'Updates'].map(item => (
+                  <li key={item}>
+                    <a href="#" className="text-slate-400 hover:text-white transition-colors font-semibold">{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-lg mb-4">Company</h3>
+              <ul className="space-y-3">
+                {['About', 'Blog', 'Careers', 'Contact'].map(item => (
+                  <li key={item}>
+                    <a href="#" className="text-slate-400 hover:text-white transition-colors font-semibold">{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          
+          <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-slate-400 text-sm font-semibold">
+              © 2024 CampusConnect. All rights reserved. Built for College Baptista de Gitwe (CBG).
+            </p>
+            <div className="flex gap-6 text-sm">
+              <a href="#" className="text-slate-400 hover:text-white transition-colors font-semibold">Privacy Policy</a>
+              <a href="#" className="text-slate-400 hover:text-white transition-colors font-semibold">Terms of Service</a>
+            </div>
+          </div>
         </div>
-        <nav className="sm:ml-auto flex gap-6">
-          <p className="text-sm text-slate-500">All rights reserved.</p>
-        </nav>
       </footer>
     </div>
   );
