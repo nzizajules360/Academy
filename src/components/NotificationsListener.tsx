@@ -28,7 +28,11 @@ export default function NotificationsListener() {
             return;
           }
           const data = change.doc.data() as any
-          const isNew = data.createdAt && (data.createdAt.toMillis() > (Date.now() - 5000)); // 5s tolerance
+          // Check if createdAt is a valid Timestamp object before calling toMillis()
+          const isNew = data.createdAt && typeof data.createdAt.toMillis === 'function' 
+            ? (data.createdAt.toMillis() > (Date.now() - 5000)) // 5s tolerance
+            : false;
+          
           if (!isNew && !change.doc.metadata.hasPendingWrites) {
               return;
           }
