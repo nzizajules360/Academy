@@ -48,6 +48,7 @@ export default function UtilitiesPage() {
     const studentRef = doc(firestore, 'students', studentId);
     
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     const utilityPresent = { materialId, status: 'present' };
     const utilityMissing = { materialId, status: 'missing' };
 
@@ -77,6 +78,18 @@ export default function UtilitiesPage() {
         // Find if there's any record for this materialId
         const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
 
+=======
+    try {
+        // Get the latest student doc from snapshot
+        const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
+        if (!studentSnap) return;
+        const studentData = studentSnap.data();
+        const existingUtilities = studentData?.utilities || [];
+        
+        // Find if there's any record for this materialId
+        const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
+
+>>>>>>> Stashed changes
         // If a record for this material exists, remove it first
         if (existingUtility) {
              await updateDoc(studentRef, {
@@ -96,16 +109,22 @@ export default function UtilitiesPage() {
   };
   
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const getStatus = (student: any, materialId: string) => {
     if (!student || !student.utilities) return false;
     const utility = student.utilities.find((u: any) => u.materialId === materialId);
     return utility ? utility.status === 'present' : false;
 =======
+=======
+>>>>>>> Stashed changes
   const getStatus = (studentId: string, materialId: string) => {
     const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
     if (!studentDoc) return false;
     const utilities = studentDoc.data()?.utilities || [];
     return utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   };
 

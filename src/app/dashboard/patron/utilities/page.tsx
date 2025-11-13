@@ -46,33 +46,11 @@ export default function UtilitiesPage() {
   const handleUtilityChange = async (studentId: string, materialId: string, isChecked: boolean) => {
     if (!firestore) return;
     const studentRef = doc(firestore, 'students', studentId);
+    const utility = { materialId, status: checked ? 'present' : 'missing' };
     
-<<<<<<< Updated upstream
-    const utilityPresent = { materialId, status: 'present' };
-    const utilityMissing = { materialId, status: 'missing' };
-
     try {
-        if (isChecked) {
-            // Remove both possible states first, then add present
-            await updateDoc(studentRef, {
-                utilities: arrayRemove(utilityMissing, utilityPresent)
-            });
-            await updateDoc(studentRef, {
-                utilities: arrayUnion(utilityPresent)
-            });
-        } else {
-            // Remove the present state only
-            await updateDoc(studentRef, {
-                utilities: arrayRemove(utilityPresent)
-            });
-        }
-=======
-    try {
-        // Get the latest student doc from snapshot
-        const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
-        if (!studentSnap) return;
-        const studentData = studentSnap.data();
-        const existingUtilities = studentData?.utilities || [];
+        const studentDoc = relevantStudents?.find(s => s.id === studentId);
+        if (!studentDoc) return;
         
         // Find if there's any record for this materialId
         const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
@@ -95,18 +73,9 @@ export default function UtilitiesPage() {
     }
   };
 
-<<<<<<< Updated upstream
   const getStatus = (student: any, materialId: string) => {
     if (!student || !student.utilities) return false;
-    const utility = student.utilities.find((u: any) => u.materialId === materialId);
-    return utility ? utility.status === 'present' : false;
-=======
-  const getStatus = (studentId: string, materialId: string) => {
-    const studentDoc = studentsSnapshot?.docs.find(d => d.id === studentId);
-    if (!studentDoc) return false;
-    const utilities = studentDoc.data()?.utilities || [];
-    return utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
->>>>>>> Stashed changes
+    return student.utilities.find((u: any) => u.materialId === materialId)?.status === 'present';
   };
 
   const getPresentCount = (studentId: string) => {
