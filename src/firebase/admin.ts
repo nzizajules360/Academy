@@ -2,6 +2,9 @@
 import * as admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
 
+// Ensure environment variables are loaded
+require('dotenv').config();
+
 let adminApp: admin.app.App | undefined;
 
 export function initAdmin() {
@@ -23,7 +26,9 @@ export function initAdmin() {
     if (!serviceAccountKey) {
       throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
     }
+    
     const serviceAccount = JSON.parse(serviceAccountKey);
+    
     adminApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       storageBucket: `${serviceAccount.project_id}.appspot.com`
