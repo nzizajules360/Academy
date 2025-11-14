@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { useCollectionData, useDocumentData } from 'react-firebase-hooks/firestore';
@@ -31,11 +31,20 @@ function SystemControls() {
     const { toast } = useToast();
     const settingsRef = firestore ? doc(firestore, 'settings', 'system') : null;
     const [settings, loading, error] = useDocumentData(settingsRef);
+    const toggleOnSoundRef = useRef<HTMLAudioElement | null>(null);
+    const toggleOffSoundRef = useRef<HTMLAudioElement | null>(null);
 
     const handleSettingChange = async (key: string, value: boolean) => {
         if (!settingsRef) return;
         try {
             await setDoc(settingsRef, { [key]: value }, { merge: true });
+            
+            if (value) {
+                toggleOnSoundRef.current?.play().catch(console.error);
+            } else {
+                toggleOffSoundRef.current?.play().catch(console.error);
+            }
+
             toast({
                 title: "Setting Updated",
                 description: `${key.replace(/([A-Z])/g, ' $1')} has been ${value ? 'enabled' : 'disabled'}.`
@@ -78,50 +87,56 @@ function SystemControls() {
     ];
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {systemToggles.map((toggle, index) => {
-                const isEnabled = settings?.[toggle.id] ?? (toggle.id === 'maintenanceMode' ? false : true);
-                
-                return (
-                    <motion.div
-                        key={toggle.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                    >
-                        <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 group">
-                             <CardContent className="p-6">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <Label htmlFor={toggle.id} className="text-base font-semibold cursor-pointer">
-                                                {toggle.label}
-                                            </Label>
-                                            <Badge 
-                                                variant={isEnabled ? (toggle.destructive ? "destructive" : "default") : "secondary"}
-                                                className="text-xs"
-                                            >
-                                                {isEnabled ? 'Active' : 'Inactive'}
-                                            </Badge>
+        <>
+            {/* Hidden audio elements for sound effects */}
+            <audio ref={toggleOnSoundRef} src="/sounds/toggle-on.mp3" preload="auto"></audio>
+            <audio ref={toggleOffSoundRef} src="/sounds/toggle-off.mp3" preload="auto"></audio>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {systemToggles.map((toggle, index) => {
+                    const isEnabled = settings?.[toggle.id] ?? (toggle.id === 'maintenanceMode' ? false : true);
+                    
+                    return (
+                        <motion.div
+                            key={toggle.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                        >
+                            <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 group">
+                                <CardContent className="p-6">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1 space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Label htmlFor={toggle.id} className="text-base font-semibold cursor-pointer">
+                                                    {toggle.label}
+                                                </Label>
+                                                <Badge 
+                                                    variant={isEnabled ? (toggle.destructive ? "destructive" : "default") : "secondary"}
+                                                    className="text-xs"
+                                                >
+                                                    {isEnabled ? 'Active' : 'Inactive'}
+                                                </Badge>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                                {toggle.description}
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
-                                            {toggle.description}
-                                        </p>
+                                        
+                                        <Switch
+                                            id={toggle.id}
+                                            checked={isEnabled}
+                                            onCheckedChange={(value) => handleSettingChange(toggle.id, value)}
+                                            className={toggle.destructive ? "data-[state=checked]:bg-destructive" : ""}
+                                        />
                                     </div>
-                                    
-                                    <Switch
-                                        id={toggle.id}
-                                        checked={isEnabled}
-                                        onCheckedChange={(value) => handleSettingChange(toggle.id, value)}
-                                        className={toggle.destructive ? "data-[state=checked]:bg-destructive" : ""}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                );
-            })}
-        </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    );
+                })}
+            </div>
+        </>
     );
 }
 
@@ -133,6 +148,8 @@ function UserManagement() {
     const [updating, setUpdating] = useState<Record<string, boolean>>({});
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
+    const deactivateSoundRef = useRef<HTMLAudioElement | null>(null);
+    const activateSoundRef = useRef<HTMLAudioElement | null>(null);
 
     const handleStatusChange = async (uid: string, disabled: boolean) => {
         if (!firestore) return;
@@ -152,6 +169,12 @@ function UserManagement() {
                 errorEmitter.emit('permission-error', permissionError);
                 throw serverError;
             });
+            
+            if (disabled) {
+                deactivateSoundRef.current?.play().catch(console.error);
+            } else {
+                activateSoundRef.current?.play().catch(console.error);
+            }
 
             toast({ title: 'Success', description: `User status updated successfully.` });
         } catch (err: any) {
@@ -181,6 +204,10 @@ function UserManagement() {
 
     return (
         <div className="space-y-6">
+            {/* Hidden audio elements */}
+            <audio ref={deactivateSoundRef} src="/sounds/deactivated.mp3" preload="auto"></audio>
+            <audio ref={activateSoundRef} src="/sounds/toggle-on.mp3" preload="auto"></audio>
+        
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
