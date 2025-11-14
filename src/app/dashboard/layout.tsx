@@ -27,9 +27,14 @@ export default function DashboardLayout({
     
     if (!loading && user && role) {
         const expectedPath = `/dashboard/${role}`;
+        
+        // Allow access to the shared activity page for all roles
+        if (pathname === '/dashboard/activity') {
+          return;
+        }
+
         if (!pathname.startsWith(expectedPath) && pathname !== '/dashboard') {
           // If user is on a page not belonging to their role, redirect.
-          // This is a simple check. More robust checks might be needed.
           router.push(expectedPath);
         } else if (pathname === '/dashboard') {
             router.push(expectedPath);
