@@ -27,8 +27,8 @@ export default function NotificationsPage() {
     const readNotifications = notifications?.filter(n => n.read) || [];
 
     const handleMarkAllAsRead = async () => {
-        if (!firestore || !user || unreadNotifications.length === 0) return;
-
+        if (!firestore || !user) return;
+        
         const unreadIds = unreadNotifications.map(n => n.id);
         if (unreadIds.length === 0) return;
 
@@ -38,11 +38,13 @@ export default function NotificationsPage() {
             // Firestore 'in' queries are limited to 30 items. If more, we need multiple batches.
             for (let i = 0; i < unreadIds.length; i += 30) {
                 const chunkIds = unreadIds.slice(i, i + 30);
-                const q = query(notificationsRef, where('__name__', 'in', chunkIds));
-                const snapshot = await getDocs(q);
-                snapshot.forEach(doc => {
-                    batch.update(doc.ref, { read: true });
-                });
+                if (chunkIds.length > 0) {
+                    const q = query(notificationsRef, where('__name__', 'in', chunkIds));
+                    const snapshot = await getDocs(q);
+                    snapshot.forEach(doc => {
+                        batch.update(doc.ref, { read: true });
+                    });
+                }
             }
 
             await batch.commit();
