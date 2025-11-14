@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFirestore, useUser } from '@/firebase';
@@ -28,9 +29,16 @@ export default function NotificationsPage() {
 
     const handleMarkAllAsRead = async () => {
         if (!firestore || !user) return;
+
+        const unreadIds = (notifications?.filter(n => !n.read) || []).map(n => n.id);
         
-        const unreadIds = unreadNotifications.map(n => n.id);
-        if (unreadIds.length === 0) return;
+        if (unreadIds.length === 0) {
+             toast({
+                title: 'No Unread Notifications',
+                description: 'Everything is already up to date!',
+            });
+            return;
+        }
 
         const batch = writeBatch(firestore);
         try {
