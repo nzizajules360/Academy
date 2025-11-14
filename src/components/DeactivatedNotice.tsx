@@ -1,25 +1,39 @@
 
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUser, useAuth } from '@/firebase'
 import { signOut } from 'firebase/auth'
 import { useRouter } from 'next/navigation'
 import { Loader2, LogOut, AlertOctagon } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useDocumentData } from 'react-firebase-hooks/firestore'
+import { doc } from 'firebase/firestore'
+import { useFirestore } from '@/firebase'
 
 export default function DeactivatedNotice() {
   const { user, loading } = useUser()
+  const firestore = useFirestore()
+  
+  // Use a separate hook to listen for real-time changes to the user document
+  const userDocRef = (user && firestore) ? doc(firestore, 'users', user.uid) : null
+  const [userData, loadingUserData] = useDocumentData(userDocRef);
+
   const auth = useAuth()
   const router = useRouter()
   const [countdown, setCountdown] = useState(10);
-
-  const isDisabled = !!(user as any)?.disabled
-  const disabledMessage = (user as any)?.disabledMessage || 'Your account is no longer active.'
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Determine disabled status from real-time data if available, otherwise from the initial user object
+  const isDisabled = !!(userData?.disabled ?? (user as any)?.disabled);
+  const disabledMessage = userData?.disabledMessage || (user as any)?.disabledMessage || 'Your account is no longer active.';
   
   useEffect(() => {
     if (!isDisabled) return;
 
+    // Play sound when the notice appears
+    audioRef.current?.play().catch(error => console.error("Audio play failed:", error));
+    
     if (countdown <= 0) {
       if (auth) {
         signOut(auth).then(() => {
@@ -36,7 +50,7 @@ export default function DeactivatedNotice() {
     return () => clearTimeout(timer);
   }, [countdown, isDisabled, auth, router]);
 
-  if (loading || !isDisabled) return null
+  if (loading || loadingUserData || !isDisabled) return null
 
   return (
     <motion.div
@@ -44,6 +58,7 @@ export default function DeactivatedNotice() {
         animate={{ opacity: 1 }}
         className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
     >
+        <audio ref={audioRef} src="/sounds/deactivated.mp3" preload="auto" />
         <motion.div
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
