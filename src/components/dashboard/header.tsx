@@ -1,3 +1,4 @@
+
 'use client';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserNav } from '@/components/dashboard/user-nav';
@@ -38,7 +39,7 @@ const NotificationBell = () => {
     const unreadNotificationsQuery = (user && firestore) 
         ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false))
         : null;
-    const [unreadNotifications] = useCollectionData(unreadNotificationsQuery);
+    const [unreadNotifications] = useCollectionData(unreadNotificationsQuery, { idField: 'id' });
     
     return (
         <DropdownMenu>
