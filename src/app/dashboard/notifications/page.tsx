@@ -1,17 +1,36 @@
-
 'use client';
 
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, writeBatch, getDocs, where, doc } from 'firebase/firestore';
+import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Bell, CheckCheck, AlertCircle } from 'lucide-react';
+import { Loader2, Bell, CheckCheck, AlertCircle, Inbox } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
+
+function NotificationItem({ notification }: { notification: any }) {
+    return (
+        <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={`p-4 rounded-lg flex items-start gap-4 transition-colors ${!notification.read ? 'bg-primary/5 border border-primary/20' : 'bg-muted/30'}`}
+        >
+            {!notification.read && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />}
+            <div className={notification.read ? 'pl-7' : ''}>
+                <p className="font-semibold">{notification.title}</p>
+                <p className="text-sm text-muted-foreground">{notification.body}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                     {notification.createdAt && (notification.createdAt as Timestamp).toDate ? 
+                        formatDistanceToNow((notification.createdAt as Timestamp).toDate(), { addSuffix: true }) : ''}
+                </p>
+            </div>
+        </motion.div>
+    )
+}
 
 export default function NotificationsPage() {
     const { user, loading: userLoading } = useUser();
@@ -29,8 +48,7 @@ export default function NotificationsPage() {
 
     const handleMarkAllAsRead = async () => {
         if (!firestore || !user) return;
-
-        const unreadIds = (notifications?.filter(n => !n.read) || []).map(n => n.id);
+        const unreadIds = (notifications?.filter(n => !n.read).map(n => n.id)) || [];
         
         if (unreadIds.length === 0) {
              toast({
@@ -43,8 +61,10 @@ export default function NotificationsPage() {
         const batch = writeBatch(firestore);
         try {
             unreadIds.forEach(notificationId => {
-                const docRef = doc(firestore, `users/${user.uid}/notifications`, notificationId);
-                batch.update(docRef, { read: true });
+                if (notificationId) {
+                    const docRef = doc(firestore, `users/${user.uid}/notifications`, notificationId);
+                    batch.update(docRef, { read: true });
+                }
             });
 
             await batch.commit();
@@ -100,8 +120,8 @@ export default function NotificationsPage() {
                 </CardHeader>
                 <CardContent className="p-6">
                     {notifications && notifications.length === 0 ? (
-                        <div className="text-center py-16 text-muted-foreground">
-                            <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                            <Inbox className="h-12 w-12 mx-auto mb-4 opacity-50" />
                             <h3 className="text-lg font-semibold">No notifications yet</h3>
                             <p>You have no notifications or events.</p>
                         </div>
@@ -130,27 +150,6 @@ export default function NotificationsPage() {
                     )}
                 </CardContent>
             </Card>
-        </motion.div>
-    )
-}
-
-
-function NotificationItem({ notification }: { notification: any }) {
-    return (
-        <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className={`p-4 rounded-lg flex items-start gap-4 transition-colors ${!notification.read ? 'bg-primary/5 border border-primary/20' : 'bg-muted/30'}`}
-        >
-            {!notification.read && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />}
-            <div className={notification.read ? 'pl-7' : ''}>
-                <p className="font-semibold">{notification.title}</p>
-                <p className="text-sm text-muted-foreground">{notification.body}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                     {notification.createdAt && (notification.createdAt as Timestamp).toDate ? 
-                        formatDistanceToNow((notification.createdAt as Timestamp).toDate(), { addSuffix: true }) : ''}
-                </p>
-            </div>
         </motion.div>
     )
 }
