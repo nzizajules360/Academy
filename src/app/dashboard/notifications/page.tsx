@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, writeBatch, doc, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, writeBatch, doc, getDocs, where } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,23 +47,20 @@ export default function NotificationsPage() {
     const readNotifications = notifications?.filter(n => n.read) || [];
 
     const handleMarkAllAsRead = async () => {
-        if (!firestore || !user) return;
+        if (!firestore || !user ) return;
         
-        const unreadQuery = query(
-            collection(firestore, `users/${user.uid}/notifications`), 
-            where('read', '==', false)
-        );
+        const unreadQuery = query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false));
+        const unreadSnapshot = await getDocs(unreadQuery);
+
+        if (unreadSnapshot.empty) {
+            toast({
+                title: 'No Unread Notifications',
+                description: 'Everything is already up to date!',
+            });
+            return;
+        }
 
         try {
-            const unreadSnapshot = await getDocs(unreadQuery);
-            if (unreadSnapshot.empty) {
-                toast({
-                    title: 'No Unread Notifications',
-                    description: 'Everything is already up to date!',
-                });
-                return;
-            }
-
             const batch = writeBatch(firestore);
             unreadSnapshot.forEach(docSnap => {
                 batch.update(docSnap.ref, { read: true });
@@ -144,7 +141,7 @@ export default function NotificationsPage() {
                                 <section>
                                     <h3 className="text-lg font-semibold mb-4">Recent</h3>
                                      <div className="space-y-4">
-                                        {readLists.map(n => <NotificationItem key={n.id} notification={n} />)}
+                                        {readNotifications.map(n => <NotificationItem key={n.id} notification={n} />)}
                                     </div>
                                 </section>
                              )}

@@ -48,18 +48,19 @@ export default function UtilitiesPage() {
     
     const studentRef = doc(firestore, 'students', studentId);
     
-    const utilityPresent = { materialId, status: 'present' };
+    const utilityData = { materialId, status: isChecked ? 'present' : 'missing' };
+    const presentUtility = { materialId, status: 'present' };
 
     try {
         if (isChecked) {
-            // Add the 'present' status. Firestore `arrayUnion` prevents duplicates.
+            // Atomically remove the 'missing' status if it exists and add the 'present' status.
             await updateDoc(studentRef, {
-                utilities: arrayUnion(utilityPresent)
+                utilities: arrayUnion(presentUtility)
             });
         } else {
              // To uncheck, we remove the 'present' status object.
              await updateDoc(studentRef, {
-                utilities: arrayRemove(utilityPresent)
+                utilities: arrayRemove(presentUtility)
             });
         }
     } catch (error) {
@@ -118,7 +119,7 @@ export default function UtilitiesPage() {
                         </TableRow>
                     ) : (
                     relevantStudents?.map(student => (
-                      <Collapsible key={student.id} asChild>
+                      <Collapsible asChild key={student.id}>
                         <>
                         <TableRow className="border-t">
                             <TableCell className="font-medium p-6">{student.name}</TableCell>

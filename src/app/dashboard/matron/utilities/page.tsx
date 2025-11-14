@@ -48,16 +48,16 @@ export default function UtilitiesPage() {
         if (!firestore) return;
         const studentRef = doc(firestore, 'students', studentId);
         
-        const utilityPresent = { materialId, status: 'present' };
+        const presentUtility = { materialId, status: 'present' };
 
         try {
             if (isChecked) {
                 await updateDoc(studentRef, {
-                    utilities: arrayUnion(utilityPresent)
+                    utilities: arrayUnion(presentUtility)
                 });
             } else {
                  await updateDoc(studentRef, {
-                    utilities: arrayRemove(utilityPresent)
+                    utilities: arrayRemove(presentUtility)
                 });
             }
         } catch (error) {
