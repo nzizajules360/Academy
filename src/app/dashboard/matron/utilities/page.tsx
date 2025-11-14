@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import {
@@ -46,23 +47,24 @@ export default function UtilitiesPage() {
     const handleUtilityChange = async (studentId: string, materialId: string, isChecked: boolean) => {
         if (!firestore) return;
         const studentRef = doc(firestore, 'students', studentId);
-        const utility = { materialId, status: isChecked ? 'present' : 'missing' };
+        
+        const utilityPresent = { materialId, status: 'present' };
+        const utilityMissing = { materialId, status: 'missing' };
 
         try {
-            // Best-effort: read latest utilities from in-memory snapshot
-            const studentSnap = studentsSnapshot?.docs.find(d => d.id === studentId);
-            const existingUtilities = studentSnap?.data()?.utilities || [];
-
-            const existingUtility = existingUtilities.find((u: any) => u.materialId === materialId);
-
-            // Remove any existing record for this material to avoid duplicates
-            if (existingUtility) {
-                await updateDoc(studentRef, { utilities: arrayRemove(existingUtility) });
-            }
-
-            // If checked, add the present record
             if (isChecked) {
-                await updateDoc(studentRef, { utilities: arrayUnion(utility) });
+                // First remove the 'missing' if it exists, then add 'present'
+                await updateDoc(studentRef, {
+                    utilities: arrayRemove(utilityMissing)
+                });
+                await updateDoc(studentRef, {
+                    utilities: arrayUnion(utilityPresent)
+                });
+            } else {
+                // Just remove 'present', the absence of it implies missing
+                await updateDoc(studentRef, {
+                    utilities: arrayRemove(utilityPresent)
+                });
             }
         } catch (error) {
             console.error('Error updating utility: ', error);

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useFirestore, useUser } from '@/firebase';
@@ -48,7 +49,8 @@ export default function NotificationsPage() {
 
     const handleMarkAllAsRead = async () => {
         if (!firestore || !user) return;
-        const unreadIds = (notifications?.filter(n => !n.read).map(n => n.id)) || [];
+        
+        const unreadIds = unreadNotifications.map(n => n.id);
         
         if (unreadIds.length === 0) {
              toast({
