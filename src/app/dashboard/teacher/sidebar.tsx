@@ -7,6 +7,7 @@ import {
   ListChecks,
   Send,
   BookCheck,
+  Users,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -21,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 
 const navItems = [
   { href: '/dashboard/teacher', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/teacher/students', icon: Users, label: 'My Students' },
   { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Daily Attendance' },
   { href: '/dashboard/teacher/attendance/report', icon: BookCheck, label: 'Attendance Report' },
   { href: '/dashboard/teacher/lists', icon: Send, label: 'Received Lists' },
@@ -49,7 +51,7 @@ export function TeacherSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href || (item.href.includes('attendance') && pathname.startsWith(item.href) && item.href !== '/dashboard/teacher/attendance/report' && pathname !== '/dashboard/teacher/attendance/report') || (pathname === item.href) }
+                isActive={pathname.startsWith(item.href)}
                 tooltip={item.label}
               >
                 <Link href={item.href}>
