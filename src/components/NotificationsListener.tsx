@@ -23,21 +23,14 @@ export default function NotificationsListener() {
     const unsub = onSnapshot(q, snapshot => {
       snapshot.docChanges().forEach(async change => {
         if (change.type === 'added') {
-          // Ignore initial documents that are already in the cache
-          if (change.doc.metadata.fromCache && change.doc.metadata.hasPendingWrites === false) {
+          // If the document has pending writes, it's a new local change.
+          // If it's not from cache, it's a new server change we haven't seen.
+          if (!change.doc.metadata.hasPendingWrites && change.doc.metadata.fromCache) {
             return;
           }
+
           const data = change.doc.data() as any
           
-          // Check if createdAt is a valid Timestamp object before calling toMillis()
-          const isNew = data.createdAt instanceof Timestamp 
-            ? (data.createdAt.toMillis() > (Date.now() - 5000)) // 5s tolerance
-            : false;
-          
-          if (!isNew && !change.doc.metadata.hasPendingWrites) {
-              return;
-          }
-
           toast({ 
             title: data.title || 'Notification', 
             description: data.body || '',
@@ -70,3 +63,4 @@ export default function NotificationsListener() {
 
   return null;
 }
+
