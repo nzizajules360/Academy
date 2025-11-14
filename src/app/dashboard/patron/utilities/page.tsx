@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import {
@@ -33,10 +32,9 @@ import { Badge } from '@/components/ui/badge';
 
 export default function UtilitiesPage() {
   const firestore = useFirestore();
-  const genderToDisplay = 'male';
   const { activeTermId, loading: loadingTerm } = useActiveTerm();
   
-  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', genderToDisplay)) : null;
+  const studentsQuery = firestore && activeTermId ? query(collection(firestore, 'students'), where('termId', '==', activeTermId), where('gender', '==', 'male')) : null;
   const [studentsSnapshot, loadingStudents, errorStudents] = useCollection(studentsQuery);
 
   const materialsQuery = firestore ? query(collection(firestore, 'materials'), where('required', '==', true)) : null;
@@ -48,16 +46,16 @@ export default function UtilitiesPage() {
     if (!firestore) return;
     const studentRef = doc(firestore, 'students', studentId);
     
-    const presentUtility = { materialId, status: 'present' };
+    const utilityObject = { materialId, status: 'present' };
 
     try {
         if (isChecked) {
             await updateDoc(studentRef, {
-                utilities: arrayUnion(presentUtility)
+                utilities: arrayUnion(utilityObject)
             });
         } else {
              await updateDoc(studentRef, {
-                utilities: arrayRemove(presentUtility)
+                utilities: arrayRemove(utilityObject)
             });
         }
     } catch (error) {
