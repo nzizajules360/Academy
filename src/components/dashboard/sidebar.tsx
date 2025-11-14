@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,6 +14,7 @@ import {
   BedDouble,
   BookCheck,
   ShieldCheck,
+  Bell,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -37,6 +37,7 @@ const navItems: Record<string, { href: string; icon: React.ElementType; label: s
     { href: '/dashboard/admin/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/admin/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/admin/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
     { href: '/dashboard/admin/settings', icon: Settings, label: 'Settings' },
   ],
   secretary: [
@@ -44,6 +45,7 @@ const navItems: Record<string, { href: string; icon: React.ElementType; label: s
     { href: '/dashboard/secretary/students', icon: Users, label: 'Manage Students' },
     { href: '/dashboard/secretary/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/secretary/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
     { href: '/dashboard/secretary/settings', icon: Settings, label: 'Settings' },
   ],
   patron: [
@@ -54,6 +56,7 @@ const navItems: Record<string, { href: string; icon: React.ElementType; label: s
     { href: '/dashboard/patron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/patron/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/patron/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
   ],
   matron: [
     { href: '/dashboard/matron', icon: LayoutDashboard, label: 'Dashboard' },
@@ -63,15 +66,18 @@ const navItems: Record<string, { href: string; icon: React.ElementType; label: s
     { href: '/dashboard/matron/materials', icon: BookUser, label: 'Materials' },
     { href: '/dashboard/matron/refectory', icon: Table, label: 'Refectory' },
     { href: '/dashboard/matron/reports', icon: FileText, label: 'Reports' },
+    { href: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
   ],
   teacher: [
     { href: '/dashboard/teacher', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/teacher/attendance', icon: ListChecks, label: 'Daily Attendance' },
     { href: '/dashboard/teacher/attendance/report', icon: BookCheck, label: 'Attendance Report' },
     { href: '/dashboard/teacher/lists', icon: Send, label: 'Received Lists' },
+    { href: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
   ],
   developer: [
     { href: '/dashboard/developer/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
     { href: '/dashboard/developer/settings', icon: Settings, label: 'Settings' },
   ]
 };

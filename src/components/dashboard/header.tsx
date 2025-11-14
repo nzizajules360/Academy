@@ -81,7 +81,7 @@ const NotificationBell = () => {
                  <DropdownMenuSeparator />
                  <div className="p-1">
                     <Button variant="ghost" className="w-full" asChild>
-                        <Link href="/dashboard/activity">View all activity</Link>
+                        <Link href="/dashboard/notifications">View all notifications</Link>
                     </Button>
                  </div>
             </DropdownMenuContent>

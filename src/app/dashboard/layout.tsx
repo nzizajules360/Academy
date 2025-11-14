@@ -1,4 +1,3 @@
-
 'use client';
 import React, { Suspense, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -28,8 +27,9 @@ export default function DashboardLayout({
     if (!loading && user && role) {
         const expectedPath = `/dashboard/${role}`;
         
-        // Allow access to the shared activity page for all roles
-        if (pathname === '/dashboard/activity') {
+        // Allow access to shared pages for all roles
+        const sharedPaths = ['/dashboard/activity', '/dashboard/notifications'];
+        if (sharedPaths.includes(pathname)) {
           return;
         }
 

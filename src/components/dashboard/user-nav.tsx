@@ -15,7 +15,7 @@ import { useRole } from '@/hooks/use-role';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useUser } from '@/firebase';
 import { getAuth, signOut } from 'firebase/auth';
-import { History } from 'lucide-react';
+import { History, Bell } from 'lucide-react';
 
 export function UserNav() {
   const { role } = useRole();
@@ -56,7 +56,13 @@ export function UserNav() {
         <DropdownMenuItem asChild>
             <Link href="/dashboard/activity">
                 <History className="mr-2 h-4 w-4" />
-                Recent Activity
+                My Activity
+            </Link>
+        </DropdownMenuItem>
+         <DropdownMenuItem asChild>
+            <Link href="/dashboard/notifications">
+                <Bell className="mr-2 h-4 w-4" />
+                Notifications
             </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
