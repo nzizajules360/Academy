@@ -1,15 +1,14 @@
-
 'use client';
 
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, orderBy, writeBatch, doc, where, getDocs } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Bell, CheckCheck, AlertCircle, Inbox } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
 
@@ -50,25 +49,26 @@ export default function NotificationsPage() {
     const handleMarkAllAsRead = async () => {
         if (!firestore || !user) return;
         
-        const unreadIds = unreadNotifications.map(n => n.id);
-        
-        if (unreadIds.length === 0) {
-             toast({
-                title: 'No Unread Notifications',
-                description: 'Everything is already up to date!',
-            });
-            return;
-        }
+        const unreadQuery = query(
+            collection(firestore, `users/${user.uid}/notifications`), 
+            where('read', '==', false)
+        );
 
-        const batch = writeBatch(firestore);
         try {
-            unreadIds.forEach(notificationId => {
-                if (notificationId) {
-                    const docRef = doc(firestore, `users/${user.uid}/notifications`, notificationId);
-                    batch.update(docRef, { read: true });
-                }
-            });
+            const unreadSnapshot = await getDocs(unreadQuery);
+            if (unreadSnapshot.empty) {
+                toast({
+                    title: 'No Unread Notifications',
+                    description: 'Everything is already up to date!',
+                });
+                return;
+            }
 
+            const batch = writeBatch(firestore);
+            unreadSnapshot.forEach(docSnap => {
+                batch.update(docSnap.ref, { read: true });
+            });
+            
             await batch.commit();
             toast({
                 title: 'Success',
@@ -144,7 +144,7 @@ export default function NotificationsPage() {
                                 <section>
                                     <h3 className="text-lg font-semibold mb-4">Recent</h3>
                                      <div className="space-y-4">
-                                        {readNotifications.map(n => <NotificationItem key={n.id} notification={n} />)}
+                                        {readLists.map(n => <NotificationItem key={n.id} notification={n} />)}
                                     </div>
                                 </section>
                              )}
