@@ -12,7 +12,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuFooter,
 } from '@/components/ui/dropdown-menu';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy, limit, writeBatch, getDocs, Timestamp } from 'firebase/firestore';
@@ -80,11 +79,11 @@ const NotificationBell = () => {
                     </DropdownMenuItem>
                 ))}
                  <DropdownMenuSeparator />
-                 <DropdownMenuFooter>
+                 <div className="p-1">
                     <Button variant="ghost" className="w-full" asChild>
                         <Link href="/dashboard/activity">View all activity</Link>
                     </Button>
-                 </DropdownMenuFooter>
+                 </div>
             </DropdownMenuContent>
         </DropdownMenu>
     );
