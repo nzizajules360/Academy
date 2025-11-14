@@ -2,7 +2,7 @@
 'use client';
 
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, writeBatch, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, writeBatch, getDocs, where, doc } from 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,18 +42,10 @@ export default function NotificationsPage() {
 
         const batch = writeBatch(firestore);
         try {
-            const notificationsRef = collection(firestore, `users/${user.uid}/notifications`);
-            // Firestore 'in' queries are limited to 30 items. If more, we need multiple batches.
-            for (let i = 0; i < unreadIds.length; i += 30) {
-                const chunkIds = unreadIds.slice(i, i + 30);
-                if (chunkIds.length > 0) {
-                    const q = query(notificationsRef, where('__name__', 'in', chunkIds));
-                    const snapshot = await getDocs(q);
-                    snapshot.forEach(doc => {
-                        batch.update(doc.ref, { read: true });
-                    });
-                }
-            }
+            unreadIds.forEach(notificationId => {
+                const docRef = doc(firestore, `users/${user.uid}/notifications`, notificationId);
+                batch.update(docRef, { read: true });
+            });
 
             await batch.commit();
             toast({
