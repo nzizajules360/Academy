@@ -49,18 +49,15 @@ export default function UtilitiesPage() {
     const studentRef = doc(firestore, 'students', studentId);
     
     const utilityData = { materialId, status: isChecked ? 'present' : 'missing' };
-    const presentUtility = { materialId, status: 'present' };
 
     try {
         if (isChecked) {
-            // Atomically remove the 'missing' status if it exists and add the 'present' status.
             await updateDoc(studentRef, {
-                utilities: arrayUnion(presentUtility)
+                utilities: arrayUnion(utilityData)
             });
         } else {
-             // To uncheck, we remove the 'present' status object.
              await updateDoc(studentRef, {
-                utilities: arrayRemove(presentUtility)
+                utilities: arrayRemove(utilityData)
             });
         }
     } catch (error) {
@@ -120,8 +117,7 @@ export default function UtilitiesPage() {
                     ) : (
                     relevantStudents?.map(student => (
                       <Collapsible asChild key={student.id}>
-                        <>
-                        <TableRow className="border-t">
+                          <TableRow className="border-t">
                             <TableCell className="font-medium p-6">{student.name}</TableCell>
                             <TableCell>{student.class}</TableCell>
                             <TableCell className="text-right p-6">
@@ -137,35 +133,7 @@ export default function UtilitiesPage() {
                                     </Button>
                                 </CollapsibleTrigger>
                             </TableCell>
-                        </TableRow>
-                        <CollapsibleContent asChild>
-                            <TableRow className="bg-muted/30 hover:bg-muted/30">
-                                <TableCell colSpan={3} className="p-0">
-                                    <div className="p-6">
-                                        <h4 className="font-semibold mb-4 text-base">Required Materials for {student.name}</h4>
-                                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                                        {materials?.map((material: any) => (
-                                            <div key={material.id} className="flex items-center space-x-3">
-                                                <Checkbox
-                                                    id={`${student.id}-${material.id}`}
-                                                    checked={getStatus(student, material.id)}
-                                                    onCheckedChange={(checked) => handleUtilityChange(student.id, material.id, !!checked)}
-                                                    className="h-5 w-5"
-                                                />
-                                                <label
-                                                    htmlFor={`${student.id}-${material.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                >
-                                                    {material.name}
-                                                </label>
-                                            </div>
-                                        ))}
-                                        </div>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        </CollapsibleContent>
-                        </>
+                          </TableRow>
                       </Collapsible>
                     )))}
                 </TableBody>

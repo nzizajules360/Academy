@@ -43,9 +43,6 @@ export default function NotificationsPage() {
     
     const [notifications, loading, error] = useCollectionData(notificationsQuery, { idField: 'id' });
 
-    const unreadNotifications = notifications?.filter(n => !n.read) || [];
-    const readNotifications = notifications?.filter(n => n.read) || [];
-
     const handleMarkAllAsRead = async () => {
         if (!firestore || !user ) return;
         
@@ -98,6 +95,9 @@ export default function NotificationsPage() {
             </Card>
         )
     }
+
+    const unreadNotifications = notifications?.filter(n => !n.read) || [];
+    const readNotifications = notifications?.filter(n => n.read) || [];
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
