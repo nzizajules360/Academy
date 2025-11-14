@@ -60,7 +60,9 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        if (!firestore) {
+        const db = firestore;
+        
+        if (!db) {
             toast({ 
                 variant: 'destructive', 
                 title: 'Error', 
@@ -79,34 +81,39 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
             setIsLoading(false);
             return;
         }
-        
-        const studentRef = doc(firestore, 'students', student.id);
 
-        updateDoc(studentRef, data)
-            .then(() => {
-                toast({
-                    title: "✓ Student Updated",
-                    description: `Information for ${student.name} has been updated successfully.`,
-                    variant: 'success'
-                });
-                
-                onUpdate();
-                onOpenChange(false);
-                form.reset();
-            })
-            .catch (serverError => {
-                const permissionError = new FirestorePermissionError({
-                    path: studentRef.path,
-                    operation: 'update',
-                    requestResourceData: data,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                
-                console.error("Failed to update student:", serverError);
-            })
-            .finally(() => {
-                setIsLoading(false);
+        try {
+            const studentRef = doc(db, 'students', student.id);
+            await updateDoc(studentRef, data);
+            
+            toast({
+                title: "✓ Student Updated",
+                description: `Information for ${student.name} has been updated successfully.`,
+                className: "bg-green-50 border-green-200",
             });
+            
+            onUpdate();
+            onOpenChange(false);
+            form.reset();
+        } catch (serverError) {
+            const studentRef = doc(db, 'students', student.id);
+            const permissionError = new FirestorePermissionError({
+                path: studentRef.path,
+                operation: 'update',
+                requestResourceData: data,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            
+            console.error("Failed to update student:", serverError);
+            
+            toast({
+                variant: 'destructive',
+                title: '✗ Update Failed',
+                description: 'Could not update student information. Please check your permissions and try again.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const handleCancel = () => {
@@ -116,9 +123,9 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <AnimatePresence>
-                {isOpen && (
-                    <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden border-2 shadow-2xl">
+            <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden border-2 shadow-2xl">
+                <AnimatePresence mode="wait">
+                    {isOpen && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -133,6 +140,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                         Edit Student
                                     </DialogTitle>
                                     <Button
+                                        type="button"
                                         variant="ghost"
                                         size="icon"
                                         onClick={handleCancel}
@@ -167,6 +175,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                                                 placeholder="e.g., Kigali, Nyarugenge" 
                                                                 {...field}
                                                                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11"
+                                                                disabled={isLoading}
                                                             />
                                                         </FormControl>
                                                         <FormMessage className="text-xs" />
@@ -184,7 +193,11 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                                             <Heart className="h-4 w-4 text-blue-600" />
                                                             Religion
                                                         </FormLabel>
-                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                        <Select 
+                                                            onValueChange={field.onChange} 
+                                                            value={field.value}
+                                                            disabled={isLoading}
+                                                        >
                                                             <FormControl>
                                                                 <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11">
                                                                     <SelectValue placeholder="Select a religion" />
@@ -218,6 +231,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                                                 placeholder="John Doe" 
                                                                 {...field}
                                                                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11"
+                                                                disabled={isLoading}
                                                             />
                                                         </FormControl>
                                                         <FormMessage className="text-xs" />
@@ -240,6 +254,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                                                 placeholder="0788123456" 
                                                                 {...field}
                                                                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-11 font-mono"
+                                                                disabled={isLoading}
                                                             />
                                                         </FormControl>
                                                         <FormMessage className="text-xs" />
@@ -249,13 +264,13 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <DialogFooter className="pt-6 gap-3 sm:gap-2">
+                                        <DialogFooter className="pt-6 gap-3 sm:gap-2 flex-col sm:flex-row">
                                             <Button 
                                                 type="button" 
                                                 variant="outline" 
                                                 onClick={handleCancel}
                                                 disabled={isLoading}
-                                                className="flex-1 sm:flex-none border-2 hover:bg-gray-50"
+                                                className="w-full sm:w-auto border-2 hover:bg-gray-50"
                                             >
                                                 <X className="mr-2 h-4 w-4" />
                                                 Cancel
@@ -263,7 +278,7 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                             <Button 
                                                 type="submit" 
                                                 disabled={isLoading}
-                                                className="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                                                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
                                             >
                                                 {isLoading ? (
                                                     <>
@@ -282,9 +297,9 @@ export function EditStudentForm({ student, isOpen, onOpenChange, onUpdate }: Edi
                                 </Form>
                             </div>
                         </motion.div>
-                    </DialogContent>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>
+            </DialogContent>
         </Dialog>
     );
 }

@@ -67,7 +67,7 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
 
     async function onSubmit(data: FormValues) {
         setIsLoading(true);
-        const db = firestore; // Capture firestore in a constant
+        const db = firestore;
         
         if (!db) {
             toast({ 
@@ -142,13 +142,14 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
         onOpenChange(false);
     };
 
-    const availableSpaces = 2 - bedOccupants.length;
+    const availableSpaces = watchedBed ? 2 - bedOccupants.length : 2;
+    const isBedFull = watchedBed && availableSpaces <= 0;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <AnimatePresence>
-                {isOpen && (
-                    <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden border-2 shadow-2xl">
+            <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden border-2 shadow-2xl">
+                <AnimatePresence mode="wait">
+                    {isOpen && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -163,6 +164,7 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
                                         Assign Dormitory Bed
                                     </DialogTitle>
                                     <Button
+                                        type="button"
                                         variant="ghost"
                                         size="icon"
                                         onClick={handleCancel}
@@ -196,7 +198,12 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
                                                             placeholder="e.g., 101" 
                                                             {...field}
                                                             value={field.value ?? ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                field.onChange(value === '' ? undefined : value);
+                                                            }}
                                                             className="border-gray-300 focus:border-purple-500 focus:ring-purple-500 h-11 text-lg font-semibold"
+                                                            disabled={isLoading}
                                                         />
                                                     </FormControl>
                                                     <FormDescription className="text-xs text-gray-500 flex items-center gap-1">
@@ -209,64 +216,69 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
                                         />
 
                                         {/* Bed Occupancy Info */}
-                                        {watchedBed && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg space-y-3"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <h4 className="font-semibold text-purple-900 flex items-center gap-2">
-                                                        <Users className="h-4 w-4" />
-                                                        Bed {watchedBed} Occupancy
-                                                    </h4>
-                                                    <Badge 
-                                                        variant={availableSpaces > 0 ? "default" : "destructive"}
-                                                        className={availableSpaces > 0 ? "bg-green-500" : ""}
-                                                    >
-                                                        {availableSpaces} space{availableSpaces !== 1 ? 's' : ''} available
-                                                    </Badge>
-                                                </div>
-                                                
-                                                {bedOccupants.length > 0 ? (
-                                                    <div className="space-y-2">
-                                                        <p className="text-xs text-purple-700 font-medium">Current occupants:</p>
-                                                        <ul className="space-y-1">
-                                                            {bedOccupants.map((occupant) => (
-                                                                <li 
-                                                                    key={occupant.id} 
-                                                                    className="text-sm text-purple-800 bg-white px-3 py-2 rounded border border-purple-200"
-                                                                >
-                                                                    • {occupant.name}
-                                                                </li>
-                                                            ))}
-                                                        </ul>
+                                        <AnimatePresence mode="wait">
+                                            {watchedBed && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <h4 className="font-semibold text-purple-900 flex items-center gap-2">
+                                                                <Users className="h-4 w-4" />
+                                                                Bed {watchedBed} Occupancy
+                                                            </h4>
+                                                            <Badge 
+                                                                variant={availableSpaces > 0 ? "default" : "destructive"}
+                                                                className={availableSpaces > 0 ? "bg-green-500 hover:bg-green-600" : ""}
+                                                            >
+                                                                {availableSpaces} space{availableSpaces !== 1 ? 's' : ''} available
+                                                            </Badge>
+                                                        </div>
+                                                        
+                                                        {bedOccupants.length > 0 ? (
+                                                            <div className="space-y-2">
+                                                                <p className="text-xs text-purple-700 font-medium">Current occupants:</p>
+                                                                <ul className="space-y-1">
+                                                                    {bedOccupants.map((occupant) => (
+                                                                        <li 
+                                                                            key={occupant.id} 
+                                                                            className="text-sm text-purple-800 bg-white px-3 py-2 rounded border border-purple-200"
+                                                                        >
+                                                                            • {occupant.name}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-purple-600 italic">
+                                                                This bed is currently empty
+                                                            </p>
+                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <p className="text-sm text-purple-600 italic">
-                                                        This bed is currently empty
-                                                    </p>
-                                                )}
-                                            </motion.div>
-                                        )}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
 
                                         {/* Action Buttons */}
-                                        <DialogFooter className="pt-6 gap-3 sm:gap-2">
+                                        <DialogFooter className="pt-6 gap-3 sm:gap-2 flex-col sm:flex-row">
                                             <Button 
                                                 type="button" 
                                                 variant="outline" 
                                                 onClick={handleCancel}
                                                 disabled={isLoading}
-                                                className="flex-1 sm:flex-none border-2 hover:bg-gray-50"
+                                                className="w-full sm:w-auto border-2 hover:bg-gray-50"
                                             >
                                                 <X className="mr-2 h-4 w-4" />
                                                 Cancel
                                             </Button>
                                             <Button 
                                                 type="submit" 
-                                                disabled={isLoading || (watchedBed && availableSpaces <= 0)}
-                                                className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                                                disabled={isLoading || isBedFull}
+                                                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-200"
                                             >
                                                 {isLoading ? (
                                                     <>
@@ -285,9 +297,9 @@ export function AssignDormForm({ student, allStudents, isOpen, onOpenChange, onU
                                 </Form>
                             </div>
                         </motion.div>
-                    </DialogContent>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>
+            </DialogContent>
         </Dialog>
     );
 }
